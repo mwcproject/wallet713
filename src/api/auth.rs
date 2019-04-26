@@ -17,7 +17,7 @@ impl BasicAuthMiddleware {
     pub fn new(api_basic_auth: Option<String>) -> Self {
         Self {
             api_basic_auth: api_basic_auth
-                .map(|x| String::from("Basic ") + &to_base64(&(String::from("grin:") + &x))),
+                .map(|x| String::from("Basic ") + &to_base64(&(String::from("mwc:") + &x))),
         }
     }
 }
