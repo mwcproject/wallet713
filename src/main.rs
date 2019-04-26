@@ -54,7 +54,7 @@ use clap::{App, Arg, ArgMatches};
 use colored::*;
 use grin_api::client;
 use grin_core::core;
-use grin_core::global::{is_mainnet, set_mining_mode, ChainTypes};
+use grin_core::global::{set_mining_mode, ChainTypes};
 use rustyline::completion::{Completer, FilenameCompleter, Pair};
 use rustyline::config::OutputStreamType;
 use rustyline::error::ReadlineError;
@@ -854,12 +854,7 @@ fn proof_ok(
     println!("kernel:");
     println!("   {}", kernel.bright_magenta());
     println!("\n{}: this proof should only be considered valid if the kernel is actually on-chain with sufficient confirmations", "WARNING".bright_yellow());
-    println!("please use a grin block explorer to verify this is the case. for example:");
-    let prefix = match is_mainnet() {
-        true => "",
-        false => "floonet.",
-    };
-    cli_message!("   https://{}grinscan.net/kernel/{}", prefix, kernel);
+    println!("please use a mwc block explorer to verify this is the case.");
 }
 
 fn do_command(
