@@ -500,7 +500,7 @@ fn main() {
         .expect("could not create an address book!");
     let address_book = Arc::new(Mutex::new(address_book));
 
-    println!("{}", format!("\nWelcome to wallet713 v{}\n", crate_version!()).bright_yellow().bold());
+    println!("{}", format!("\nWelcome to wallet713 for MWC v{}\n", crate_version!()).bright_yellow().bold());
 
     if config.check_updates() {
         get_motd().unwrap_or(());

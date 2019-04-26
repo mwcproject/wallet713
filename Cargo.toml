@@ -1,5 +1,5 @@
 [package]
-name = "wallet713"
+name = "mwc713"
 version = "2.0.0"
 authors = ["vault713 devs"]
 description = "A wallet that makes it easy to send, store, and swap Grin."
