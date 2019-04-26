@@ -268,14 +268,14 @@ impl SubscriptionHandler for Controller {
 
         if slate.num_participants > slate.participant_data.len() {
             cli_message!(
-                "slate [{}] received from [{}] for [{}] grins",
+                "slate [{}] received from [{}] for [{}] MWCs",
                 slate.id.to_string().bright_green(),
                 display_from.bright_green(),
                 core::amount_to_hr_string(slate.amount, false).bright_green()
             );
         } else {
             cli_message!(
-                "slate [{}] received back from [{}] for [{}] grins",
+                "slate [{}] received back from [{}] for [{}] MWCs",
                 slate.id.to_string().bright_green(),
                 display_from.bright_green(),
                 core::amount_to_hr_string(slate.amount, false).bright_green()
@@ -354,7 +354,7 @@ fn start_grinbox_listener(
         }
     }
 
-    cli_message!("starting grinbox listener...");
+    cli_message!("starting mwcbox listener...");
     let grinbox_address = config.get_grinbox_address()?;
     let grinbox_secret_key = config.get_grinbox_secret_key()?;
 
@@ -803,7 +803,7 @@ fn derive_address_key(
 fn show_address(config: &Wallet713Config, include_index: bool) -> Result<()> {
     println!(
         "{}: {}",
-        "Your grinbox address".bright_yellow(),
+        "Your mwcbox address".bright_yellow(),
         config.get_grinbox_address()?.stripped().bright_green()
     );
     if include_index {
@@ -834,7 +834,7 @@ fn proof_ok(
         .unwrap_or(String::new());
 
     println!(
-        "this file proves that [{}] grins was sent to [{}]{}",
+        "this file proves that [{}] MWCs was sent to [{}]{}",
         core::amount_to_hr_string(amount, false).bright_green(),
         receiver.bright_green(),
         sender_message
@@ -1243,7 +1243,7 @@ fn do_command(
             let mut slate = slate?;
 
             cli_message!(
-                "slate [{}] for [{}] grins sent successfully to [{}]",
+                "slate [{}] for [{}] MWCs sent successfully to [{}]",
                 slate.id.to_string().bright_green(),
                 core::amount_to_hr_string(slate.amount, false).bright_green(),
                 display_to.unwrap().bright_green()
@@ -1312,7 +1312,7 @@ fn do_command(
 
             let slate = slate?;
             cli_message!(
-                "invoice slate [{}] for [{}] grins sent successfully to [{}]",
+                "invoice slate [{}] for [{}] MWCs sent successfully to [{}]",
                 slate.id.to_string().bright_green(),
                 core::amount_to_hr_string(slate.amount, false).bright_green(),
                 display_to.unwrap().bright_green()
