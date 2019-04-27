@@ -16,7 +16,8 @@ const WALLET713_DEFAULT_CONFIG_FILENAME: &str = "wallet713.toml";
 
 const DEFAULT_CONFIG: &str = r#"
 	wallet713_data_path = "wallet713_data"
-	grinbox_domain = "grinbox.io"
+	grinbox_domain = "mq.mwc.mw"
+        grinbox_protocol_unsecure = true
 	default_keybase_ttl = "24h"
 "#;
 
@@ -166,8 +167,8 @@ impl Wallet713Config {
     pub fn grin_node_uri(&self) -> String {
         let chain_type = self.chain.as_ref().unwrap_or(&ChainTypes::Floonet);
         self.grin_node_uri.clone().unwrap_or(match chain_type {
-            ChainTypes::Mainnet => String::from("https://seed1.mwc.mw:13413"),
-            _ => String::from("https://seed1.mwc.mw:13413"),
+            ChainTypes::Mainnet => String::from("http://seed1.mwc.mw:13413"),
+            _ => String::from("http://seed1.mwc.mw:13413"),
         })
     }
 

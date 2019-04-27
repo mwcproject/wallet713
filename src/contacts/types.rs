@@ -12,8 +12,8 @@ use common::{ErrorKind, Result};
 const ADDRESS_REGEX: &str = r"^((?P<address_type>keybase|grinbox|https)://).+$";
 const GRINBOX_ADDRESS_REGEX: &str = r"^(grinbox://)?(?P<public_key>[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{52})(@(?P<domain>[a-zA-Z0-9\.]+)(:(?P<port>[0-9]*))?)?$";
 const KEYBASE_ADDRESS_REGEX: &str = r"^(keybase://)?(?P<username>[0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_]{1,16})(:(?P<topic>[a-zA-Z0-9_-]+))?$";
-const DEFAULT_GRINBOX_DOMAIN: &str = "grinbox.io";
-pub const DEFAULT_GRINBOX_PORT: u16 = 443;
+const DEFAULT_GRINBOX_DOMAIN: &str = "mq.mwc.mw";
+pub const DEFAULT_GRINBOX_PORT: u16 = 13420;
 
 #[derive(PartialEq)]
 pub enum AddressType {
