@@ -17,7 +17,6 @@ const WALLET713_DEFAULT_CONFIG_FILENAME: &str = "wallet713.toml";
 const DEFAULT_CONFIG: &str = r#"
 	wallet713_data_path = "wallet713_data"
 	grinbox_domain = "mq.mwc.mw"
-        grinbox_protocol_unsecure = true
 	default_keybase_ttl = "24h"
 "#;
 
