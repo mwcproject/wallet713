@@ -22,30 +22,30 @@ impl<'a, 'b> Parser {
                 SubCommand::with_name("config")
                     .about("configures wallet713")
                     .arg(
-                        Arg::from_usage("[generate-address] -g, --generate-next-address 'generate new grinbox address, supports optional index `-i`'")
+                        Arg::from_usage("[generate-address] -g, --generate-next-address 'generate new mwcbox address, supports optional index `-i`'")
                     )
                     .arg(
-                        Arg::from_usage("[generate-address-index] -i, --index=<index> 'use this index for grinbox address generation'")
+                        Arg::from_usage("[generate-address-index] -i, --index=<index> 'use this index for mwcbox address generation'")
                     )
                     .arg(
                         Arg::from_usage("[data-path] -d, --data-path=<data path> 'the wallet data directory'")
                     )
                     .arg(
-                        Arg::from_usage("[domain] --domain=<domain> 'the grinbox domain'")
+                        Arg::from_usage("[domain] --domain=<domain> 'the mwcbox domain'")
                     )
                     .arg(
-                        Arg::from_usage("[port] -p, --port=<port> 'the grinbox port'")
+                        Arg::from_usage("[port] -p, --port=<port> 'the mwcbox port'")
                     )
                     .arg(
-                        Arg::from_usage("[node-uri] -n, --node-uri=<uri> 'the grin node uri'")
+                        Arg::from_usage("[node-uri] -n, --node-uri=<uri> 'the mwc node uri'")
                     )
                     .arg(
-                        Arg::from_usage("[node-secret] -s, --secret=<node-secret> 'the grin node api secret'")
+                        Arg::from_usage("[node-secret] -s, --secret=<node-secret> 'the mwc node api secret'")
                     )
             )
             .subcommand(
                 SubCommand::with_name("address")
-                    .about("shows your current grinbox address")
+                    .about("shows your current mwcbox address")
             )
             .subcommand(
                 SubCommand::with_name("init")
@@ -137,7 +137,7 @@ impl<'a, 'b> Parser {
             )
             .subcommand(
                 SubCommand::with_name("listen")
-                    .about("listens to incoming slates to your grinbox account or keybase")
+                    .about("listens to incoming slates to your mwcbox account or keybase")
                     .arg(
                         Arg::from_usage("[grinbox] -g, --grinbox 'start the grinbox listener'")
                     )
@@ -157,9 +157,9 @@ impl<'a, 'b> Parser {
             )
             .subcommand(
                 SubCommand::with_name("send")
-                    .about("sends grins to an address")
+                    .about("sends MWCs to an address")
                     .arg(
-                        Arg::from_usage("[to] -t, --to=<address> 'the address to send grins to'")
+                        Arg::from_usage("[to] -t, --to=<address> 'the address to send MWCs to'")
                     )
                     .arg(
                         Arg::from_usage("[file] -f, --file=<file> 'the file to store the slate in'")
@@ -169,7 +169,7 @@ impl<'a, 'b> Parser {
                         .required(true)
                     )
                     .arg(
-                        Arg::from_usage("<amount> 'the amount of grins to send'")
+                        Arg::from_usage("<amount> 'the amount of MWCs to send'")
                     )
                     .arg(
                         Arg::from_usage("[strategy] -s, --strategy=<strategy> 'the input selection strategy (all/smallest). Default: smallest'")
@@ -188,10 +188,10 @@ impl<'a, 'b> Parser {
                 SubCommand::with_name("invoice")
                     .about("sends invoice to an address")
                     .arg(
-                        Arg::from_usage("-t, --to=<address> 'the address to send grins to'")
+                        Arg::from_usage("-t, --to=<address> 'the address to send MWCs to'")
                     )
                     .arg(
-                        Arg::from_usage("<amount> 'the amount of grins to send'")
+                        Arg::from_usage("<amount> 'the amount of MWCs to send'")
                     )
                     .arg(
                         Arg::from_usage("[outputs] -o, --outputs=<outputs> 'the number of outputs'")
