@@ -19,7 +19,7 @@ use crate::wallet::api::Wallet713OwnerAPI;
 use crate::wallet::types::TxProof;
 
 pub struct Wallet {
-    active_account: String,
+    pub active_account: String,
     backend: Option<Arc<Mutex<Backend<HTTPNodeClient, ExtKeychain>>>>,
     max_auto_accept_invoice: Option<u64>,
 }

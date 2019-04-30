@@ -83,6 +83,8 @@ use crate::common::motd::get_motd;
 use contacts::{Address, AddressBook, AddressType, Backend, Contact, GrinboxAddress};
 
 const CLI_HISTORY_PATH: &str = ".history";
+static mut RECV_ACCOUNT: Option<String> = None;
+static mut RECV_PASS: Option<String> = None;
 
 fn do_config(
     args: &ArgMatches,
@@ -233,15 +235,37 @@ impl Controller {
         address: Option<String>,
         slate: &mut Slate,
         tx_proof: Option<&mut TxProof>,
+        config: Option<Wallet713Config>,
     ) -> Result<bool> {
         if slate.num_participants > slate.participant_data.len() {
             //TODO: this needs to be changed to properly figure out if this slate is an invoice or a send
             if slate.tx.inputs().len() == 0 {
                 self.wallet.lock().process_receiver_initiated_slate(slate)?;
             } else {
-                self.wallet
-                    .lock()
-                    .process_sender_initiated_slate(address, slate)?;
+                let mut w = self.wallet.lock();
+                let old_account = w.active_account.clone();
+
+                unsafe {
+                    if config.is_some() && RECV_ACCOUNT.is_some() {
+                        if RECV_PASS.is_some() {
+                            w.unlock(&config.clone().unwrap(), &RECV_ACCOUNT.clone().unwrap(), &RECV_PASS.clone().unwrap())?;
+                        } 
+                        else
+                        {
+                            w.unlock(&config.clone().unwrap(), &RECV_ACCOUNT.clone().unwrap(), &"".to_string())?;
+                        }
+                    }
+                    w.process_sender_initiated_slate(address, slate)?;
+
+                    if config.is_some() && RECV_ACCOUNT.is_some() {
+                        if RECV_PASS.is_some() {
+                            w.unlock(&config.unwrap(), &old_account, &RECV_PASS.clone().unwrap())?;
+                        }
+                        else {
+                            w.unlock(&config.unwrap(), &old_account, &"".to_string())?;
+                        }
+                    }
+                }
             }
             Ok(false)
         } else {
@@ -256,7 +280,7 @@ impl SubscriptionHandler for Controller {
         cli_message!("listener started for [{}]", self.name.bright_green());
     }
 
-    fn on_slate(&self, from: &Address, slate: &mut Slate, tx_proof: Option<&mut TxProof>) {
+    fn on_slate(&self, from: &Address, slate: &mut Slate, tx_proof: Option<&mut TxProof>, config: Option<Wallet713Config>) {
         let mut display_from = from.stripped();
         if let Ok(contact) = self
             .address_book
@@ -287,7 +311,7 @@ impl SubscriptionHandler for Controller {
         }
 
         let result = self
-            .process_incoming_slate(Some(from.to_string()), slate, tx_proof)
+            .process_incoming_slate(Some(from.to_string()), slate, tx_proof, config)
             .and_then(|is_finalized| {
                 if !is_finalized {
                     self.publisher
@@ -362,6 +386,7 @@ fn start_grinbox_listener(
         &grinbox_address,
         &grinbox_secret_key,
         config.grinbox_protocol_unsecure(),
+        config,
     )?;
 
     let grinbox_subscriber = GrinboxSubscriber::new(
@@ -1385,6 +1410,23 @@ fn do_command(
             let mut wallet = wallet.lock();
             wallet.check_repair()?;
             cli_message!("check and repair done!");
+        }
+        Some("set-recv") => {
+            let args = matches.subcommand_matches("set-recv").unwrap();
+            unsafe {
+                RECV_ACCOUNT = Some(args.value_of("account").unwrap().to_string());
+                let pass = args.value_of("password");
+                if pass.is_some() {
+                    RECV_PASS = Some(pass.unwrap().to_string());
+                }
+                else
+                {
+                    RECV_PASS = None;
+                }
+            }
+            unsafe {
+                cli_message!("Incoming funds will be received in account: {:?}", RECV_ACCOUNT.clone().unwrap());
+            }
         }
         Some("export-proof") => {
             let args = matches.subcommand_matches("export-proof").unwrap();

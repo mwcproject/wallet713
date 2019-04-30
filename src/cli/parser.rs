@@ -273,5 +273,15 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("-f, --file=<file> 'the file to read from'")
                     )
             )
+            .subcommand(
+                SubCommand::with_name("set-recv")
+                    .about("sets which account is the recipient of an incoming transaction")
+                    .arg(
+                        Arg::from_usage("-a, --account=<account> 'the account to receive to'")
+                    )
+                    .arg(
+                        Arg::from_usage("[password] -p, --password=<password> 'the password for this account'")
+                    )
+            )
     }
 }
