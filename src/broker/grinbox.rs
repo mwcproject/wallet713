@@ -5,6 +5,7 @@ use ws::{
 };
 
 use crate::wallet::types::{Slate, TxProof, TxProofErrorKind};
+use common::config::Wallet713Config;
 use common::crypto::{sign_challenge, Hex, SecretKey};
 use common::message::EncryptedMessage;
 use common::{Arc, ErrorKind, Mutex, Result};
@@ -21,6 +22,7 @@ pub struct GrinboxPublisher {
     address: GrinboxAddress,
     broker: GrinboxBroker,
     secret_key: SecretKey,
+    config: Wallet713Config,
 }
 
 impl GrinboxPublisher {
@@ -28,11 +30,13 @@ impl GrinboxPublisher {
         address: &GrinboxAddress,
         secret_key: &SecretKey,
         protocol_unsecure: bool,
+        config: &Wallet713Config,
     ) -> Result<Self> {
         Ok(Self {
             address: address.clone(),
             broker: GrinboxBroker::new(protocol_unsecure)?,
             secret_key: secret_key.clone(),
+            config: config.clone(),
         })
     }
 }
@@ -50,6 +54,7 @@ pub struct GrinboxSubscriber {
     address: GrinboxAddress,
     broker: GrinboxBroker,
     secret_key: SecretKey,
+    config: Wallet713Config,
 }
 
 impl GrinboxSubscriber {
@@ -58,6 +63,7 @@ impl GrinboxSubscriber {
             address: publisher.address.clone(),
             broker: publisher.broker.clone(),
             secret_key: publisher.secret_key.clone(),
+            config: publisher.config.clone(),
         })
     }
 }
@@ -65,7 +71,7 @@ impl GrinboxSubscriber {
 impl Subscriber for GrinboxSubscriber {
     fn start(&mut self, handler: Box<SubscriptionHandler + Send>) -> Result<()> {
         self.broker
-            .subscribe(&self.address, &self.secret_key, handler)?;
+            .subscribe(&self.address, &self.secret_key, handler, self.config.clone())?;
         Ok(())
     }
 
@@ -154,6 +160,7 @@ impl GrinboxBroker {
         address: &GrinboxAddress,
         secret_key: &SecretKey,
         handler: Box<SubscriptionHandler + Send>,
+        config: Wallet713Config,
     ) -> Result<()> {
         let handler = Arc::new(Mutex::new(handler));
         let url = {
@@ -181,6 +188,8 @@ impl GrinboxBroker {
             let cloned_handler = cloned_handler.clone();
             let cloned_cloned_inner = cloned_inner.clone();
             let cloned_connection_meta_data = connection_meta_data.clone();
+            let cloned_config = config.clone();
+
             let result = connect(url.clone(), move |sender| {
                 {
                     let mut guard = cloned_cloned_inner.lock();
@@ -194,6 +203,7 @@ impl GrinboxBroker {
                     address: cloned_address.clone(),
                     secret_key,
                     connection_meta_data: cloned_connection_meta_data.clone(),
+                    config: cloned_config.clone(),
                 };
                 client
             });
@@ -245,6 +255,7 @@ struct GrinboxClient {
     address: GrinboxAddress,
     secret_key: SecretKey,
     connection_meta_data: Arc<Mutex<ConnectionMetadata>>,
+    config: Wallet713Config,
 }
 
 impl GrinboxClient {
@@ -373,7 +384,7 @@ impl Handler for GrinboxClient {
                 let address = tx_proof.address.clone();
                 self.handler
                     .lock()
-                    .on_slate(&address, &mut slate, Some(&mut tx_proof));
+                    .on_slate(&address, &mut slate, Some(&mut tx_proof), Some(self.config.clone()));
             }
             ProtocolResponse::Error {
                 kind: _,
