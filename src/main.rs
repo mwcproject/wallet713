@@ -1148,6 +1148,22 @@ fn do_command(
         Some("send") => {
             let args = matches.subcommand_matches("send").unwrap();
             let to = args.value_of("to");
+            let mut to = to.unwrap().to_string();
+            let grinbox_address_obj = config.get_grinbox_address()?;
+            let grinbox_address = grinbox_address_obj.public_key;
+            let w = wallet.lock();
+            let active_account = &w.active_account;
+
+            let mut condition_check;
+            unsafe {
+                condition_check = to == grinbox_address && (RECV_ACCOUNT.is_none() || &RECV_ACCOUNT.clone().unwrap() == active_account);
+            }
+            if condition_check {
+            //if to == grinbox_address && (RECV_ACCOUNT.is_none() || &RECV_ACCOUNT.clone().unwrap() == active_account) {
+                cli_message!("You cannot send to your own account!");
+            }
+            else
+            {
             let input = args.value_of("file");
             let message = args.value_of("message").map(|s| s.to_string());
 
@@ -1177,7 +1193,7 @@ fn do_command(
             // Store slate in a file
             if let Some(input) = input {
                 let mut file = File::create(input.replace("~", &home_dir))?;
-                let slate = wallet.lock().initiate_send_tx(
+                    let slate = w.initiate_send_tx(
                     Some(String::from("file")),
                     amount,
                     confirmations,
@@ -1192,7 +1208,6 @@ fn do_command(
                 return Ok(());
             }
 
-            let mut to = to.unwrap().to_string();
             let mut display_to = None;
             if to.starts_with("@") {
                 let contact = address_book.lock().get_contact(&to[1..])?;
@@ -1216,7 +1231,7 @@ fn do_command(
             let mut slate: Slate = match to.address_type() {
                 AddressType::Keybase => {
                     if let Some((publisher, _)) = keybase_broker {
-                        let slate = wallet.lock().initiate_send_tx(
+                            let slate = w.initiate_send_tx(
                             Some(to.to_string()),
                             amount,
                             confirmations,
@@ -1237,7 +1252,7 @@ fn do_command(
                 }
                 AddressType::Grinbox => {
                     if let Some((publisher, _)) = grinbox_broker {
-                        let slate = wallet.lock().initiate_send_tx(
+                            let slate = w.initiate_send_tx(
                             Some(to.to_string()),
                             amount,
                             confirmations,
@@ -1256,7 +1271,7 @@ fn do_command(
                 AddressType::Https => {
                     let url =
                         Url::parse(&format!("{}/v1/wallet/foreign/receive_tx", to.to_string()))?;
-                    let slate = wallet.lock().initiate_send_tx(
+                        let slate = w.initiate_send_tx(
                         Some(to.to_string()),
                         amount,
                         confirmations,
@@ -1281,12 +1296,13 @@ fn do_command(
             );
 
             if to.address_type() == AddressType::Https {
-                wallet.lock().finalize_slate(&mut slate, None)?;
+                    w.finalize_slate(&mut slate, None)?;
                 cli_message!(
                     "slate [{}] finalized successfully",
                     slate.id.to_string().bright_green()
                 );
             }
+        }
         }
         Some("invoice") => {
             let args = matches.subcommand_matches("invoice").unwrap();
