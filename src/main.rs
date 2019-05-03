@@ -1145,20 +1145,25 @@ fn do_command(
             cli_message!("{} finalized.", input);
         }
         Some("send") => {
+/*
             let args = matches.subcommand_matches("send").unwrap();
-            let to = args.value_of("to");
-            let mut to = to.unwrap().to_string();
+            let to_arg = args.value_of("to");
+            let mut to = "";
+            if to_arg.is_some() {
+                to = &to_arg.unwrap().to_string();
+            }
             let grinbox_address_obj = config.get_grinbox_address()?;
             let grinbox_address = grinbox_address_obj.public_key;
             let w = wallet.lock();
             let active_account = &w.active_account;
 
-            let mut condition_check;
+            let mut condition_check = false;
             unsafe {
-                condition_check = to == grinbox_address && (RECV_ACCOUNT.is_none() || &RECV_ACCOUNT.clone().unwrap() == active_account);
+                if to_arg.is_some() {
+                    condition_check = to == grinbox_address && (RECV_ACCOUNT.is_none() || &RECV_ACCOUNT.clone().unwrap() == active_account);
+                }
             }
             if condition_check {
-            //if to == grinbox_address && (RECV_ACCOUNT.is_none() || &RECV_ACCOUNT.clone().unwrap() == active_account) {
                 cli_message!("You cannot send to your own account!");
             }
             else
@@ -1170,98 +1175,88 @@ fn do_command(
                 if strategy != "smallest" && strategy != "all" {
                     return Err(ErrorKind::InvalidStrategy.into());
                 }
+*/
 
-                let confirmations = args.value_of("confirmations").unwrap_or("10");
-                let confirmations = u64::from_str_radix(confirmations, 10)
-                    .map_err(|_| ErrorKind::InvalidMinConfirmations(confirmations.to_string()))?;
+            let args = matches.subcommand_matches("send").unwrap();
+            let to = args.value_of("to");
+            let input = args.value_of("file");
+            let message = args.value_of("message").map(|s| s.to_string());
 
-                let change_outputs = args.value_of("change-outputs").unwrap_or("1");
-                let change_outputs = usize::from_str_radix(change_outputs, 10)
-                    .map_err(|_| ErrorKind::InvalidNumOutputs(change_outputs.to_string()))?;
+            let strategy = args.value_of("strategy").unwrap_or("smallest");
+            if strategy != "smallest" && strategy != "all" {
+                return Err(ErrorKind::InvalidStrategy.into());
+            }
 
-                let amount = args.value_of("amount").unwrap();
-                let amount = core::amount_from_hr_string(amount)
-                    .map_err(|_| ErrorKind::InvalidAmount(amount.to_string()))?;
+            let confirmations = args.value_of("confirmations").unwrap_or("10");
+            let confirmations = u64::from_str_radix(confirmations, 10)
+                .map_err(|_| ErrorKind::InvalidMinConfirmations(confirmations.to_string()))?;
 
-                // Store slate in a file
-                if let Some(input) = input {
-                    let mut file = File::create(input.replace("~", &home_dir))?;
-                    let slate = w.initiate_send_tx(
-                        Some(String::from("file")),
-                        amount,
-                        confirmations,
-                        strategy,
-                        change_outputs,
-                        500,
-                        message,
-                    )?;
-                    file.write_all(serde_json::to_string(&slate).unwrap().as_bytes())?;
-                    cli_message!("{} created successfully.", input);
-                    return Ok(());
+            let change_outputs = args.value_of("change-outputs").unwrap_or("1");
+            let change_outputs = usize::from_str_radix(change_outputs, 10)
+                .map_err(|_| ErrorKind::InvalidNumOutputs(change_outputs.to_string()))?;
+
+            let amount = args.value_of("amount").unwrap();
+            let amount = core::amount_from_hr_string(amount)
+                .map_err(|_| ErrorKind::InvalidAmount(amount.to_string()))?;
+
+            // Store slate in a file
+            if let Some(input) = input {
+                let mut file = File::create(input.replace("~", &home_dir))?;
+                let slate = wallet.lock().initiate_send_tx(
+                    Some(String::from("file")),
+                    amount,
+                    confirmations,
+                    strategy,
+                    change_outputs,
+                    500,
+                    message,
+                )?;
+                file.write_all(serde_json::to_string(&slate).unwrap().as_bytes())?;
+                cli_message!("{} created successfully.", input);
+                return Ok(());
+            }
+
+            let mut to = to.unwrap().to_string();
+
+            let grinbox_address_obj = config.get_grinbox_address()?;
+            let grinbox_address = grinbox_address_obj.public_key;
+            let w = wallet.lock();
+            let active_account = &w.active_account;
+
+            let mut condition_check;
+            unsafe {
+                condition_check = to == grinbox_address && (RECV_ACCOUNT.is_none() || &RECV_ACCOUNT.clone().unwrap() == active_account);
+            }
+            if condition_check {
+                cli_message!("You cannot send to your own account!");
+            }
+            else
+            {
+
+            let mut display_to = None;
+            if to.starts_with("@") {
+                let contact = address_book.lock().get_contact(&to[1..])?;
+                to = contact.get_address().to_string();
+                display_to = Some(contact.get_name().to_string());
+            }
+
+            // try parse as a general address and fallback to grinbox address
+            let address = Address::parse(&to);
+            let address: Result<Box<Address>> = match address {
+                Ok(address) => Ok(address),
+                Err(e) => {
+                    Ok(Box::new(GrinboxAddress::from_str(&to).map_err(|_| e)?) as Box<Address>)
                 }
+            };
+            let to = address?;
+            if display_to.is_none() {
+                display_to = Some(to.stripped());
+            }
 
-                let mut display_to = None;
-                if to.starts_with("@") {
-                    let contact = address_book.lock().get_contact(&to[1..])?;
-                    to = contact.get_address().to_string();
-                    display_to = Some(contact.get_name().to_string());
-                }
-
-                // try parse as a general address and fallback to grinbox address
-                let address = Address::parse(&to);
-                let address: Result<Box<Address>> = match address {
-                    Ok(address) => Ok(address),
-                    Err(e) => {
-                        Ok(Box::new(GrinboxAddress::from_str(&to).map_err(|_| e)?) as Box<Address>)
-                    }
-                };
-                let to = address?;
-                if display_to.is_none() {
-                    display_to = Some(to.stripped());
-                }
-
-                let slate: Result<Slate> = match to.address_type() {
-                    AddressType::Keybase => {
-                        if let Some((publisher, _)) = keybase_broker {
-                            let slate = w.initiate_send_tx(
-                            Some(to.to_string()),
-                            amount,
-                            confirmations,
-                            strategy,
-                            change_outputs,
-                            500,
-                            message,
-                            )?;
-                            let mut keybase_address =
-                                contacts::KeybaseAddress::from_str(&to.to_string())?;
-                            keybase_address.topic = Some(broker::TOPIC_SLATE_NEW.to_string());
-                            publisher.post_slate(&slate, keybase_address.borrow())?;
-                            Ok(slate)
-                        } else {
-                            Err(ErrorKind::ClosedListener("keybase".to_string()))?
-                        }
-                    }
-                    AddressType::Grinbox => {
-                        if let Some((publisher, _)) = grinbox_broker {
-                            let slate = w.initiate_send_tx(
-                            Some(to.to_string()),
-                            amount,
-                            confirmations,
-                            strategy,
-                            change_outputs,
-                            500,
-                            message,
-                            )?;
-                            publisher.post_slate(&slate, to.borrow())?;
-                            Ok(slate)
-                        } else {
-                            Err(ErrorKind::ClosedListener("grinbox".to_string()))?
-                        }
-                    }
-                    AddressType::Https => {
-                        let url =
-                            Url::parse(&format!("{}/v1/wallet/foreign/receive_tx", to.to_string()))?;
-                        let slate = w.initiate_send_tx(
+            let slate: Result<Slate> = match to.address_type() {
+                AddressType::Keybase => {
+                    if let Some((publisher, _)) = keybase_broker {
+                        let slate = wallet.lock().initiate_send_tx(
                             Some(to.to_string()),
                             amount,
                             confirmations,
@@ -1270,28 +1265,66 @@ fn do_command(
                             500,
                             message,
                         )?;
-                        client::post(url.as_str(), None, &slate)
-                            .map_err(|_| ErrorKind::HttpRequest.into())
+                        let mut keybase_address =
+                            contacts::KeybaseAddress::from_str(&to.to_string())?;
+                        keybase_address.topic = Some(broker::TOPIC_SLATE_NEW.to_string());
+                        publisher.post_slate(&slate, keybase_address.borrow())?;
+                        Ok(slate)
+                    } else {
+                        Err(ErrorKind::ClosedListener("keybase".to_string()))?
                     }
-                };
-
-                let mut slate = slate?;
-
-                cli_message!(
-                    "slate [{}] for [{}] MWCs sent successfully to [{}]",
-                    slate.id.to_string().bright_green(),
-                    core::amount_to_hr_string(slate.amount, false).bright_green(),
-                    display_to.unwrap().bright_green()
-                );
-
-                if to.address_type() == AddressType::Https {
-                    w.finalize_slate(&mut slate, None)?;
-                    cli_message!(
-                        "slate [{}] finalized successfully",
-                        slate.id.to_string().bright_green()
-                    );
                 }
+                AddressType::Grinbox => {
+                    if let Some((publisher, _)) = grinbox_broker {
+                        let slate = wallet.lock().initiate_send_tx(
+                            Some(to.to_string()),
+                            amount,
+                            confirmations,
+                            strategy,
+                            change_outputs,
+                            500,
+                            message,
+                        )?;
+                        publisher.post_slate(&slate, to.borrow())?;
+                        Ok(slate)
+                    } else {
+                        Err(ErrorKind::ClosedListener("grinbox".to_string()))?
+                    }
+                }
+                AddressType::Https => {
+                    let url =
+                        Url::parse(&format!("{}/v1/wallet/foreign/receive_tx", to.to_string()))?;
+                    let slate = wallet.lock().initiate_send_tx(
+                        Some(to.to_string()),
+                        amount,
+                        confirmations,
+                        strategy,
+                        change_outputs,
+                        500,
+                        message,
+                    )?;
+                    client::post(url.as_str(), None, &slate)
+                        .map_err(|_| ErrorKind::HttpRequest.into())
+                }
+            };
+
+            let mut slate = slate?;
+
+            cli_message!(
+                "slate [{}] for [{}] grins sent successfully to [{}]",
+                slate.id.to_string().bright_green(),
+                core::amount_to_hr_string(slate.amount, false).bright_green(),
+                display_to.unwrap().bright_green()
+            );
+
+            if to.address_type() == AddressType::Https {
+                wallet.lock().finalize_slate(&mut slate, None)?;
+                cli_message!(
+                    "slate [{}] finalized successfully",
+                    slate.id.to_string().bright_green()
+                );
             }
+}
         }
         Some("invoice") => {
             let args = matches.subcommand_matches("invoice").unwrap();
