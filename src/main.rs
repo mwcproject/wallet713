@@ -1298,7 +1298,7 @@ fn do_command(
 
                 let mut slate = slate?;
                 cli_message!(
-                    "slate [{}] for [{}] grins sent successfully to [{}]",
+                    "slate [{}] for [{}] MWCs sent successfully to [{}]",
                     slate.id.to_string().bright_green(),
                     core::amount_to_hr_string(slate.amount, false).bright_green(),
                     display_to.unwrap().bright_green()
