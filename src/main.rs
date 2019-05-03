@@ -1146,38 +1146,6 @@ fn do_command(
             cli_message!("{} finalized.", input);
         }
         Some("send") => {
-/*
-            let args = matches.subcommand_matches("send").unwrap();
-            let to_arg = args.value_of("to");
-            let mut to = "";
-            if to_arg.is_some() {
-                to = &to_arg.unwrap().to_string();
-            }
-            let grinbox_address_obj = config.get_grinbox_address()?;
-            let grinbox_address = grinbox_address_obj.public_key;
-            let w = wallet.lock();
-            let active_account = &w.active_account;
-
-            let mut condition_check = false;
-            unsafe {
-                if to_arg.is_some() {
-                condition_check = to == grinbox_address && (RECV_ACCOUNT.is_none() || &RECV_ACCOUNT.clone().unwrap() == active_account);
-            }
-            }
-            if condition_check {
-                cli_message!("You cannot send to your own account!");
-            }
-            else
-            {
-            let input = args.value_of("file");
-            let message = args.value_of("message").map(|s| s.to_string());
-
-            let strategy = args.value_of("strategy").unwrap_or("smallest");
-            if strategy != "smallest" && strategy != "all" {
-                return Err(ErrorKind::InvalidStrategy.into());
-            }
-*/
-
             let args = matches.subcommand_matches("send").unwrap();
             let to = args.value_of("to");
             let input = args.value_of("file");
@@ -1228,13 +1196,34 @@ fn do_command(
 
             let grinbox_address_obj = config.get_grinbox_address()?;
             let grinbox_address = grinbox_address_obj.public_key;
-            let w = wallet.lock();
-            let active_account = &w.active_account;
 
-            let mut condition_check;
+            let mut condition_check = false;
+
+            if to == grinbox_address {
+
             unsafe {
-                condition_check = to == grinbox_address && (RECV_ACCOUNT.is_none() || &RECV_ACCOUNT.clone().unwrap() == active_account);
+                    if RECV_ACCOUNT.is_none() {
+                        condition_check = true;
+                    }
+                    else {
+                        let mut w = wallet.lock();
+                        let active_account = &w.active_account.clone();
+
+                        if &RECV_ACCOUNT.clone().unwrap() == active_account {
+                            condition_check = true;
+                        }
+
+                        if RECV_PASS.is_some() {
+                            w.unlock(&config.clone(), &active_account, &RECV_PASS.clone().unwrap())?;
             }
+                        else
+                        {
+                            w.unlock(&config.clone(), &active_account, &"".to_string())?;
+                        }
+                    }
+                }
+            }
+
             if condition_check {
                 cli_message!("You cannot send to your own account!");
             }
@@ -1255,11 +1244,11 @@ fn do_command(
                         Ok(Box::new(GrinboxAddress::from_str(&to).map_err(|_| e)?) as Box<Address>)
                     }
                 };
+
                 let to = address?;
                 if display_to.is_none() {
                     display_to = Some(to.stripped());
                 }
-
                 let mut slate: Slate = match to.address_type() {
                     AddressType::Keybase => {
                         if let Some((publisher, _)) = keybase_broker {
