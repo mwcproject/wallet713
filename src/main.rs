@@ -1160,6 +1160,10 @@ fn do_command(
             let confirmations = u64::from_str_radix(confirmations, 10)
                 .map_err(|_| ErrorKind::InvalidMinConfirmations(confirmations.to_string()))?;
 
+            if confirmations < 1 {
+                return Err(ErrorKind::ZeroConfNotAllowed.into());
+            }
+
             let change_outputs = args.value_of("change-outputs").unwrap_or("1");
             let change_outputs = usize::from_str_radix(change_outputs, 10)
                 .map_err(|_| ErrorKind::InvalidNumOutputs(change_outputs.to_string()))?;
