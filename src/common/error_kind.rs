@@ -85,6 +85,11 @@ pub enum ErrorKind {
         display = "\x1b[31;1merror:\x1b[0m could not unlock wallet! are you using the correct passphrase?"
     )]
     WalletUnlockFailed,
+    #[fail(
+        display = "\x1b[31;1merror:\x1b[0m Zero-conf Transactions are not allowed. Must have at least 1 confirmation."
+    )]
+    ZeroConfNotAllowed,
+
     #[fail(display = "\x1b[31;1merror:\x1b[0m could not open wallet! use `unlock` or `init`.")]
     NoWallet,
     #[fail(
