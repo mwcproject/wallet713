@@ -22,19 +22,19 @@ impl<'a, 'b> Parser {
                 SubCommand::with_name("config")
                     .about("configures wallet713")
                     .arg(
-                        Arg::from_usage("[generate-address] -g, --generate-next-address 'generate new mwcbox address, supports optional index `-i`'")
+                        Arg::from_usage("[generate-address] -g, --generate-next-address 'generate new mwc address, supports optional index `-i`'")
                     )
                     .arg(
-                        Arg::from_usage("[generate-address-index] -i, --index=<index> 'use this index for mwcbox address generation'")
+                        Arg::from_usage("[generate-address-index] -i, --index=<index> 'use this index for mwc address generation'")
                     )
                     .arg(
                         Arg::from_usage("[data-path] -d, --data-path=<data path> 'the wallet data directory'")
                     )
                     .arg(
-                        Arg::from_usage("[domain] --domain=<domain> 'the mwcbox domain'")
+                        Arg::from_usage("[domain] --domain=<domain> 'the mwc domain'")
                     )
                     .arg(
-                        Arg::from_usage("[port] -p, --port=<port> 'the mwcbox port'")
+                        Arg::from_usage("[port] -p, --port=<port> 'the mwc port'")
                     )
                     .arg(
                         Arg::from_usage("[node-uri] -n, --node-uri=<uri> 'the mwc node uri'")
@@ -45,7 +45,7 @@ impl<'a, 'b> Parser {
             )
             .subcommand(
                 SubCommand::with_name("address")
-                    .about("shows your current mwcbox address")
+                    .about("shows your current mwc address")
             )
             .subcommand(
                 SubCommand::with_name("init")
@@ -137,7 +137,7 @@ impl<'a, 'b> Parser {
             )
             .subcommand(
                 SubCommand::with_name("listen")
-                    .about("listens to incoming slates to your mwcbox account or keybase")
+                    .about("listens to incoming slates to your mwc account or keybase")
                     .arg(
                         Arg::from_usage("[grinbox] -g, --grinbox 'start the grinbox listener'")
                     )

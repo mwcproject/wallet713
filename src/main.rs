@@ -377,7 +377,7 @@ fn start_grinbox_listener(
         }
     }
 
-    cli_message!("starting mwcbox listener...");
+    cli_message!("starting mwc listener...");
     let grinbox_address = config.get_grinbox_address()?;
     let grinbox_secret_key = config.get_grinbox_secret_key()?;
 
@@ -829,7 +829,7 @@ fn derive_address_key(
 fn show_address(config: &Wallet713Config, include_index: bool) -> Result<()> {
     println!(
         "{}: {}",
-        "Your mwcbox address".bright_yellow(),
+        "Your mwc address".bright_yellow(),
         config.get_grinbox_address()?.stripped().bright_green()
     );
     if include_index {
