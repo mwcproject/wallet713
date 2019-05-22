@@ -148,7 +148,7 @@ impl Wallet {
             let (_validated, outputs) = api.retrieve_outputs(false, true, None)?;
 
             for o in outputs {
-                if o.0.num_confirmations(height) > minimum_confirmations {
+                if o.0.eligible_to_spend(height, minimum_confirmations) {
                     value += o.0.value;
                 }
             }
@@ -166,7 +166,7 @@ impl Wallet {
             let (_validated, outputs) = api.retrieve_outputs(false, true, None)?;
 
             for o in outputs {
-                if o.0.num_confirmations(height) > minimum_confirmations {
+                if o.0.eligible_to_spend(height, minimum_confirmations) {
                     count = count + 1;
                 }
             }
