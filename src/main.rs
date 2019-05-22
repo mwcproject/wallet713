@@ -54,6 +54,7 @@ use std::path::Path;
 use clap::{App, Arg, ArgMatches};
 use colored::*;
 use grin_core::core;
+use grin_core::libtx::tx_fee;
 use grin_core::global::{set_mining_mode, ChainTypes};
 use rustyline::completion::{Completer, FilenameCompleter, Pair};
 use rustyline::config::OutputStreamType;
@@ -1175,8 +1176,18 @@ fn do_command(
             };
 
             let amount = args.value_of("amount").unwrap();
-            let amount = core::amount_from_hr_string(amount)
-                .map_err(|_| ErrorKind::InvalidAmount(amount.to_string()))?;
+            let mut ntotal = 0;
+            if amount == "ALL" {
+                let max_available = wallet.lock().output_count(confirmations)?;
+                let total_value = wallet.lock().total_value(confirmations)?;
+                let fee = tx_fee(max_available, 1, 1, None);
+                ntotal = total_value - fee;
+            }
+  
+            let amount = match amount == "ALL" {
+                true => ntotal,
+                false => core::amount_from_hr_string(amount).map_err(|_| ErrorKind::InvalidAmount(amount.to_string()))?,
+            };
 
             // Store slate in a file
             if let Some(input) = input {

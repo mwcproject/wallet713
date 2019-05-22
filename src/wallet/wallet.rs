@@ -139,6 +139,42 @@ impl Wallet {
         Ok(())
     }
 
+    pub fn total_value(&self, minimum_confirmations: u64) -> Result<(u64)> {
+        let wallet = self.get_wallet_instance()?;
+
+        let mut value = 0;
+        let _result = controller::owner_single_use(wallet.clone(), |api| {
+            let (height, _) = api.node_height()?;
+            let (_validated, outputs) = api.retrieve_outputs(false, true, None)?;
+
+            for o in outputs {
+                if o.0.num_confirmations(height) > minimum_confirmations {
+                    value += o.0.value;
+                }
+            }
+            Ok(())
+        })?;
+        Ok(value)
+    }
+
+    pub fn output_count(&self, minimum_confirmations: u64) -> Result<(usize)> {
+        let wallet = self.get_wallet_instance()?;
+
+        let mut count = 0;
+        let _result = controller::owner_single_use(wallet.clone(), |api| {
+            let (height, _) = api.node_height()?;
+            let (_validated, outputs) = api.retrieve_outputs(false, true, None)?;
+
+            for o in outputs {
+                if o.0.num_confirmations(height) > minimum_confirmations {
+                    count = count + 1;
+                }
+            }
+            Ok(())
+        })?;
+        Ok(count)
+    }
+
     pub fn outputs(&self, show_spent: bool) -> Result<()> {
         let wallet = self.get_wallet_instance()?;
         let result = controller::owner_single_use(wallet.clone(), |api| {
@@ -429,7 +465,7 @@ impl Wallet {
         Ok(seed)
     }
 
-    fn get_wallet_instance(
+    pub fn get_wallet_instance(
         &self,
     ) -> Result<Arc<Mutex<WalletInst<impl NodeClient + 'static, ExtKeychain>>>> {
         if let Some(ref backend) = self.backend {

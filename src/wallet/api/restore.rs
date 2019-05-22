@@ -42,8 +42,8 @@ where
 {
     let mut wallet_outputs: Vec<OutputResult> = Vec::new();
 
-    warn!(
-        "Scanning {} outputs in the current Grin utxo set",
+    println!(
+        "Scanning {} outputs in the current MWC utxo set",
         outputs.len(),
     );
 
@@ -100,7 +100,7 @@ where
         let (highest_index, last_retrieved_index, outputs) = wallet
             .w2n_client()
             .get_outputs_by_pmmr_index(start_index, batch_size)?;
-        warn!(
+        println!(
             "Checking {} outputs, up to index {}. (Highest index: {})",
             outputs.len(),
             highest_index,
