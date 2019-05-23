@@ -181,7 +181,11 @@ pub fn txs(
                 core::amount_to_hr_string(t.amount_debited - t.amount_credited, true)
             )
         };
-        let proof = match has_proof {
+
+        let mut disp_has_proof = has_proof;
+        if t.address.is_none() { disp_has_proof = false; }
+
+        let proof = match disp_has_proof {
             true => "yes",
             false => "",
         };
