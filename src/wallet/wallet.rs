@@ -50,6 +50,24 @@ impl Wallet {
         Ok(())
     }
 
+    pub fn account_exists(
+        &mut self,
+        account: &str) -> Result<(bool)> {
+        let mut ret = false;
+        let wallet = self.get_wallet_instance()?;
+        controller::owner_single_use(wallet.clone(), |api| {
+            let acct_mappings = api.accounts()?;
+            for m in acct_mappings {
+                if m.label == account {
+                    ret = true;
+                }
+            }
+            Ok(())
+        })?;
+        Ok(ret)
+    }
+    
+
     pub fn show_mnemonic(&self, config: &Wallet713Config, passphrase: &str) -> Result<()> {
         let wallet_config = config.as_wallet_config()?;
         let seed = WalletSeed::from_file(&wallet_config, passphrase)?;
@@ -117,6 +135,18 @@ impl Wallet {
             Ok(())
         })?;
         Ok(())
+    }
+
+    pub fn get_id(&self, slate_id: Uuid) -> Result<(u32)> {
+        let mut id = 1;
+        let wallet = self.get_wallet_instance()?;
+        controller::owner_single_use(wallet.clone(), |api| {
+            let (_height, _) = api.node_height()?;
+            id = api.retrieve_tx_id_by_slate_id(slate_id)?;
+            Ok(())
+        })?;
+
+        Ok(id)
     }
 
     pub fn txs(&self, address_book: Option<Arc<Mutex<AddressBook>>>) -> Result<()> {

@@ -120,7 +120,7 @@ impl GrinboxBroker {
         secret_key: &SecretKey,
     ) -> Result<()> {
         if !self.is_running() {
-            return Err(ErrorKind::ClosedListener("grinbox".to_string()).into());
+            return Err(ErrorKind::ClosedListener("mwcmq".to_string()).into());
         }
 
         let pkey = to.public_key()?;
@@ -320,7 +320,6 @@ impl Handler for GrinboxClient {
                 return Ok(());
             }
         };
-
         match response {
             ProtocolResponse::Challenge { str } => {
                 self.challenge = Some(str.clone());
