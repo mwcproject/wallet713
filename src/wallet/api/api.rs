@@ -97,6 +97,18 @@ where
         keys::new_acct_path(&mut *w, label)
     }
 
+   pub fn retrieve_tx_id_by_slate_id(&self, slate_id: Uuid) -> Result<u32, Error> {
+       let mut w = self.wallet.lock();
+       w.open_with_credentials()?;
+       let tx = updater::retrieve_txs(&mut *w, None, Some(slate_id), None, false)?;
+       let mut ret = 1000000000;
+       for t in &tx {
+           ret = t.id;
+       }
+
+       Ok(ret)
+   }
+
     pub fn retrieve_outputs(
         &self,
         include_spent: bool,

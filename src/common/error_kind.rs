@@ -127,7 +127,7 @@ pub enum ErrorKind {
     #[fail(display = "\x1b[31;1merror:\x1b[0m unknown address type `{}`!", 0)]
     UnknownAddressType(String),
     #[fail(
-        display = "\x1b[31;1merror:\x1b[0m could not parse `{}` to a grinbox address!",
+        display = "\x1b[31;1merror:\x1b[0m could not parse `{}` to a mwcmq address!",
         0
     )]
     GrinboxAddressParsingError(String),
@@ -155,7 +155,7 @@ pub enum ErrorKind {
         display = "\x1b[31;1merror:\x1b[0m keybase not found! consider installing keybase locally first."
     )]
     KeybaseNotFound,
-    #[fail(display = "\x1b[31;1merror:\x1b[0m grinbox websocket terminated unexpectedly!")]
+    #[fail(display = "\x1b[31;1merror:\x1b[0m mwcmq websocket terminated unexpectedly!")]
     GrinboxWebsocketAbnormalTermination,
     #[fail(
         display = "\x1b[31;1merror:\x1b[0m rejecting invoice as auto invoice acceptance is turned off!"

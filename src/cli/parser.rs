@@ -139,7 +139,7 @@ impl<'a, 'b> Parser {
                 SubCommand::with_name("listen")
                     .about("listens to incoming slates to your mwc account or keybase")
                     .arg(
-                        Arg::from_usage("[grinbox] -g, --grinbox 'start the grinbox listener'")
+                        Arg::from_usage("[grinbox] -m, --mwcmq 'start the mwcmq listener'")
                     )
                     .arg(
                         Arg::from_usage("[keybase] -k, --keybase 'start the keybase listener'")
@@ -149,7 +149,7 @@ impl<'a, 'b> Parser {
                 SubCommand::with_name("stop")
                     .about("stops the slate listener")
                     .arg(
-                        Arg::from_usage("[grinbox] -g, --grinbox 'stop the grinbox listener'")
+                        Arg::from_usage("[grinbox] -m, --mwcmq 'stop the mwcmq listener'")
                     )
                     .arg(
                         Arg::from_usage("[keybase] -k, --keybase 'stop the keybase listener'")
@@ -280,7 +280,7 @@ impl<'a, 'b> Parser {
                 SubCommand::with_name("set-recv")
                     .about("sets which account is the recipient of an incoming transaction")
                     .arg(
-                        Arg::from_usage("-a, --account=<account> 'the account to receive to'")
+                        Arg::from_usage("<account> 'the account to receive to'")
                     )
                     .arg(
                         Arg::from_usage("[password] -p, --password=<password> 'the password for this account'")

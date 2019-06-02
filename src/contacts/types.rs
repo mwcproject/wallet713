@@ -9,8 +9,8 @@ use common::crypto::{
 };
 use common::{ErrorKind, Result};
 
-const ADDRESS_REGEX: &str = r"^((?P<address_type>keybase|grinbox|https)://).+$";
-const GRINBOX_ADDRESS_REGEX: &str = r"^(grinbox://)?(?P<public_key>[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{52})(@(?P<domain>[a-zA-Z0-9\.]+)(:(?P<port>[0-9]*))?)?$";
+const ADDRESS_REGEX: &str = r"^((?P<address_type>keybase|mwcmq|https)://).+$";
+const GRINBOX_ADDRESS_REGEX: &str = r"^(mwcmq://)?(?P<public_key>[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{52})(@(?P<domain>[a-zA-Z0-9\.]+)(:(?P<port>[0-9]*))?)?$";
 const KEYBASE_ADDRESS_REGEX: &str = r"^(keybase://)?(?P<username>[0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_]{1,16})(:(?P<topic>[a-zA-Z0-9_-]+))?$";
 const DEFAULT_GRINBOX_DOMAIN: &str = "mq.mwc.mw";
 
@@ -46,7 +46,7 @@ impl Address {
         let address_type = captures.name("address_type").unwrap().as_str().to_string();
         let address: Box<Address> = match address_type.as_ref() {
             "keybase" => Box::new(KeybaseAddress::from_str(address)?),
-            "grinbox" => Box::new(GrinboxAddress::from_str(address)?),
+            "mwcmq" => Box::new(GrinboxAddress::from_str(address)?),
             "https" => Box::new(HttpsAddress::from_str(address)?),
             x => Err(ErrorKind::UnknownAddressType(x.to_string()))?,
         };
@@ -236,13 +236,13 @@ impl Address for GrinboxAddress {
     }
 
     fn stripped(&self) -> String {
-        format!("{}", self)[10..].to_string()
+        format!("{}", self)[8..].to_string()
     }
 }
 
 impl Display for GrinboxAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "grinbox://{}", self.public_key)?;
+        write!(f, "mwcmq://{}", self.public_key)?;
         if self.domain != DEFAULT_GRINBOX_DOMAIN
             || (self.port.is_some() && self.port.unwrap() != DEFAULT_GRINBOX_PORT)
         {

@@ -151,7 +151,7 @@ fn do_contacts(args: &ArgMatches, address_book: Arc<Mutex<AddressBook>>) -> Resu
             .value_of("address")
             .expect("missing argument: address");
 
-        // try parse as a general address and fallback to grinbox address
+        // try parse as a general address and fallback to mwcmq address
         let contact_address = Address::parse(address);
         let contact_address: Result<Box<Address>> = match contact_address {
             Ok(address) => Ok(address),
@@ -307,7 +307,7 @@ impl SubscriptionHandler for Controller {
         };
 
         if from.address_type() == AddressType::Grinbox {
-            GrinboxAddress::from_str(&from.to_string()).expect("invalid grinbox address");
+            GrinboxAddress::from_str(&from.to_string()).expect("invalid mwcmq address");
         }
 
         let result = self
@@ -402,7 +402,7 @@ fn start_grinbox_listener(
             address_book.clone(),
             Box::new(cloned_publisher),
         )
-        .expect("could not start grinbox controller!");
+        .expect("could not start mwcmq controller!");
         cloned_subscriber
             .start(Box::new(controller))
             .expect("something went wrong!");
@@ -1018,7 +1018,7 @@ fn do_command(
             let grinbox = matches
                 .subcommand_matches("listen")
                 .unwrap()
-                .is_present("grinbox");
+                .is_present("mwcmq");
             let keybase = matches
                 .subcommand_matches("listen")
                 .unwrap()
@@ -1029,7 +1029,7 @@ fn do_command(
                     _ => false,
                 };
                 if is_running {
-                    Err(ErrorKind::AlreadyListening("grinbox".to_string()))?
+                    Err(ErrorKind::AlreadyListening("mwcmq".to_string()))?
                 } else {
                     let (publisher, subscriber, _) =
                         start_grinbox_listener(config, wallet.clone(), address_book.clone())?;
@@ -1054,7 +1054,7 @@ fn do_command(
             let grinbox = matches
                 .subcommand_matches("stop")
                 .unwrap()
-                .is_present("grinbox");
+                .is_present("mwcmq");
             let keybase = matches
                 .subcommand_matches("stop")
                 .unwrap()
@@ -1065,13 +1065,13 @@ fn do_command(
                     _ => false,
                 };
                 if is_running {
-                    cli_message!("stopping grinbox listener...");
+                    cli_message!("stopping mwcmq listener...");
                     if let Some((_, subscriber)) = grinbox_broker {
                         subscriber.stop();
                     };
                     *grinbox_broker = None;
                 } else {
-                    Err(ErrorKind::ClosedListener("grinbox".to_string()))?
+                    Err(ErrorKind::ClosedListener("mwcmq".to_string()))?
                 }
             }
             if keybase {
@@ -1251,7 +1251,7 @@ fn do_command(
                 display_to = Some(contact.get_name().to_string());
             }
 
-            // try parse as a general address and fallback to grinbox address
+            // try parse as a general address and fallback to mwcmq address
             let address = Address::parse(&to);
             let address: Result<Box<Address>> = match address {
                 Ok(address) => Ok(address),
@@ -1301,7 +1301,7 @@ fn do_command(
                         publisher.post_slate(&slate, to.borrow())?;
                         slate
                     } else {
-                        return Err(ErrorKind::ClosedListener("grinbox".to_string()).into());
+                        return Err(ErrorKind::ClosedListener("mwcmq".to_string()).into());
                     }
                 }
                 AddressType::Https => {
@@ -1323,6 +1323,9 @@ fn do_command(
                         .map_err(|_| ErrorKind::HttpRequest)?
                 }
             };
+
+            let ret_id = wallet.lock().get_id(slate.id)?;
+            println!("txid={:?}", ret_id);
 
             cli_message!(
                     "slate [{}] for [{}] MWCs sent successfully to [{}]",
@@ -1387,7 +1390,7 @@ fn do_command(
                         publisher.post_slate(&slate, to.borrow())?;
                         Ok(slate)
                     } else {
-                        Err(ErrorKind::ClosedListener("grinbox".to_string()))?
+                        Err(ErrorKind::ClosedListener("mwcmq".to_string()))?
                     }
                 }
                 _ => Err(ErrorKind::HttpRequest.into()),
@@ -1476,8 +1479,10 @@ fn do_command(
         }
         Some("set-recv") => {
             let args = matches.subcommand_matches("set-recv").unwrap();
+            let account = args.value_of("account").unwrap();
+            if wallet.lock().account_exists(account).unwrap() {
             unsafe {
-                RECV_ACCOUNT = Some(args.value_of("account").unwrap().to_string());
+                    RECV_ACCOUNT = Some(account.to_string());
                 let pass = args.value_of("password");
                 if pass.is_some() {
                     RECV_PASS = Some(pass.unwrap().to_string());
@@ -1489,6 +1494,11 @@ fn do_command(
             }
             unsafe {
                 cli_message!("Incoming funds will be received in account: {:?}", RECV_ACCOUNT.clone().unwrap());
+            }
+        }
+            else
+            {
+                cli_message!("Account {:?} does not exist!", account);
             }
         }
         Some("export-proof") => {

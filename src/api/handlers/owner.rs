@@ -254,7 +254,7 @@ pub fn handle_post_tx(state: &State, body: &Chunk) -> Result<Response<Body>, Err
 enum IssueSendMethod {
     #[serde(rename = "none")]
     None,
-    #[serde(rename = "grinbox")]
+    #[serde(rename = "mwcmq")]
     Grinbox,
     #[serde(rename = "keybase")]
     Keybase,

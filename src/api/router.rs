@@ -46,7 +46,7 @@ impl WalletContainer {
 
     pub fn grinbox_publisher(&self) -> Result<&GrinboxPublisher, Error> {
         self.grinbox_publisher.as_ref().ok_or_else(|| {
-            ErrorKind::GenericError(String::from("missing grinbox publisher")).into()
+            ErrorKind::GenericError(String::from("missing mwcmq publisher")).into()
         })
     }
 
