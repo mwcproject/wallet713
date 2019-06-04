@@ -876,10 +876,10 @@ fn proof_ok(
 
     println!("\noutputs:");
     for output in outputs {
-        println!("   {}", output.bright_magenta());
+        println!("   {}: https://explorer.mwc.mw/#o{}", output.bright_magenta(), output);
     }
     println!("kernel:");
-    println!("   {}", kernel.bright_magenta());
+    println!("   {}: https://explorer.mwc.mw/#k{}", kernel.bright_magenta(), kernel);
     println!("\n{}: this proof should only be considered valid if the kernel is actually on-chain with sufficient confirmations", "WARNING".bright_yellow());
     println!("please use a mwc block explorer to verify this is the case.");
 }
