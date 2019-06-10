@@ -17,7 +17,7 @@ const DEFAULT_GRINBOX_DOMAIN: &str = "mq.mwc.mw";
 #[cfg(not(windows))]
 pub const DEFAULT_GRINBOX_PORT: u16 = 443;
 #[cfg(windows)]
-pub const DEFAULT_GRINBOX_PORT: u16 = 13420;
+pub const DEFAULT_GRINBOX_PORT: u16 = 80;
 
 #[derive(PartialEq)]
 pub enum AddressType {
