@@ -452,7 +452,7 @@ impl Slate {
 		let blind_offset = keychain.blind_sum(
 			&BlindSum::new()
 				.add_blinding_factor(BlindingFactor::from_secret_key(sec_key.clone()))
-				.sub_blinding_factor(self.tx.offset),
+				.sub_blinding_factor(self.tx.offset.clone()),
 		)?;
 		*sec_key = blind_offset.secret_key(&keychain.secp())?;
 		Ok(())
@@ -600,7 +600,7 @@ impl Slate {
 	where
 		K: Keychain,
 	{
-		let kernel_offset = self.tx.offset;
+		// let kernel_offset = &self.tx.offset;
 
 		self.check_fees()?;
 
@@ -615,7 +615,7 @@ impl Slate {
 			// subtract the kernel_excess (built from kernel_offset)
 			let offset_excess = keychain
 				.secp()
-				.commit(0, kernel_offset.secret_key(&keychain.secp())?)?;
+				.commit(0, final_tx.offset.secret_key(&keychain.secp())?)?;
 			keychain
 				.secp()
 				.commit_sum(vec![tx_excess], vec![offset_excess])?
@@ -789,7 +789,7 @@ impl From<Transaction> for TransactionV2 {
 impl From<&Transaction> for TransactionV2 {
 	fn from(tx: &Transaction) -> TransactionV2 {
 		let Transaction { offset, body } = tx;
-		let offset = *offset;
+		let offset = offset.clone();
 		let body = TransactionBodyV2::from(body);
 		TransactionV2 { offset, body }
 	}
