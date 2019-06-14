@@ -37,7 +37,7 @@ use uuid::Uuid;
 
 use crate::wallet::error::{Error, ErrorKind};
 use super::versions::{v0::SlateV0, v1::SlateV1, v2::*};
-use super::versions::CURRENT_SLATE_VERSION;
+use super::versions::{CURRENT_SLATE_VERSION, GRIN_BLOCK_HEADER_VERSION};
 use serde::{Serialize, Serializer};
 
 
@@ -149,8 +149,8 @@ pub struct VersionCompatInfo {
 	pub version: u16,
 	/// Original version this slate was converted from
 	pub orig_version: u16,
-	/// Minimum version this slate is compatible with
-	pub min_compat_version: u16,
+	/// The grin block header version this slate is intended for
+	pub block_header_version: u16,
 }
 
 /// Helper just to facilitate serialization
@@ -223,7 +223,7 @@ impl Slate {
 			version_info: VersionCompatInfo {
 				version: CURRENT_SLATE_VERSION,
 				orig_version: CURRENT_SLATE_VERSION,
-				min_compat_version: 0,
+				block_header_version: GRIN_BLOCK_HEADER_VERSION,
 			},
 		}
 	}
@@ -765,15 +765,15 @@ impl From<&VersionCompatInfo> for VersionCompatInfoV2 {
 		let VersionCompatInfo {
 			version,
 			orig_version,
-			min_compat_version,
+			block_header_version,
 		} = data;
 		let version = *version;
 		let orig_version = *orig_version;
-		let min_compat_version = *min_compat_version;
+		let block_header_version = *block_header_version;
 		VersionCompatInfoV2 {
 			version,
 			orig_version,
-			min_compat_version,
+			block_header_version,
 		}
 	}
 }
@@ -918,15 +918,15 @@ impl From<&VersionCompatInfoV2> for VersionCompatInfo {
 		let VersionCompatInfoV2 {
 			version,
 			orig_version,
-			min_compat_version,
+			block_header_version,
 		} = data;
 		let version = *version;
 		let orig_version = *orig_version;
-		let min_compat_version = *min_compat_version;
+		let block_header_version = *block_header_version;
 		VersionCompatInfo {
 			version,
 			orig_version,
-			min_compat_version,
+			block_header_version,
 		}
 	}
 }
