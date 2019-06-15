@@ -1,21 +1,18 @@
-[![Build Status](https://travis-ci.org/vault713/wallet713.svg?branch=master)](https://travis-ci.org/vault713/wallet713)
-[![Join the chat at https://gitter.im/vault713/wallet713](https://badges.gitter.im/vault713/wallet713.svg)](https://gitter.im/vault713/wallet713?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+# MWC713
 
-# Wallet713
+MWC713 is:
 
-Wallet713 is:
+- a wallet for MWC.
 
-- a wallet for Grin.
+   [MWC](https://github.com/cgilliard/mwc-node) is a blockchain-powered cryptocurrency that is an implementation of the MimbleWimble protocol, forked from Grin, with a focus on privacy and scalability. In MimbleWimble, transactions are interactive, requiring the Sender and Recipient to interact over a single round trip in order to build the transaction.
 
-   [Grin](https://github.com/mimblewimble/grin) is a blockchain-powered cryptocurrency that is an implementation of the MimbleWimble protocol, with a focus on privacy and scalability. In MimbleWimble, transactions are interactive, requiring the Sender and Recipient to interact over a single round trip in order to build the transaction.
+- a fork of the wallet713 wallet for Grin.
 
-- a fork of the official grin wallet.
+   mwc713 makes it easy to store, send and soon also swap grins seamlessly through a single interface. Built on top of the standard MWC wallet reference implementation, mwc713 extends its functionality to improve usability and reduce friction. 
 
-   wallet713 makes it easy to store, send and soon also swap grins seamlessly through a single interface. Built on top of the standard Grin wallet reference implementation, wallet713 extends its functionality to improve usability and reduce friction. 
+- integrated with the mwcmq messaging relay.
 
-- integrated with the grinbox messaging relay.
-
-   For better privacy and usability, the grinbox messaging relay allows the steps to build transactions (partial transactions, or "slates") to be routed via the relay, protecting the user from exposing their IP address, and with no impact to the safety of their funds.
+   For better privacy and usability, the mwcmq messaging relay allows the steps to build transactions (partial transactions, or "slates") to be routed via the relay, protecting the user from exposing their IP address, and with no impact to the safety of their funds.
 
 <p align="center">
   <img width="600" src="demo.svg">
@@ -25,11 +22,11 @@ Wallet713 is:
 
 * **Get up and running fast.** Download a pre-compiled binary (or build yourself). We run a node for you (or run your own). 
 * **Everything in one interface.** Listen, send and receive using the same instance of the wallet.
-* **Use your public key as your address.** grinbox relies on public/private keypairs that are derived from your wallet seed to authenticate yourself and receive your messages.
-* **SSL & End-to-end encryption.** All grinbox traffic uses SSL and messages are end-to-end encrypted. Nobody beyond the intended recipient can read the contents of your transaction slates.  
+* **Use your public key as your address.** mwcmq relies on public/private keypairs that are derived from your wallet seed to authenticate yourself and receive your messages.
+* **SSL & End-to-end encryption.** All mwcmq traffic uses SSL and messages are end-to-end encrypted. Nobody beyond the intended recipient can read the contents of your transaction slates. (Note: Windows SSL support is not functional yet)
 * **Process transactions easily.** Send to a recipient's grinbox or keybase profile and it takes care of itself. No need to deal with IP addresses, port forwarding, or manual file transfers.
 * **Receive transactions while you are offline.** Transactions persist, waiting for you to fetch them the next time you come online.
-* **Contacts.** No need to keep track of grinbox addresses or keybase account names. Add addresses to contacts stored locally on your machine, and sending 10 grin becomes as easy as `send 10 --to @alice`.
+* **Contacts.** No need to keep track of mwcmq addresses or keybase account names. Add addresses to contacts stored locally on your machine, and sending 10 mwc becomes as easy as `send 10 --to @alice`.
 * **Remain in full control.** Only you have access to your private keys and your wallet balance, only you can read or sign your own transactions.
 
 ## Status
