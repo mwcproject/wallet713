@@ -17,7 +17,7 @@ use std::io::{Read, Write};
 use std::path::Path;
 use std::path::MAIN_SEPARATOR;
 
-use blake2_rfc as blake2;
+// use blake2_rfc as blake2;
 use rand::{thread_rng, Rng};
 use serde_json;
 
@@ -49,15 +49,19 @@ impl WalletSeed {
 		}
 	}
 
+        /*
 	pub fn from_hex(hex: &str) -> Result<WalletSeed, Error> {
 		let bytes = from_hex(hex.to_string())
 			.context(ErrorKind::GenericError("Invalid hex".to_owned()))?;
 		Ok(WalletSeed::from_bytes(&bytes))
 	}
+        */
 
+        /*
 	pub fn to_hex(&self) -> String {
 		to_hex(self.0.to_vec())
 	}
+        */
 
 	pub fn to_mnemonic(&self) -> Result<String, Error> {
 		let result = mnemonic::from_entropy(&self.0);
@@ -67,10 +71,12 @@ impl WalletSeed {
 		}
 	}
 
+        /*
 	pub fn derive_keychain_old(old_wallet_seed: [u8; 32], password: &str) -> Vec<u8> {
 		let seed = blake2::blake2b::blake2b(64, password.as_bytes(), &old_wallet_seed);
 		seed.as_bytes().to_vec()
 	}
+        */
 
 	pub fn derive_keychain<K: Keychain>(&self, is_floonet: bool) -> Result<K, Error> {
 		let result = K::from_seed(&self.0, is_floonet)?;
