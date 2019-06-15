@@ -499,6 +499,7 @@ fn main() {
         .arg(Arg::from_usage("[passphrase] -p, --passphrase=<passphrase> 'the passphrase to use'").min_values(0))
         .arg(Arg::from_usage("[daemon] -d, --daemon 'run daemon'"))
         .arg(Arg::from_usage("[floonet] -f, --floonet 'use floonet'"))
+        .arg(Arg::from_usage("[ready-phrase] -r, --ready-phrase=<phrase> 'use additional ready phrase printed when wallet ready to read input'"))
         .get_matches();
 
     let runtime_mode = match matches.is_present("daemon") {
@@ -769,7 +770,12 @@ fn main() {
         rl.load_history(path).is_ok();
     }
 
+    let prompt_plus = matches.value_of("ready-phrase").unwrap_or("").to_string();
+
     loop {
+        if ! prompt_plus.is_empty() {
+            println!("{}", prompt_plus);
+        }
         let command = rl.readline(PROMPT);
         match command {
             Ok(command) => {
