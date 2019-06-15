@@ -96,6 +96,7 @@ pub struct ParticipantMessageData {
 	pub message_sig: Option<Signature>,
 }
 
+/*
 impl ParticipantMessageData {
 	/// extract relevant message data from participant data
 	pub fn from_participant_data(p: &ParticipantData) -> ParticipantMessageData {
@@ -107,6 +108,7 @@ impl ParticipantMessageData {
 		}
 	}
 }
+*/
 
 /// A 'Slate' is passed around to all parties to build up all of the public
 /// transaction data needed to create a finalized transaction. Callers can pass
@@ -413,6 +415,7 @@ impl Slate {
 	}
 
 	/// helper to return all participant messages
+        /*
 	pub fn participant_messages(&self) -> ParticipantMessages {
 		let mut ret = ParticipantMessages { messages: vec![] };
 		for ref m in self.participant_data.iter() {
@@ -421,6 +424,7 @@ impl Slate {
 		}
 		ret
 	}
+        */
 
 	/// Somebody involved needs to generate an offset with their private key
 	/// For now, we'll have the transaction initiator be responsible for it

@@ -297,11 +297,14 @@ impl Default for WalletConfig {
 	}
 }
 
+#[allow(dead_code)]
 impl WalletConfig {
+        /*
 	/// API Listen address
 	pub fn api_listen_addr(&self) -> String {
 		format!("{}:{}", self.api_listen_interface, self.api_listen_port)
 	}
+        */
 
 	/// Default listener port
 	pub fn default_owner_api_listen_port() -> u16 {
@@ -314,13 +317,16 @@ impl WalletConfig {
 			.unwrap_or(WalletConfig::default_owner_api_listen_port())
 	}
 
+        /*
 	/// Owner API listen address
 	pub fn owner_api_listen_addr(&self) -> String {
 		format!("127.0.0.1:{}", self.owner_api_listen_port())
 	}
+        */
 }
 /// Error type wrapping config errors.
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum ConfigError {
 	/// Error with parsing of config file
 	ParseError(String, String),

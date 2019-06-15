@@ -234,16 +234,22 @@ impl Error {
 		self.inner.get_context().clone()
 	}
 	/// get cause string
+        /*
 	pub fn cause_string(&self) -> String {
 		match self.cause() {
 			Some(k) => format!("{}", k),
 			None => format!("Unknown"),
 		}
 	}
+        */
+
 	/// get cause
+        /*
 	pub fn cause(&self) -> Option<&dyn Fail> {
 		self.inner.cause()
 	}
+        */
+
 	/// get backtrace
 	pub fn backtrace(&self) -> Option<&Backtrace> {
 		self.inner.backtrace()
