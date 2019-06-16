@@ -316,7 +316,7 @@ where
             }
 
             // select some spendable coins from the wallet
-            let (_, coins_inner) = select_coins(
+            coins = select_coins(
                 wallet,
                 amount_with_fee,
                 current_height,
@@ -324,8 +324,7 @@ where
                 max_outputs,
                 selection_strategy_is_use_all,
                 parent_key_id,
-            );
-            coins = coins_inner;
+            ).1;
             max_fee = tx_fee(coins.len(), num_outputs, 1, None);
             fee = match initial_fee {
                 Some(i) => {
@@ -338,6 +337,7 @@ where
             amount_with_fee = amount + fee;
         }
     }
+
     // build transaction skeleton with inputs and change
     let (mut parts, change_amounts_derivations) =
         inputs_and_change(&coins, wallet, amount, fee, change_outputs)?;
