@@ -7,7 +7,7 @@ use common::{ErrorKind, Result};
 use sha2::{Digest, Sha256};
 use std::fmt::Write;
 
-pub const GRINBOX_ADDRESS_VERSION_MAINNET: [u8; 2] = [31, 103];
+pub const GRINBOX_ADDRESS_VERSION_MAINNET: [u8; 2] = [1, 69];
 pub const GRINBOX_ADDRESS_VERSION_TESTNET: [u8; 2] = [1, 121];
 
 pub trait Hex<T> {
