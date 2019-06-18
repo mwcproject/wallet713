@@ -1291,6 +1291,7 @@ dependencies = [
  "grin_api 1.1.1-beta.1 (git+https://github.com/cgilliard/mwc-node)",
  "grin_core 1.1.1-beta.1 (git+https://github.com/cgilliard/mwc-node)",
  "grin_keychain 1.1.1-beta.1 (git+https://github.com/cgilliard/mwc-node)",
+ "grin_p2p 1.1.1-beta.1 (git+https://github.com/cgilliard/mwc-node)",
  "grin_store 1.1.1-beta.1 (git+https://github.com/cgilliard/mwc-node)",
  "grin_util 1.1.1-beta.1 (git+https://github.com/cgilliard/mwc-node)",
  "hmac 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)",

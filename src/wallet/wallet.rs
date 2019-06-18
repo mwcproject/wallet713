@@ -50,6 +50,31 @@ impl Wallet {
         Ok(())
     }
 
+    pub fn node_info(
+        &mut self) -> Result<()> {
+        // get wallet instance
+        let wallet = self.get_wallet_instance()?;
+
+        // create a single use wallet api
+        controller::owner_single_use(wallet.clone(), |api| {
+            let ni = api.node_info().unwrap();
+            // this is an error condition
+            if ni.height == 0 && ni.total_difficulty == 0 {
+                cli_message!("Error occured trying to contact node!");
+            }
+            else
+            {
+                // otherwise it worked, print it out here.
+                cli_message!("Node Info:");
+                cli_message!("Height: {}", ni.height);
+                cli_message!("Total_Difficulty: {}", ni.total_difficulty);
+                cli_message!("PeerInfo: {:?}", ni.peers);
+            }
+            Ok(())
+        })?;
+        Ok(())
+    }
+
     pub fn account_exists(
         &mut self,
         account: &str) -> Result<(bool)> {

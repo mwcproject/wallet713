@@ -51,3 +51,4 @@ grin_core = { git = "https://github.com/cgilliard/mwc-node" }
 grin_keychain = { git = "https://github.com/cgilliard/mwc-node" }
 grin_util = { git = "https://github.com/cgilliard/mwc-node" }
 grin_store = { git = "https://github.com/cgilliard/mwc-node" }
+grin_p2p = { git = "https://github.com/cgilliard/mwc-node" }

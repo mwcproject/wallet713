@@ -277,6 +277,10 @@ impl<'a, 'b> Parser {
                     )
             )
             .subcommand(
+                SubCommand::with_name("nodeinfo")
+                    .about("prints information about the node")
+            )
+            .subcommand(
                 SubCommand::with_name("set-recv")
                     .about("sets which account is the recipient of an incoming transaction")
                     .arg(

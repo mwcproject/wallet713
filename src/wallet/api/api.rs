@@ -6,6 +6,7 @@ use grin_core::ser;
 use grin_util::secp::key::PublicKey;
 use grin_util::secp::pedersen;
 use grin_util::secp::{ContextFlag, Secp256k1};
+use grin_p2p::types::PeerInfoDisplay;
 
 use crate::contacts::GrinboxAddress;
 
@@ -38,6 +39,14 @@ where
     pub wallet: Arc<Mutex<W>>,
     phantom: PhantomData<K>,
     phantom_c: PhantomData<C>,
+}
+
+// struct for sending back node information
+pub struct NodeInfo
+{
+    pub height: u64,
+    pub total_difficulty: u64,
+    pub peers: Vec<PeerInfoDisplay>,
 }
 
 impl<W: ?Sized, C, K> Wallet713OwnerAPI<W, C, K>
@@ -342,6 +351,53 @@ where
     pub fn get_stored_tx(&self, uuid: &str) -> Result<Transaction, Error> {
         let w = self.wallet.lock();
         w.get_stored_tx(uuid)
+    }
+
+    pub fn node_info(&self) -> Result<(NodeInfo), Error> {
+        // first get height
+        let height = {
+            let mut w = self.wallet.lock();
+            w.open_with_credentials()?;
+            w.w2n_client().get_chain_height()
+        };
+
+        // next total_difficulty
+        let total_difficulty = {
+            let mut w = self.wallet.lock();
+            w.open_with_credentials()?;
+            w.w2n_client().get_total_difficulty()
+        };
+
+        // peer info
+        let peers = {
+            let mut w = self.wallet.lock();
+            w.open_with_credentials()?;
+            w.w2n_client().get_connected_peer_info()
+        };
+
+        // handle any errors that occurred
+        match height {
+           Ok(height) => {
+               match total_difficulty {
+                   Ok(total_difficulty) => {
+                       match peers {
+                           Ok(peers) => {
+                               Ok(NodeInfo{height:height,total_difficulty:total_difficulty,peers:peers})
+                           },
+                           Err(_) => {
+                               Ok(NodeInfo{height:0,total_difficulty:0,peers:Vec::new()})
+                           }
+                       }
+                   },
+                   Err(_) => {
+                       Ok(NodeInfo{height:0,total_difficulty:0,peers:Vec::new()})
+                   }
+               }
+           },
+           Err(_) => {
+               Ok(NodeInfo{height:0,total_difficulty:0,peers:Vec::new()})
+           }
+        }
     }
 
     pub fn post_tx(&self, tx: &Transaction, fluff: bool) -> Result<(), Error> {
