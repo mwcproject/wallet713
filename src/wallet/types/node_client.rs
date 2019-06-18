@@ -16,6 +16,7 @@ use futures::Stream;
 use futures::stream;
 use grin_api::{Output, OutputType, OutputListing, Tip};
 use grin_api::client;
+use grin_p2p::types::PeerInfoDisplay;
 use grin_util::secp::pedersen::{Commitment, RangeProof};
 use grin_util::to_hex;
 use std::collections::HashMap;
@@ -44,6 +45,12 @@ pub trait NodeClient: Sync + Send + Clone {
 
 	/// retrieves the current tip from the specified grin node
 	fn get_chain_height(&self) -> Result<u64, Error>;
+
+        /// retreives total difficulty
+        fn get_total_difficulty(&self) -> Result<u64, Error>;
+
+        /// retreives the connected peer info of the node
+        fn get_connected_peer_info(&self) -> Result<Vec<PeerInfoDisplay>, grin_api::Error>;
 
 	/// retrieve a list of outputs from the specified grin node
 	/// need "by_height" and "by_id" variants
@@ -120,6 +127,29 @@ impl NodeClient for HTTPNodeClient {
 		}
 		Ok(())
 	}
+
+        /// Return Connected peers
+        fn get_connected_peer_info(&self) -> Result<Vec<PeerInfoDisplay>, grin_api::Error> {
+                let addr = self.node_url();
+                let url = format!("{}/v1/peers/connected", addr);
+                let peers = client::get::<Vec<PeerInfoDisplay>>(url.as_str(), self.node_api_secret());
+                peers
+        }
+
+        /// Return total_difficulty of the chain 
+        fn get_total_difficulty(&self) -> Result<u64, Error> {
+                let addr = self.node_url();
+                let url = format!("{}/v1/chain", addr);
+                let res = client::get::<Tip>(url.as_str(), self.node_api_secret());
+                match res {
+                        Err(e) => {
+                                let report = format!("Getting chain difficulty from node: {}", e);
+                                error!("Get diffulty error: {}", e);
+                                Err(ErrorKind::ClientCallback(report).into())
+                        }
+                        Ok(r) => Ok(r.total_difficulty),
+                }
+        }
 
 	/// Return the chain tip from a given node
 	fn get_chain_height(&self) -> Result<u64, Error> {

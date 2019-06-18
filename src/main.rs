@@ -44,6 +44,7 @@ extern crate grin_core;
 extern crate grin_keychain;
 extern crate grin_store;
 extern crate grin_util;
+extern crate grin_p2p;
 
 use std::borrow::Cow::{self, Borrowed, Owned};
 use std::fs::File;
@@ -1151,6 +1152,9 @@ fn do_command(
             let mut slate = Slate::deserialize_upgrade(&slate)?;
             wallet.lock().finalize_slate(&mut slate, None)?;
             cli_message!("{} finalized.", input);
+        }
+        Some("nodeinfo") => {
+            wallet.lock().node_info()?;
         }
         Some("send") => {
             let args = matches.subcommand_matches("send").unwrap();
