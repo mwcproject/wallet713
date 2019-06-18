@@ -492,7 +492,7 @@ impl Helper for EditorHelper {}
 fn main() {
     enable_ansi_support();
 
-    let matches = App::new("wallet713")
+    let matches = App::new("mwc713")
         .version(crate_version!())
         .arg(Arg::from_usage("[config-path] -c, --config=<config-path> 'the path to the config file'"))
         .arg(Arg::from_usage("[log-config-path] -l, --log-config-path=<log-config-path> 'the path to the log config file'"))
