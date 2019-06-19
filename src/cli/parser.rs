@@ -181,7 +181,7 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("[change-outputs] -o, --change-outputs=<change-outputs> 'the number of change outputs'")
                     )
                     .arg(
-                        Arg::from_usage("[message] -g, --message=<message> 'the message to include in the tx'")
+                        Arg::from_usage("[message] -g, --message=<message> 'the message to include in the tx'").multiple(true)
                     )
                     .arg(
                         Arg::from_usage("[version] -v, --version=<version> 'the slate version. Default: latest version'")
