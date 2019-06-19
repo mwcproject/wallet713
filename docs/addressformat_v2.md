@@ -19,7 +19,7 @@ and transact as normal, but the underlying mwc713 instances of both users actual
 underlying mwcmq address before completing the actual underlying transaction. This is done by having a predefined hashing
 procedure that is understood by both the sender and the recipient. This procedure would be the following:
 
-<mwcmq address> = hash(<mwcmq2 address>_<floor of the number of days since January 1st 1970 utc time>)
+<mwcmq address> = hash( \<mwcmq2 address\> _ <floor of the number of days since January 1st 1970 utc time>)
 
 So for example, user A might tell user B that their v2 address is:
 mwcmq2://q5ZwKof1p2UneCJwka66ERDCaxASec79vfSFmk4hYNyDufSuNnyu
