@@ -1240,41 +1240,6 @@ fn do_command(
 
             let mut to = to.unwrap().to_string();
 
-            let grinbox_address_obj = config.get_grinbox_address()?;
-            let grinbox_address = grinbox_address_obj.public_key;
-
-            let mut condition_check = false;
-
-            if to == grinbox_address {
-
-            unsafe {
-                    if RECV_ACCOUNT.is_none() {
-                        condition_check = true;
-                    }
-                    else {
-                        let mut w = wallet.lock();
-                        let active_account = &w.active_account.clone();
-
-                        if &RECV_ACCOUNT.clone().unwrap() == active_account {
-                            condition_check = true;
-                        }
-
-                        if RECV_PASS.is_some() {
-                            w.unlock(&config.clone(), &active_account, &RECV_PASS.clone().unwrap())?;
-            }
-                        else
-                        {
-                            w.unlock(&config.clone(), &active_account, &"".to_string())?;
-                        }
-                    }
-                }
-            }
-
-            if condition_check {
-                cli_message!("You cannot send to your own account!");
-            }
-            else
-            {
             let mut display_to = None;
             if to.starts_with("@") {
                 let contact = address_book.lock().get_contact(&to[1..])?;
@@ -1371,7 +1336,6 @@ fn do_command(
                     "slate [{}] finalized successfully",
                     slate.id.to_string().bright_green()
                 );
-            }
             }
         }
         Some("invoice") => {
