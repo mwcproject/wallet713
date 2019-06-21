@@ -184,7 +184,7 @@ impl NodeClient for HTTPNodeClient {
 		let mut tasks = Vec::new();
 
 		for query_chunk in query_params.chunks(120) {
-			let url = format!("{}/v1/chain/outputs/byids?={}", addr, query_chunk.join(","),);
+			let url = format!("{}/v1/chain/outputs/byids?id={}", addr, query_chunk.join(","),);
 			tasks.push(client::get_async::<Vec<Output>>(
 				url.as_str(),
 				self.node_api_secret(),
