@@ -194,7 +194,7 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn total_value(&self, minimum_confirmations: u64) -> Result<(u64)> {
+    pub fn total_value(&self, minimum_confirmations: u64, output_list: Option<Vec<&str>>) -> Result<(u64)> {
         let wallet = self.get_wallet_instance()?;
 
         let mut value = 0;
@@ -203,7 +203,18 @@ impl Wallet {
             let (_validated, outputs) = api.retrieve_outputs(false, true, None)?;
 
             for o in outputs {
-                if o.0.eligible_to_spend(height, minimum_confirmations) {
+                let mut found: bool = false;
+                if output_list.is_some() {
+                    let ol = output_list.clone().unwrap();
+                    for lo in ol {
+                        if o.0.commit.is_some() && lo == o.0.commit.clone().unwrap() {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+
+                if found && o.0.eligible_to_spend(height, minimum_confirmations) {
                     value += o.0.value;
                 }
             }
@@ -212,7 +223,7 @@ impl Wallet {
         Ok(value)
     }
 
-    pub fn output_count(&self, minimum_confirmations: u64) -> Result<(usize)> {
+    pub fn output_count(&self, minimum_confirmations: u64, output_list: Option<Vec<&str>>) -> Result<(usize)> {
         let wallet = self.get_wallet_instance()?;
 
         let mut count = 0;
@@ -221,7 +232,18 @@ impl Wallet {
             let (_validated, outputs) = api.retrieve_outputs(false, true, None)?;
 
             for o in outputs {
-                if o.0.eligible_to_spend(height, minimum_confirmations) {
+                let mut found: bool = false;
+                if output_list.is_some() {
+                    let ol = output_list.clone().unwrap();
+                    for lo in ol {
+                        if o.0.commit.is_some() && lo == o.0.commit.clone().unwrap() {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+
+                if found && o.0.eligible_to_spend(height, minimum_confirmations) {
                     count = count + 1;
                 }
             }
@@ -250,6 +272,7 @@ impl Wallet {
         change_outputs: usize,
         max_outputs: usize,
         message: Option<String>,
+        outputs: Option<Vec<&str>>,
         version: Option<u16>,
     ) -> Result<Slate> {
         let wallet = self.get_wallet_instance()?;
@@ -263,6 +286,7 @@ impl Wallet {
                 change_outputs,
                 selection_strategy == "all",
                 message,
+                outputs,
                 version,
             )?;
             api.tx_lock_outputs(&slate.tx, lock_fn)?;

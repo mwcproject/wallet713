@@ -63,7 +63,15 @@ pub enum ErrorKind {
     #[fail(display = "\x1b[31;1merror:\x1b[0m invalid amount given: `{}`", 0)]
     InvalidAmount(String),
     #[fail(
-        display = "\x1b[31;1merror:\x1b[0m invalid selection strategy, use either 'smallest' or 'all'"
+        display = "\x1b[31;1merror:\x1b[0m --outputs must be specified when selection strategy is 'custom'"
+    )]
+    CustomWithNoOutputs,
+    #[fail(
+        display = "\x1b[31;1merror:\x1b[0m --outputs must not be specified unless selection strategy is 'custom'"
+    )]
+    NonCustomWithOutputs,
+    #[fail(
+        display = "\x1b[31;1merror:\x1b[0m invalid selection strategy, use either 'smallest', 'all', or 'custom'"
     )]
     InvalidStrategy,
     #[fail(
