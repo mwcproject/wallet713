@@ -232,6 +232,7 @@ where
         num_change_outputs: usize,
         selection_strategy_is_use_all: bool,
         message: Option<String>,
+        outputs: Option<Vec<&str>>,
         version: Option<u16>,
     ) -> Result<
         (
@@ -253,6 +254,7 @@ where
             selection_strategy_is_use_all,
             &parent_key_id,
             message,
+            outputs,
             version,
         )?;
 

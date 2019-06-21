@@ -43,7 +43,10 @@ pub fn outputs(
         bMG->"Tx"
     ]);
 
-    for (out, commit) in outputs {
+    let mut outputs_sorted = outputs.clone();
+    outputs_sorted.sort_by_key(|out| out.0.height);
+
+    for (out, commit) in outputs_sorted {
         let commit = format!("{}", grin_util::to_hex(commit.as_ref().to_vec()));
         let index = match out.mmr_index {
             None => "None".to_owned(),

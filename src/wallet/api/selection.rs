@@ -21,6 +21,7 @@ pub fn build_send_tx_slate<T: ?Sized, C, K>(
     change_outputs: usize,
     selection_strategy_is_use_all: bool,
     parent_key_id: Identifier,
+    outputs: Option<Vec<&str>>,
     version: Option<u16>,
 ) -> Result<
     (
@@ -46,6 +47,7 @@ where
         change_outputs,
         selection_strategy_is_use_all,
         &parent_key_id,
+        outputs,
         None,
     )?;
 
@@ -225,6 +227,7 @@ fn select_send_tx<T: ?Sized, C, K>(
     change_outputs: usize,
     selection_strategy_is_use_all: bool,
     parent_key_id: &Identifier,
+    outputs: Option<Vec<&str>>,
     initial_fee: Option<u64>,
 ) -> Result<
     (
@@ -250,6 +253,7 @@ where
         max_outputs,
         selection_strategy_is_use_all,
         parent_key_id,
+        outputs.clone(),
     );
 
     // sender is responsible for setting the fee on the partial tx
@@ -324,6 +328,7 @@ where
                 max_outputs,
                 selection_strategy_is_use_all,
                 parent_key_id,
+                outputs.clone(),
             ).1;
             max_fee = tx_fee(coins.len(), num_outputs, 1, None);
             fee = match initial_fee {
@@ -420,6 +425,7 @@ pub fn select_coins<T: ?Sized, C, K>(
     max_outputs: usize,
     select_all: bool,
     parent_key_id: &Identifier,
+    outputs: Option<Vec<&str>>,
 ) -> (usize, Vec<OutputData>)
 //    max_outputs_available, Outputs
 where
@@ -428,7 +434,7 @@ where
     K: Keychain,
 {
     // first find all eligible outputs based on number of confirmations
-    let mut eligible = wallet
+    let eligible_orig = wallet
         .outputs()
         .filter(|out| {
             out.root_key_id == *parent_key_id
@@ -436,10 +442,27 @@ where
         })
         .collect::<Vec<OutputData>>();
 
-    let max_available = eligible.len();
+    let mut eligible = eligible_orig.clone();
 
     // sort eligible outputs by increasing value
     eligible.sort_by_key(|out| out.value);
+
+    if outputs.is_some() {
+        let mut output_list = outputs.unwrap();
+        let mut nvec = Vec::new();
+        output_list.sort();
+        for eli in &eligible {
+            for passed in &output_list {
+                let commit = eli.commit.clone();
+                if commit.is_some() && passed.to_string() == commit.unwrap() {
+                    nvec.push(eli.clone());
+                }
+            }
+        }
+        eligible = nvec;
+    }
+
+    let max_available = eligible.len();
 
     // use a sliding window to identify potential sets of possible outputs to spend
     // Case of amount > total amount of max_outputs(500):
@@ -633,6 +656,7 @@ where
         num_change_outputs,
         selection_strategy_is_use_all,
         &parent_key_id,
+        None,
         match slate.fee {
             0 => None,
             f => Some(f),

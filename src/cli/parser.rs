@@ -172,7 +172,7 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("<amount> 'the amount of MWCs to send'")
                     )
                     .arg(
-                        Arg::from_usage("[strategy] -s, --strategy=<strategy> 'the input selection strategy (all/smallest). Default: smallest'")
+                        Arg::from_usage("[strategy] -s, --strategy=<strategy> 'the input selection strategy (all/smallest/custom). Default: smallest'")
                     )
                     .arg(
                         Arg::from_usage("[confirmations] -c, --confirmations=<confirmations> 'the number of confirmations required for inputs'")
@@ -182,6 +182,9 @@ impl<'a, 'b> Parser {
                     )
                     .arg(
                         Arg::from_usage("[message] -g, --message=<message> 'the message to include in the tx'").multiple(true)
+                    )
+                    .arg(
+                        Arg::from_usage("[outputs] -p, --outputs=<outputs> 'a comma separated list of custom outputs to include in transaction'")
                     )
                     .arg(
                         Arg::from_usage("[version] -v, --version=<version> 'the slate version. Default: latest version'")

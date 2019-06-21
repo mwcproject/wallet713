@@ -1184,9 +1184,26 @@ fn do_command(
 
 
             let strategy = args.value_of("strategy").unwrap_or("smallest");
-            if strategy != "smallest" && strategy != "all" {
+            if strategy != "smallest" && strategy != "all" && strategy != "custom" {
                 return Err(ErrorKind::InvalidStrategy.into());
             }
+
+            let outputs_arg = args.value_of("outputs");
+
+            let output_list = if outputs_arg.is_none() {
+                if strategy == "custom" {
+                    return Err(ErrorKind::CustomWithNoOutputs.into());
+                }
+                None
+            }
+            else
+            {
+                if strategy != "custom" {
+                    return Err(ErrorKind::NonCustomWithOutputs.into());
+                }
+                let ret: Vec<_> = outputs_arg.unwrap().split(",").collect();
+                Some(ret)
+            };
 
             let confirmations = args.value_of("confirmations").unwrap_or("10");
             let confirmations = u64::from_str_radix(confirmations, 10)
@@ -1209,8 +1226,8 @@ fn do_command(
             let amount = args.value_of("amount").unwrap();
             let mut ntotal = 0;
             if amount == "ALL" {
-                let max_available = wallet.lock().output_count(confirmations)?;
-                let total_value = wallet.lock().total_value(confirmations)?;
+                let max_available = wallet.lock().output_count(confirmations, output_list.clone())?;
+                let total_value = wallet.lock().total_value(confirmations, output_list.clone())?;
                 let fee = tx_fee(max_available, 1, 1, None);
                 ntotal = total_value - fee;
             }
@@ -1231,6 +1248,7 @@ fn do_command(
                     change_outputs,
                     500,
                     message,
+                    output_list,
                     version,
                 )?;
                 file.write_all(serde_json::to_string(&slate)?.as_bytes())?;
@@ -1271,6 +1289,7 @@ fn do_command(
                             change_outputs,
                             500,
                             message,
+                            output_list,
                             version,
                         )?;
                         let mut keybase_address =
@@ -1292,6 +1311,7 @@ fn do_command(
                             change_outputs,
                             500,
                             message,
+                            output_list,
                             version,
                         )?;
                         publisher.post_slate(&slate, to.borrow())?;
@@ -1311,6 +1331,7 @@ fn do_command(
                         change_outputs,
                         500,
                         message,
+                        output_list,
                         version,
                     )?;
                     let slate_res = post(url.as_str(), None, &slate)
