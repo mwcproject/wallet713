@@ -1,5 +1,7 @@
 use clap::{App, AppSettings, Arg, ArgGroup, ArgMatches, SubCommand};
 use common::Result;
+use commands::tokenizer::{tokenize, TokenType};
+use enquote::unquote;
 
 #[derive(Clone)]
 pub struct Parser {}
@@ -7,7 +9,17 @@ pub struct Parser {}
 impl<'a, 'b> Parser {
     pub fn parse(command: &str) -> Result<ArgMatches> {
         let command = command.trim();
-        let matches = Parser::parser().get_matches_from_safe(command.split_whitespace())?;
+        let mut tokens = tokenize(command)?;
+        tokens.retain(|&token| token.token_type != TokenType::Whitespace);
+        let matches = Parser::parser().get_matches_from_safe(
+            tokens.iter().map(|token| {
+                let unquoted = unquote(token.text);
+                match unquoted {
+                    Ok(_) => unquoted.unwrap(),
+                    Err(_) => token.text.to_string()
+                }
+            })
+        )?;
         Ok(matches)
     }
 

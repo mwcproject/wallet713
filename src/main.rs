@@ -37,6 +37,8 @@ extern crate url;
 extern crate uuid;
 extern crate ws;
 extern crate semver;
+extern crate commands;
+extern crate enquote;
 
 extern crate grin_api;
 #[macro_use]
