@@ -102,7 +102,9 @@ impl<'a, 'b> Parser {
             .subcommand(
                 SubCommand::with_name("info")
                     .about("displays wallet info")
-                    .subcommand(SubCommand::with_name("--no-refresh"))
+                    .subcommand(SubCommand::with_name("--no-refresh")
+                        .about("do not contact full node to refresh outputs")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("contacts")
