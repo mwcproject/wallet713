@@ -152,10 +152,11 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn info(&self) -> Result<()> {
+    pub fn info(&self, refresh: bool) -> Result<()> {
         let wallet = self.get_wallet_instance()?;
         controller::owner_single_use(wallet.clone(), |api| {
-            let (validated, wallet_info) = api.retrieve_summary_info(true, 10)?;
+            let (mut validated, wallet_info) = api.retrieve_summary_info(refresh, 10)?;
+            if !refresh  { validated = true; }
             display::info(&self.active_account, &wallet_info, validated, true);
             Ok(())
         })?;
