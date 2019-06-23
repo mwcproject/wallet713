@@ -31,12 +31,13 @@ extern crate rpassword;
 extern crate rustyline;
 extern crate serde;
 extern crate sha2;
-extern crate term;
 extern crate tokio;
 extern crate url;
 extern crate uuid;
 extern crate ws;
 extern crate semver;
+extern crate commands;
+extern crate enquote;
 
 extern crate grin_api;
 #[macro_use]
@@ -1161,28 +1162,7 @@ fn do_command(
             let args = matches.subcommand_matches("send").unwrap();
             let to = args.value_of("to");
             let input = args.value_of("file");
-
-            // message can have spaces so we get multiple values
-            // then concat.
-            let message_arg = args.values_of("message");
-
-            let message_vec = if message_arg.is_none() {
-                Vec::new()
-            }
-            else
-            {
-                let ret: Vec<_> = args.values_of("message").unwrap().collect();
-                ret
-            };
-
-            let message = if message_vec.len() > 0 {
-                Some(message_vec.join(" "))
-            }
-            else
-            {
-                None
-            };
-
+            let message = args.value_of("message").map(|s| s.to_string());
 
             let strategy = args.value_of("strategy").unwrap_or("smallest");
             if strategy != "smallest" && strategy != "all" && strategy != "custom" {
