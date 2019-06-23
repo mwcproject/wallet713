@@ -1,6 +1,5 @@
 use prettytable;
-use std::io::prelude::Write;
-use term;
+use colored::*;
 
 use grin_core::core::{self, amount_to_hr_string};
 use grin_core::global;
@@ -19,15 +18,11 @@ pub fn outputs(
     outputs: Vec<(OutputData, pedersen::Commitment)>,
     dark_background_color_scheme: bool,
 ) -> Result<(), Error> {
-    let title = format!(
+    println!();
+    println!("{}", format!(
         "Wallet Outputs - Account '{}' - Block Height: {}",
         account, cur_height
-    );
-    println!();
-    let mut t = term::stdout().unwrap();
-    t.fg(term::color::MAGENTA).unwrap();
-    writeln!(t, "{}", title).unwrap();
-    t.reset().unwrap();
+    ).magenta());
 
     let mut table = table!();
 
@@ -120,15 +115,11 @@ pub fn txs(
     dark_background_color_scheme: bool,
     address_book: Option<Arc<Mutex<AddressBook>>>,
 ) -> Result<(), Error> {
-    let title = format!(
+    println!();
+    println!("{}", format!(
         "Transaction Log - Account '{}' - Block Height: {}",
         account, cur_height
-    );
-    println!();
-    let mut t = term::stdout().unwrap();
-    t.fg(term::color::MAGENTA).unwrap();
-    writeln!(t, "{}", title).unwrap();
-    t.reset().unwrap();
+    ).magenta());
 
     let mut table = table!();
 
