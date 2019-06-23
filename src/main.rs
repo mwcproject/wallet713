@@ -31,7 +31,6 @@ extern crate rpassword;
 extern crate rustyline;
 extern crate serde;
 extern crate sha2;
-extern crate term;
 extern crate tokio;
 extern crate url;
 extern crate uuid;
