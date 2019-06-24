@@ -1210,7 +1210,7 @@ fn do_command(
                 let max_available = wallet.lock().output_count(confirmations, output_list.clone())?;
                 let total_value = wallet.lock().total_value(confirmations, output_list.clone())?;
                 let fee = tx_fee(max_available, 1, 1, None);
-                ntotal = total_value - fee;
+                ntotal = if total_value >= fee { total_value - fee } else { 0 };
             }
   
             let amount = match amount == "ALL" {
