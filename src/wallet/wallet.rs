@@ -214,6 +214,10 @@ impl Wallet {
                         }
                     }
                 }
+                else
+                {
+                    found = true;
+                }
 
                 if found && o.0.eligible_to_spend(height, minimum_confirmations) {
                     value += o.0.value;
@@ -242,6 +246,10 @@ impl Wallet {
                             break;
                         }
                     }
+                }
+                else
+                {
+                    found = true;
                 }
 
                 if found && o.0.eligible_to_spend(height, minimum_confirmations) {
