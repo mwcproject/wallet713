@@ -296,11 +296,11 @@ impl SubscriptionHandler for Controller {
             let message = &slate.participant_data[0].message;
             if message.is_some() {
                 cli_message!(
-                    "slate [{}] received from [{}] for [{}] MWCs. Message: [{}]",
+                    "slate [{}] received from [{}] for [{}] MWCs. Message: [\"{}\"]",
                     slate.id.to_string().bright_green(),
                     display_from.bright_green(),
                     core::amount_to_hr_string(slate.amount, false).bright_green(),
-                    message.clone().unwrap().bright_yellow()
+                    message.clone().unwrap().bright_green()
                 );
             }
             else {
