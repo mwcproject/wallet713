@@ -293,12 +293,24 @@ impl SubscriptionHandler for Controller {
         }
 
         if slate.num_participants > slate.participant_data.len() {
-            cli_message!(
-                "slate [{}] received from [{}] for [{}] MWCs",
-                slate.id.to_string().bright_green(),
-                display_from.bright_green(),
-                core::amount_to_hr_string(slate.amount, false).bright_green()
-            );
+            let message = &slate.participant_data[0].message;
+            if message.is_some() {
+                cli_message!(
+                    "slate [{}] received from [{}] for [{}] MWCs. Message: [{}]",
+                    slate.id.to_string().bright_green(),
+                    display_from.bright_green(),
+                    core::amount_to_hr_string(slate.amount, false).bright_green(),
+                    message.clone().unwrap().bright_yellow()
+                );
+            }
+            else {
+                cli_message!(
+                    "slate [{}] received from [{}] for [{}] MWCs",
+                    slate.id.to_string().bright_green(),
+                    display_from.bright_green(),
+                    core::amount_to_hr_string(slate.amount, false).bright_green()
+                );
+            }
         } else {
             cli_message!(
                 "slate [{}] received back from [{}] for [{}] MWCs",
@@ -1141,7 +1153,14 @@ fn do_command(
             wallet
                 .lock()
                 .process_sender_initiated_slate(Some(String::from("file")), &mut slate)?;
-            cli_message!("{} received.", input);
+
+            let message = &slate.participant_data[0].message;
+            if message.is_some() {
+                cli_message!("{} received. message = [{:?}]", input, message.clone().unwrap());
+            }
+            else {
+                cli_message!("{} received.", input);
+            }
             file.write_all(serde_json::to_string(&slate)?.as_bytes())?;
             cli_message!("{}.response created successfully.", input);
         }
