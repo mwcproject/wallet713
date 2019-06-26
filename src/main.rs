@@ -1155,7 +1155,7 @@ fn do_command(
                 .process_sender_initiated_slate(Some(String::from("file")), &mut slate)?;
 
             let message = &slate.participant_data[0].message;
-            let amount = &slate.amount;
+            let amount = core::amount_to_hr_string(slate.amount, false);
             if message.is_some() {
                 cli_message!("{} received. amount = [{}], message = [{:?}]", input, amount, message.clone().unwrap());
             }
