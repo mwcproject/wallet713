@@ -305,7 +305,7 @@ impl SubscriptionHandler for Controller {
             }
             else {
                 cli_message!(
-                    "slate [{}] received from [{}] for [{}] MWCs",
+                    "slate [{}] received from [{}] for [{}] MWCs.",
                     slate.id.to_string().bright_green(),
                     display_from.bright_green(),
                     core::amount_to_hr_string(slate.amount, false).bright_green()
@@ -1155,11 +1155,12 @@ fn do_command(
                 .process_sender_initiated_slate(Some(String::from("file")), &mut slate)?;
 
             let message = &slate.participant_data[0].message;
+            let amount = &slate.amount;
             if message.is_some() {
-                cli_message!("{} received. message = [{:?}]", input, message.clone().unwrap());
+                cli_message!("{} received. amount = [{}], message = [{:?}]", input, amount, message.clone().unwrap());
             }
             else {
-                cli_message!("{} received.", input);
+                cli_message!("{} received. amount = [{}]", input, amount);
             }
             file.write_all(serde_json::to_string(&slate)?.as_bytes())?;
             cli_message!("{}.response created successfully.", input);
