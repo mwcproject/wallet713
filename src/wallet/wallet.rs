@@ -108,18 +108,30 @@ impl Wallet {
         self.backend.is_none()
     }
 
-    pub fn init(
+    pub fn complete(
         &mut self,
+        seed: WalletSeed,
         config: &Wallet713Config,
         account: &str,
         passphrase: &str,
         create_new: bool,
-    ) -> Result<()> {
+    ) -> Result<(WalletSeed)> {
         let wallet_config = config.as_wallet_config()?;
-        self.init_seed(&wallet_config, passphrase, create_new)?;
+        let seed = self.init_seed(&wallet_config, passphrase, create_new, true, Some(seed))?;
         self.init_backend(&wallet_config, &config, passphrase)?;
         self.unlock(config, account, passphrase)?;
-        Ok(())
+        Ok(seed)
+    }
+
+    pub fn init(
+        &mut self,
+        config: &Wallet713Config,
+        passphrase: &str,
+        create_new: bool,
+    ) -> Result<(WalletSeed)> {
+        let wallet_config = config.as_wallet_config()?;
+        let seed = self.init_seed(&wallet_config, passphrase, create_new, false, None)?;
+        Ok(seed)
     }
 
     pub fn restore_seed(
@@ -537,6 +549,8 @@ impl Wallet {
         wallet_config: &WalletConfig,
         passphrase: &str,
         create_new: bool,
+        create_file: bool,
+        seed: Option<WalletSeed>,
     ) -> Result<WalletSeed> {
         let result = WalletSeed::from_file(&wallet_config, passphrase);
         let seed = match result {
@@ -544,7 +558,7 @@ impl Wallet {
             Err(_) => {
                 // could not load from file, let's create a new one
                 if create_new {
-                    WalletSeed::init_file(&wallet_config, 32, None, passphrase)?
+                    WalletSeed::init_file(&wallet_config, 32, None, passphrase, create_file, seed)?
                 } else {
                     return Err(ErrorKind::WalletSeedCouldNotBeOpened.into());
                 }

@@ -971,15 +971,17 @@ fn do_command(
                 println!("{}: wallet with no passphrase.", "WARNING".bright_yellow());
             }
 
-            wallet
+            let seed = wallet
                 .lock()
-                .init(config, "default", passphrase.as_str(), true)?;
+                .init(config, passphrase.as_str(), true)?;
 
             println!("{}", "Press ENTER when you have done so".bright_green().bold());
 
             let mut line = String::new();
             io::stdout().flush().unwrap();
             io::stdin().read_line(&mut line).unwrap();
+
+            wallet.lock().complete(seed, config, "default", passphrase.as_str(), true)?;
 
             derive_address_key(config, wallet, grinbox_broker)?;
             return Ok(());
@@ -1437,7 +1439,8 @@ fn do_command(
 
             {
                 let mut w = wallet.lock();
-                w.init(config, "default", passphrase.as_str(), false)?;
+                let seed = w.init(config, passphrase.as_str(), false)?;
+                w.complete(seed, config, "default", passphrase.as_str(), true)?;
                 w.restore_state()?;
             }
 
@@ -1467,7 +1470,8 @@ fn do_command(
                 {
                     let mut w = wallet.lock();
                     w.restore_seed(config, &words, passphrase.as_str())?;
-                    w.init(config, "default", passphrase.as_str(), false)?;
+                    let seed = w.init(config, passphrase.as_str(), false)?;
+                    w.complete(seed, config, "default", passphrase.as_str(), true)?;
                     w.restore_state()?;
                 }
 

@@ -169,6 +169,8 @@ impl WalletSeed {
 		seed_length: usize,
 		recovery_phrase: Option<ZeroingString>,
 		password: &str,
+                write: bool,
+                passed_seed: Option<WalletSeed>,
 	) -> Result<WalletSeed, Error> {
 		// create directory if it doesn't exist
 		fs::create_dir_all(&wallet_config.data_file_dir).context(ErrorKind::IO)?;
@@ -181,17 +183,25 @@ impl WalletSeed {
 		warn!("Generating wallet seed file at: {}", seed_file_path);
 		let _ = WalletSeed::seed_file_exists(wallet_config)?;
 
-		let seed = match recovery_phrase {
+		let mut seed = match recovery_phrase {
 			Some(p) => WalletSeed::from_mnemonic(&p)?,
 			None => WalletSeed::init_new(seed_length),
 		};
 
-		let enc_seed = EncryptedWalletSeed::from_seed(&seed, password)?;
-		let enc_seed_json = serde_json::to_string_pretty(&enc_seed).context(ErrorKind::Format)?;
-		let mut file = File::create(seed_file_path).context(ErrorKind::IO)?;
-		file.write_all(&enc_seed_json.as_bytes())
-			.context(ErrorKind::IO)?;
-		seed.show_recovery_phrase()?;
+                if passed_seed.is_some() {
+                        seed = passed_seed.unwrap();
+                }
+
+                if write {
+		        let enc_seed = EncryptedWalletSeed::from_seed(&seed, password)?;
+		        let enc_seed_json = serde_json::to_string_pretty(&enc_seed).context(ErrorKind::Format)?;
+		        let mut file = File::create(seed_file_path).context(ErrorKind::IO)?;
+		        file.write_all(&enc_seed_json.as_bytes())
+		        	.context(ErrorKind::IO)?;
+                }
+                else {
+		        seed.show_recovery_phrase()?;
+                }
 		Ok(seed)
 	}
 
