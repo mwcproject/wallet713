@@ -438,8 +438,9 @@ fn start_keybase_listener(
     }
 
     cli_message!("starting keybase listener...");
-    let keybase_subscriber = KeybaseSubscriber::new()?;
-    let keybase_publisher = KeybasePublisher::new(config.default_keybase_ttl.clone())?;
+    let keybase_subscriber = KeybaseSubscriber::new(config.keybase_binary.clone())?;
+    let keybase_publisher = KeybasePublisher::new(config.default_keybase_ttl.clone(),
+                                                  config.keybase_binary.clone())?;
 
     let mut cloned_subscriber = keybase_subscriber.clone();
     let cloned_publisher = keybase_publisher.clone();

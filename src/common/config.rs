@@ -19,12 +19,14 @@ const DEFAULT_CONFIG: &str = r#"
 	wallet713_data_path = "wallet713_data"
 	grinbox_domain = "mq.mwc.mw"
 	default_keybase_ttl = "24h"
+        keybase_binary = "keybase"
 "#;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Wallet713Config {
     pub chain: Option<ChainTypes>,
     pub wallet713_data_path: String,
+    pub keybase_binary: Option<String>,
     pub grinbox_domain: String,
     pub grinbox_port: Option<u16>,
     pub grinbox_protocol_unsecure: Option<bool>,

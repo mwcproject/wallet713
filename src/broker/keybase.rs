@@ -20,24 +20,27 @@ const SLEEP_DURATION: Duration = Duration::from_millis(5000);
 #[derive(Clone)]
 pub struct KeybasePublisher {
     ttl: Option<String>,
+    keybase_binary: Option<String>,
 }
 
 impl KeybasePublisher {
-    pub fn new(ttl: Option<String>) -> Result<Self> {
-        let _broker = KeybaseBroker::new()?;
-        Ok(Self { ttl })
+    pub fn new(ttl: Option<String>, keybase_binary: Option<String>) -> Result<Self> {
+        let _broker = KeybaseBroker::new(keybase_binary.clone())?;
+        Ok(Self { ttl, keybase_binary })
     }
 }
 
 #[derive(Clone)]
 pub struct KeybaseSubscriber {
     stop_signal: Arc<Mutex<bool>>,
+    keybase_binary: Option<String>,
 }
 
 impl KeybaseSubscriber {
-    pub fn new() -> Result<Self> {
+    pub fn new(keybase_binary: Option<String>) -> Result<Self> {
         Ok(Self {
             stop_signal: Arc::new(Mutex::new(true)),
+            keybase_binary: keybase_binary,
         })
     }
 }
@@ -57,7 +60,7 @@ impl Publisher for KeybasePublisher {
             None => TOPIC_WALLET713_SLATES,
         };
 
-        KeybaseBroker::send(&slate, &to.stripped(), topic, ttl)?;
+        KeybaseBroker::send(&slate, &to.stripped(), topic, ttl, self.keybase_binary.clone())?;
 
         Ok(())
     }
@@ -76,7 +79,7 @@ impl Subscriber for KeybaseSubscriber {
             if *self.stop_signal.lock() {
                 break Ok(());
             };
-            let result = KeybaseBroker::get_unread(HashSet::from_iter(vec![
+            let result = KeybaseBroker::get_unread(self.keybase_binary.clone(), HashSet::from_iter(vec![
                 TOPIC_WALLET713_SLATES,
                 TOPIC_SLATE_NEW,
                 TOPIC_SLATE_SIGNED,
@@ -135,14 +138,18 @@ impl Subscriber for KeybaseSubscriber {
 struct KeybaseBroker {}
 
 impl KeybaseBroker {
-    pub fn new() -> Result<Self> {
+    pub fn new(keybase_binary: Option<String>) -> Result<Self> {
         let mut proc = if cfg!(target_os = "windows") {
             Command::new("where")
         } else {
             Command::new("which")
         };
 
-        let status = proc.arg("keybase").stdout(Stdio::null()).status()?;
+        let status = if keybase_binary.is_some() {
+            proc.arg(keybase_binary.unwrap()).stdout(Stdio::null()).status()?
+        } else {
+            proc.arg("keybase").stdout(Stdio::null()).status()?
+        };
 
         if status.success() {
             Ok(Self {})
@@ -151,8 +158,12 @@ impl KeybaseBroker {
         }
     }
 
-    pub fn api_send(payload: &str) -> Result<Value> {
-        let mut proc = Command::new("keybase");
+    pub fn api_send(keybase_binary: Option<String>, payload: &str) -> Result<Value> {
+        let mut proc = if keybase_binary.is_some() {
+            Command::new(keybase_binary.unwrap())
+        } else {
+            Command::new("keybase")
+        };
         proc.args(&["chat", "api", "-m", &payload]);
         let output = proc.output().expect("No output").stdout;
         let response = std::str::from_utf8(&output)?;
@@ -160,7 +171,7 @@ impl KeybaseBroker {
         Ok(response)
     }
 
-    pub fn read_from_channel(channel: &str, topic: &str) -> Result<Vec<(String, String, String)>> {
+    pub fn read_from_channel(channel: &str, topic: &str, keybase_binary: Option<String>) -> Result<Vec<(String, String, String)>> {
         let payload = json!({
             "method": "read",
             "params": {
@@ -176,7 +187,7 @@ impl KeybaseBroker {
             }
         });
         let payload = serde_json::to_string(&payload)?;
-        let response = KeybaseBroker::api_send(&payload)?;
+        let response = KeybaseBroker::api_send(keybase_binary, &payload)?;
         let mut unread: Vec<(String, String, String)> = Vec::new();
         let messages = response["result"]["messages"].as_array();
         if let Some(messages) = messages {
@@ -193,7 +204,7 @@ impl KeybaseBroker {
         Ok(unread)
     }
 
-    pub fn get_unread(topics: HashSet<&str>) -> Result<Vec<(String, String, String)>> {
+    pub fn get_unread(keybase_binary: Option<String>, topics: HashSet<&str>) -> Result<Vec<(String, String, String)>> {
         let payload = json!({
             "method": "list",
             "params": {
@@ -203,7 +214,7 @@ impl KeybaseBroker {
             }
         });
         let payload = serde_json::to_string(&payload)?;
-        let response = KeybaseBroker::api_send(&payload)?;
+        let response = KeybaseBroker::api_send(keybase_binary.clone(), &payload)?;
 
         let mut channels = HashSet::new();
         let messages = response["result"]["conversations"].as_array();
@@ -219,7 +230,7 @@ impl KeybaseBroker {
 
         let mut unread: Vec<(String, String, String)> = Vec::new();
         for (channel, topic) in channels.iter() {
-            let mut messages = KeybaseBroker::read_from_channel(channel, topic)?;
+            let mut messages = KeybaseBroker::read_from_channel(channel, topic, keybase_binary.clone())?;
             unread.append(&mut messages);
         }
         Ok(unread)
@@ -230,6 +241,7 @@ impl KeybaseBroker {
         channel: &str,
         topic: &str,
         ttl: &Option<String>,
+        keybase_binary: Option<String>,
     ) -> Result<()> {
         let mut payload = json!({
             "method": "send",
@@ -252,7 +264,7 @@ impl KeybaseBroker {
         }
 
         let payload = serde_json::to_string(&payload)?;
-        let response = KeybaseBroker::api_send(&payload)?;
+        let response = KeybaseBroker::api_send(keybase_binary, &payload)?;
         match response["result"]["message"].as_str() {
             Some("message sent") => Ok(()),
             _ => Err(ErrorKind::KeybaseMessageSendError)?,
