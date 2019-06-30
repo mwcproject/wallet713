@@ -84,7 +84,7 @@ impl<'a, 'b> Parser {
             )
             .subcommand(
                 SubCommand::with_name("account")
-                    .about("create a new account or switch to an existing account")
+                    .about("create a new account or switch to an existing account or rename an account")
                     .subcommand(
                         SubCommand::with_name("create")
                             .about("creates a new account")
