@@ -41,6 +41,36 @@ where
     Ok(wallet.accounts().collect())
 }
 
+/// Renames an account path with a new label
+pub fn rename_acct_path<T: ?Sized, C, K>(wallet: &mut T, accounts: Vec<AcctPathMapping>, old_label: &str, label: &str) -> Result<()>
+where
+    T: WalletBackend<C, K>,
+    C: NodeClient,
+    K: Keychain,
+{
+    let label = label.to_string();
+    if let Some(_) = wallet.accounts().find(|l| l.label == label) {
+        return Err(ErrorKind::AccountLabelAlreadyExists(label.clone()).into());
+    }
+
+    let old_label = old_label.to_string();
+    if old_label == "default" {
+        return Err(ErrorKind::AccountDefaultCannotBeRenamed.into())
+    }
+
+    if let Some(_) = wallet.accounts().find(|l| l.label == old_label) {
+        let mut batch = wallet.batch()?;
+        batch.rename_acct_path(accounts, &old_label, &label)?;
+        batch.commit()?;
+    }
+    else {
+        return Err(ErrorKind::AccountLabelNotExists(old_label.clone()).into());
+    }
+    
+
+    Ok(())
+}
+
 /// Adds an new parent account path with a given label
 pub fn new_acct_path<T: ?Sized, C, K>(wallet: &mut T, label: &str) -> Result<Identifier>
 where

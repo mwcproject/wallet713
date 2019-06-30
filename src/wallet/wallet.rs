@@ -155,6 +155,15 @@ impl Wallet {
         Ok(())
     }
 
+    pub fn rename_account(&self, old_name: &str, new_name: &str) -> Result<()> {
+        let wallet = self.get_wallet_instance()?;
+        controller::owner_single_use(wallet.clone(), |api| {
+            api.rename_account_path(old_name, new_name)?;
+            Ok(())
+        })?;
+        Ok(())
+    }
+
     pub fn create_account(&self, name: &str) -> Result<()> {
         let wallet = self.get_wallet_instance()?;
         controller::owner_single_use(wallet.clone(), |api| {

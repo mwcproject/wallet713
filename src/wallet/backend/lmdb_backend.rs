@@ -459,6 +459,24 @@ where
         Ok(())
     }
 
+    fn rename_acct_path(&mut self, accounts: Vec<AcctPathMapping>, old_name: &str, new_name: &str) -> Result<()> {
+        for acc in accounts {
+            if acc.label == old_name {
+                let mut nacc = acc.clone();
+                let old_key = to_key(ACCOUNT_PATH_MAPPING_PREFIX, &mut acc.label.as_bytes().to_vec(), );
+                self.db.borrow().as_ref().unwrap().delete(&old_key)?;
+                nacc.label = new_name.to_string();
+                let acct_key = to_key(ACCOUNT_PATH_MAPPING_PREFIX, &mut nacc.label.as_bytes().to_vec(), );
+                self.db.borrow().as_ref().unwrap().put_ser(&acct_key, &nacc)?;
+
+                break;
+            }
+        }
+        println!("rename acct from '{}' to '{}'", old_name, new_name);
+        Ok(())
+    }
+
+
     fn lock_output(&mut self, out: &mut OutputData) -> Result<()> {
         out.lock();
         self.save_output(out)

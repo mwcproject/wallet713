@@ -106,6 +106,14 @@ where
         keys::new_acct_path(&mut *w, label)
     }
 
+    pub fn rename_account_path(&self, old_label: &str, new_label: &str) -> Result<(), Error> {
+        let accounts = self.accounts()?;
+        let mut w = self.wallet.lock();
+println!("herexxx");
+        keys::rename_acct_path(&mut *w, accounts, old_label, new_label)?;
+        Ok(())
+    }
+
    pub fn retrieve_tx_id_by_slate_id(&self, slate_id: Uuid) -> Result<u32, Error> {
        let mut w = self.wallet.lock();
        w.open_with_credentials()?;
