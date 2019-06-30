@@ -109,7 +109,6 @@ where
     pub fn rename_account_path(&self, old_label: &str, new_label: &str) -> Result<(), Error> {
         let accounts = self.accounts()?;
         let mut w = self.wallet.lock();
-println!("herexxx");
         keys::rename_acct_path(&mut *w, accounts, old_label, new_label)?;
         Ok(())
     }
