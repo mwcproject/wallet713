@@ -17,6 +17,7 @@ where
     fn next_tx_log_id(&mut self, parent_key_id: &Identifier) -> Result<u32>;
     fn save_tx_log_entry(&mut self, t: &TxLogEntry) -> Result<()>;
     fn save_acct_path(&mut self, mapping: &AcctPathMapping) -> Result<()>;
+    fn rename_acct_path(&mut self, accounts: Vec<AcctPathMapping>, old_name: &str, new_name: &str) -> Result<()>;
     fn save_private_context(&mut self, uuid: &str, ctx: &Context) -> Result<()>;
     fn delete_private_context(&mut self, uuid: &str) -> Result<()>;
     fn store_tx(&self, uuid: &str, tx: &Transaction) -> Result<()>;

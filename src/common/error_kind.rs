@@ -16,6 +16,8 @@ pub enum ErrorKind {
     DeriveKeychainError,
     #[fail(display = "\x1b[31;1merror:\x1b[0m wallet should be empty before attempting restore!")]
     WalletShouldBeEmpty,
+    #[fail(display = "\x1b[31;1merror:\x1b[0m default account cannot be renamed!")]
+    AccountDefaultCannotBeRenamed,
     #[fail(
         display = "\x1b[31;1merror:\x1b[0m transaction with slate id {} already received!",
         0
@@ -55,6 +57,11 @@ pub enum ErrorKind {
         0
     )]
     AccountLabelAlreadyExists(String),
+    #[fail(
+        display = "\x1b[31;1merror:\x1b[0m Account label {} doesn't exist!",
+        0
+    )]
+    AccountLabelNotExists(String),
     #[fail(
         display = "\x1b[31;1merror:\x1b[0m invalid transaction id given: `{}`",
         0

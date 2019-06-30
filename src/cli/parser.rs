@@ -93,6 +93,16 @@ impl<'a, 'b> Parser {
                             )
                     )
                     .subcommand(
+                        SubCommand::with_name("rename")
+                            .about("renames an account")
+                            .arg(
+                                Arg::from_usage("<old_account> 'the account old name'")
+                            )
+                            .arg(
+                                Arg::from_usage("<new_account> 'the account new name'")
+                            )
+                    )
+                    .subcommand(
                         SubCommand::with_name("switch")
                             .about("switches to the given account")
                             .arg(

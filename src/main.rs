@@ -1022,6 +1022,7 @@ fn do_command(
 
             let create_args = args.subcommand_matches("create");
             let switch_args = args.subcommand_matches("switch");
+            let rename_args = args.subcommand_matches("rename");
             if let Some(args) = create_args {
                 wallet
                     .lock()
@@ -1033,6 +1034,10 @@ fn do_command(
                     false => "".to_string(),
                 };
                 wallet.lock().unlock(config, account, passphrase.as_str())?;
+            } else if let Some(args) = rename_args {
+                let old_account = args.value_of("old_account").unwrap();
+                let new_account = args.value_of("new_account").unwrap();
+                wallet.lock().rename_account(old_account, new_account)?;
             }
 
             return Ok(());
