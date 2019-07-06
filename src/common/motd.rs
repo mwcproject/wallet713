@@ -21,7 +21,7 @@ pub fn get_motd() -> Result<(), Error> {
     let crate_version = Version::parse(crate_version!())?;
 
     let motd: MOTD = client::get(
-        "https://raw.githubusercontent.com/vault713/wallet713/master/motd.json",
+        "https://wallet.mwc.mw/motd.json",
         None,
     )?;
 
