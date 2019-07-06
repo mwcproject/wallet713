@@ -300,6 +300,13 @@ where
     }
 
     fn restore(&mut self) -> Result<()> {
+        // check if accounts exist. Do not allow.
+        let label_pre = "default";
+        let label = label_pre.to_owned();
+        let res = self.accounts().find(|l| l.label != label);
+        if let Some(_) = res {
+            return Err(ErrorKind::Restore.into());
+        }
         restore::restore(self).context(ErrorKind::Restore)?;
         Ok(())
     }
