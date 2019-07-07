@@ -521,6 +521,7 @@ fn main() {
                 .about("recover wallet from mnemonic or displays the current mnemonic")
                 .arg(Arg::from_usage("[words] -m, --mnemonic=<words>... 'the seed mnemonic'"))
         )
+        .subcommand(SubCommand::with_name("state").about("print wallet initialization state and exit"))
         .get_matches();
 
     let runtime_mode = match matches.is_present("daemon") {
@@ -562,6 +563,16 @@ fn main() {
     let mut keybase_broker: Option<(KeybasePublisher, KeybaseSubscriber)> = None;
 
     let has_seed = Wallet::seed_exists(&config);
+
+    // TODO: print something nicer for the user
+    if matches.subcommand_matches("state").is_some() {
+        match has_seed {
+            true => println!("Initialized"),
+            false => println!("Uninitialized")
+        };
+        std::process::exit();
+    }
+
     if !has_seed {
         let mut line = String::new();
 
