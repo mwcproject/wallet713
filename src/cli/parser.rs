@@ -127,6 +127,9 @@ impl<'a, 'b> Parser {
                     .subcommand(SubCommand::with_name("--no-refresh")
                         .about("do not contact full node to refresh outputs")
                     )
+                    .arg(
+                        Arg::from_usage("[confirmations] -c, --confirmations=<confirmations> 'the number of confirmations required for inputs'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("contacts")
