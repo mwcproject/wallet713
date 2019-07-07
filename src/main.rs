@@ -1120,7 +1120,12 @@ fn do_command(
         }
         Some("info") => {
             let args = matches.subcommand_matches("info").unwrap();
-            wallet.lock().info(!args.is_present("--no-refresh"))?;
+
+            let confirmations = args.value_of("confirmations").unwrap_or("10");
+            let confirmations = u64::from_str_radix(confirmations, 10)
+                .map_err(|_| ErrorKind::InvalidMinConfirmations(confirmations.to_string()))?;
+
+            wallet.lock().info(!args.is_present("--no-refresh"), confirmations)?;
         }
         Some("txs") => {
             wallet.lock().txs(Some(address_book.clone()))?;
