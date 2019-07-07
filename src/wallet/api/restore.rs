@@ -368,6 +368,14 @@ where
     K: Keychain,
 {
     // Don't proceed if wallet_data has anything in it
+
+    // check accounts
+    let res = wallet.accounts().find(|l| l.label != "default");
+    if let Some(_) = res {
+        return Err(ErrorKind::WalletShouldBeEmpty.into());
+    }
+
+    // next outputs
     let is_empty = wallet.outputs().next().is_none();
     if !is_empty {
         return Err(ErrorKind::WalletShouldBeEmpty.into());
