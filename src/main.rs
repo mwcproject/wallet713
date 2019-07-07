@@ -53,7 +53,7 @@ use std::io;
 use std::io::{Read, Write};
 use std::path::Path;
 
-use clap::{App, Arg, ArgMatches};
+use clap::{App, Arg, ArgMatches, SubCommand};
 use colored::*;
 use grin_core::core;
 use grin_core::libtx::tx_fee;
@@ -511,10 +511,16 @@ fn main() {
         .arg(Arg::from_usage("[config-path] -c, --config=<config-path> 'the path to the config file'"))
         .arg(Arg::from_usage("[log-config-path] -l, --log-config-path=<log-config-path> 'the path to the log config file'"))
         .arg(Arg::from_usage("[account] -a, --account=<account> 'the account to use'"))
-        .arg(Arg::from_usage("[passphrase] -p, --passphrase=<passphrase> 'the passphrase to use'").min_values(0))
+        .arg(Arg::from_usage("[passphrase] -p, --passphrase=<passphrase> 'the passphrase to use'"))
         .arg(Arg::from_usage("[daemon] -d, --daemon 'run daemon'"))
         .arg(Arg::from_usage("[floonet] -f, --floonet 'use floonet'"))
         .arg(Arg::from_usage("[ready-phrase] -r, --ready-phrase=<phrase> 'use additional ready phrase printed when wallet ready to read input'"))
+        .subcommand(SubCommand::with_name("init").about("initializes the wallet"))
+        .subcommand(
+            SubCommand::with_name("recover")
+                .about("recover wallet from mnemonic or displays the current mnemonic")
+                .arg(Arg::from_usage("[words] -m, --mnemonic=<words>... 'the seed mnemonic'"))
+        )
         .get_matches();
 
     let runtime_mode = match matches.is_present("daemon") {
@@ -559,20 +565,34 @@ fn main() {
     if !has_seed {
         let mut line = String::new();
 
-        println!("{}", "Please choose an option".bright_green().bold());
-        println!(" 1) {} a new wallet", "init".bold());
-        println!(" 2) {} from mnemonic", "recover".bold());
-        println!(" 3) {}", "exit".bold());
-        println!();
-        print!("{}", "> ".cyan());
-        io::stdout().flush().unwrap();
+        if matches.subcommand_matches("init").is_some() {
+            line = "init".to_string();
+        }
+        if matches.subcommand_matches("recover").is_some() {
+            line = "recover".to_string();
+        }
+        if line == String::new() {
+            println!("{}", "Please choose an option".bright_green().bold());
+            println!(" 1) {} a new wallet", "init".bold());
+            println!(" 2) {} from mnemonic", "recover".bold());
+            println!(" 3) {}", "exit".bold());
+            println!();
+            print!("{}", "> ".cyan());
+            io::stdout().flush().unwrap();
 
-        if io::stdin().read_line(&mut line).unwrap() == 0 {
-            println!("{}: invalid option", "ERROR".bright_red());
-            std::process::exit(1);
+            if io::stdin().read_line(&mut line).unwrap() == 0 {
+                println!("{}: invalid option", "ERROR".bright_red());
+                std::process::exit(1);
+            }
+
+            println!();
         }
 
-        println!();
+        let passphrase = if matches.is_present("passphrase") {
+            matches.value_of("passphrase").unwrap()
+        } else {
+            ""
+        };
 
         let line = line.trim();
         let mut out_is_safe = false;
@@ -582,7 +602,8 @@ fn main() {
                 println!();
                 println!("Set an optional password to secure your wallet with. Leave blank for no password.");
                 println!();
-                if let Err(err) = do_command("init -p", &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut grinbox_broker, &mut out_is_safe) {
+                let cmd = format!("init -p {}", &passphrase);
+                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut grinbox_broker, &mut out_is_safe) {
                     println!("{}: {}", "ERROR".bright_red(), err);
                     std::process::exit(1);
                 }
@@ -591,17 +612,25 @@ fn main() {
                 println!("{}", "Recovering from mnemonic".bold());
                 print!("Mnemonic: ");
                 io::stdout().flush().unwrap();
-                let mut line = String::new();
-                if io::stdin().read_line(&mut line).unwrap() == 0 {
-                    println!("{}: invalid mnemonic", "ERROR".bright_red());
-                    std::process::exit(1);
-                }
-                let line = line.trim();
+                let mut mnemonic = String::new();
+
+                if let Some(recover) = matches.subcommand_matches("recover") {
+                    if recover.is_present("words") {
+                        mnemonic = matches.subcommand_matches("recover").unwrap().value_of("words").unwrap().to_string();
+                    }
+                } else {
+                    if io::stdin().read_line(&mut mnemonic).unwrap() == 0 {
+                        println!("{}: invalid mnemonic", "ERROR".bright_red());
+                        std::process::exit(1);
+                    }
+                    mnemonic = mnemonic.trim().to_string();
+                };
+
                 println!();
                 println!("Set an optional password to secure your wallet with. Leave blank for no password.");
                 println!();
                 // TODO: refactor this
-                let cmd = format!("recover -m {} -p", line);
+                let cmd = format!("recover -m {} -p {}", mnemonic, &passphrase);
                 if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut grinbox_broker, &mut out_is_safe) {
                     println!("{}: {}", "ERROR".bright_red(), err);
                     std::process::exit(1);
@@ -617,6 +646,15 @@ fn main() {
         }
 
         println!();
+    } else {
+        if matches.subcommand_matches("init").is_some() {
+            println!("Seed file already exists! Not initializing");
+            std::process::exit(1);
+        }
+        if matches.subcommand_matches("recover").is_some() {
+            println!("Seed file already exists! Not recovering");
+            std::process::exit(1);
+        }
     }
 
     if wallet.lock().is_locked() {
