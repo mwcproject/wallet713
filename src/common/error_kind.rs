@@ -87,6 +87,16 @@ pub enum ErrorKind {
     )]
     InvalidMinConfirmations(String),
     #[fail(
+        display = "\x1b[31;1merror:\x1b[0m invalid pagination length: `{}`",
+        0
+    )]
+    InvalidPaginationLength(String),
+    #[fail(
+        display = "\x1b[31;1merror:\x1b[0m invalid pagination start: `{}`", 
+        0
+    )]
+    InvalidPaginationStart(String),
+    #[fail(
         display = "\x1b[31;1merror:\x1b[0m invalid number of outputs given: `{}`",
         0
     )]

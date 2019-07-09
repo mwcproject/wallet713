@@ -222,7 +222,7 @@ impl Wallet {
         let mut value = 0;
         let _result = controller::owner_single_use(wallet.clone(), |api| {
             let (height, _) = api.node_height()?;
-            let (_validated, outputs) = api.retrieve_outputs(false, true, None)?;
+            let (_validated, outputs) = api.retrieve_outputs(false, true, None, 0, 0)?;
 
             for o in outputs {
                 let mut found: bool = false;
@@ -255,7 +255,7 @@ impl Wallet {
         let mut count = 0;
         let _result = controller::owner_single_use(wallet.clone(), |api| {
             let (height, _) = api.node_height()?;
-            let (_validated, outputs) = api.retrieve_outputs(false, true, None)?;
+            let (_validated, outputs) = api.retrieve_outputs(false, true, None, 0, 0)?;
 
             for o in outputs {
                 let mut found: bool = false;
@@ -282,11 +282,11 @@ impl Wallet {
         Ok(count)
     }
 
-    pub fn outputs(&self, show_spent: bool) -> Result<()> {
+    pub fn outputs(&self, show_spent: bool, pagination_start: u32, pagination_length: u32) -> Result<()> {
         let wallet = self.get_wallet_instance()?;
         let result = controller::owner_single_use(wallet.clone(), |api| {
             let (height, _) = api.node_height()?;
-            let (validated, outputs) = api.retrieve_outputs(show_spent, true, None)?;
+            let (validated, outputs) = api.retrieve_outputs(show_spent, true, None, pagination_start, pagination_length)?;
             display::outputs(&self.active_account, height, validated, outputs, true)?;
             Ok(())
         })?;
@@ -468,7 +468,7 @@ impl Wallet {
         let wallet = self.get_wallet_instance()?;
         let mut result = (false, vec![]);
         controller::owner_single_use(wallet.clone(), |api| {
-            result = api.retrieve_outputs(include_spent, refresh_from_node, tx_id)?;
+            result = api.retrieve_outputs(include_spent, refresh_from_node, tx_id, 0, 0)?;
             Ok(())
         })?;
         Ok(result)

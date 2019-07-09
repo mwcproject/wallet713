@@ -130,6 +130,8 @@ where
         include_spent: bool,
         refresh_from_node: bool,
         tx_id: Option<u32>,
+        pagination_start: u32,
+        pagination_len: u32,
     ) -> Result<(bool, Vec<(OutputData, pedersen::Commitment)>), Error> {
         let mut w = self.wallet.lock();
         w.open_with_credentials()?;
@@ -142,7 +144,12 @@ where
 
         let res = Ok((
             validated,
-            updater::retrieve_outputs(&mut *w, include_spent, tx_id, Some(&parent_key_id))?,
+            updater::retrieve_outputs(&mut *w,
+                                      include_spent,
+                                      tx_id,
+                                      Some(&parent_key_id),
+                                      pagination_start,
+                                      pagination_len)?,
         ));
 
         w.close()?;
@@ -450,7 +457,7 @@ where
         match res {
             Ok(height) => Ok((height, true)),
             Err(_) => {
-                let outputs = self.retrieve_outputs(true, false, None)?;
+                let outputs = self.retrieve_outputs(true, false, None, 0, 0)?;
                 let height = match outputs.1.iter().map(|(out, _)| out.height).max() {
                     Some(height) => height,
                     None => 0,
