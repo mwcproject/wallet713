@@ -166,7 +166,7 @@ where
         return Err(ErrorKind::TransactionNotCancellable(tx_id_string))?;
     }
     // get outputs associated with tx
-    let res = updater::retrieve_outputs(wallet, false, Some(tx.id), Some(&parent_key_id))?;
+    let res = updater::retrieve_outputs(wallet, false, Some(tx.id), Some(&parent_key_id), 0, 0)?;
     let outputs = res.iter().map(|(out, _)| out).cloned().collect();
     updater::cancel_tx_and_outputs(wallet, tx, outputs)?;
     Ok(())

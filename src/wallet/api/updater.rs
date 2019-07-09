@@ -9,6 +9,7 @@ use grin_core::libtx::reward;
 use grin_core::{global, ser};
 use grin_util::secp::pedersen;
 use grin_util::{from_hex, to_hex};
+use std::convert::TryFrom;
 
 use super::types::{
     BlockFees, CbData, ErrorKind, Identifier, Keychain, NodeClient, OutputData, OutputStatus,
@@ -21,6 +22,8 @@ pub fn retrieve_outputs<T: ?Sized, C, K>(
     show_spent: bool,
     tx_id: Option<u32>,
     parent_key_id: Option<&Identifier>,
+    pagination_start: u32,
+    pagination_len: u32,
 ) -> Result<Vec<(OutputData, pedersen::Commitment)>>
 where
     T: WalletBackend<C, K>,
@@ -52,7 +55,7 @@ where
     outputs.sort_by_key(|out| out.n_child);
     let keychain = wallet.keychain().clone();
 
-    let res = outputs
+    let res: Vec <(OutputData, pedersen::Commitment)> = outputs
         .into_iter()
         .map(|out| {
             let commit = match out.commit.clone() {
@@ -62,7 +65,29 @@ where
             (out, commit)
         })
         .collect();
-    Ok(res)
+
+    let mut pag_len = pagination_len;
+    if pag_len != 0 || pagination_start != 0 {
+        if pag_len == 0 {
+            pag_len = u32::try_from(res.clone().len()).unwrap();
+        }
+        let mut pag_vec = Vec::new();
+
+        let mut pre_count = 0;
+        let mut count = 0;
+        for n in res {
+            if pre_count >= pagination_start {
+                pag_vec.push(n);
+                count = count + 1;
+                if count == pag_len { break; }
+            }
+            pre_count = pre_count + 1;
+        }
+        Ok(pag_vec)
+    }
+    else {
+        Ok(res)
+    }
 }
 
 /// Retrieve all of the transaction entries, or a particular entry

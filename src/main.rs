@@ -1136,8 +1136,19 @@ fn do_command(
         }
         Some("outputs") => {
             let args = matches.subcommand_matches("outputs").unwrap();
+
+            // get pagination parameters default is to not do pagination when length == 0.
+            let pagination_length = args.value_of("length").unwrap_or("0");
+            let pagination_start = args.value_of("offset").unwrap_or("0");
+
+            let pagination_length = u32::from_str_radix(pagination_length, 10)
+                .map_err(|_| ErrorKind::InvalidPaginationLength(pagination_length.to_string()))?;
+
+            let pagination_start = u32::from_str_radix(pagination_start, 10)
+                .map_err(|_| ErrorKind::InvalidPaginationStart(pagination_length.to_string()))?;
+
             let show_spent = args.is_present("show-spent");
-            wallet.lock().outputs(show_spent)?;
+            wallet.lock().outputs(show_spent, pagination_start, pagination_length)?;
         }
         Some("repost") => {
             let args = matches.subcommand_matches("repost").unwrap();
