@@ -17,7 +17,7 @@ const WALLET713_DEFAULT_CONFIG_FILENAME: &str = "wallet713.toml";
 
 const DEFAULT_CONFIG: &str = r#"
 	wallet713_data_path = "wallet713_data"
-	grinbox_domain = "mq.mwc.mw"
+	mwcmq_domain = "mq.mwc.mw"
 	default_keybase_ttl = "24h"
         keybase_binary = "keybase"
 "#;
@@ -27,8 +27,8 @@ pub struct Wallet713Config {
     pub chain: Option<ChainTypes>,
     pub wallet713_data_path: String,
     pub keybase_binary: Option<String>,
-    pub grinbox_domain: String,
-    pub grinbox_port: Option<u16>,
+    pub mwcmq_domain: String,
+    pub mwcmq_port: Option<u16>,
     pub grinbox_protocol_unsecure: Option<bool>,
     pub grinbox_address_index: Option<u32>,
     pub grin_node_uri: Option<String>,
@@ -134,8 +134,8 @@ impl Wallet713Config {
         let public_key = self.get_grinbox_public_key()?;
         Ok(GrinboxAddress::new(
             public_key,
-            Some(self.grinbox_domain.clone()),
-            self.grinbox_port,
+            Some(self.mwcmq_domain.clone()),
+            self.mwcmq_port,
         ))
     }
 
@@ -230,10 +230,10 @@ impl Wallet713Config {
 
 impl fmt::Display for Wallet713Config {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "wallet713_data_path={}\ngrinbox_domain={}\ngrinbox_port={}\ngrin_node_uri={}\ngrin_node_secret={}",
+        write!(f, "wallet713_data_path={}\nmwcmq_domain={}\nmwcmq_port={}\ngrin_node_uri={}\ngrin_node_secret={}",
                self.wallet713_data_path,
-               self.grinbox_domain,
-               self.grinbox_port.unwrap_or(DEFAULT_GRINBOX_PORT),
+               self.mwcmq_domain,
+               self.mwcmq_port.unwrap_or(DEFAULT_GRINBOX_PORT),
                self.grin_node_uri.clone().unwrap_or(String::from("provided by vault713")),
                "{...}")?;
         Ok(())

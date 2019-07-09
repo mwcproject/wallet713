@@ -111,13 +111,13 @@ fn do_config(
     }
 
     if let Some(domain) = args.value_of("domain") {
-        config.grinbox_domain = domain.to_string();
+        config.mwcmq_domain = domain.to_string();
         any_matches = true;
     }
 
     if let Some(port) = args.value_of("port") {
         let port = u16::from_str_radix(port, 10).map_err(|_| ErrorKind::NumberParsingError)?;
-        config.grinbox_port = Some(port);
+        config.mwcmq_port = Some(port);
         any_matches = true;
     }
 
