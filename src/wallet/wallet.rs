@@ -249,6 +249,17 @@ impl Wallet {
         Ok(value)
     }
 
+    pub fn all_output_count(&self, show_spent: bool) -> Result<(usize)> {
+        let wallet = self.get_wallet_instance()?;
+        let mut count = 0;
+        controller::owner_single_use(wallet.clone(), |api| {
+            let (_, outputs) = api.retrieve_outputs(show_spent, true, None, 0, 0)?;
+            count = outputs.len();
+            Ok(())
+        })?;
+        Ok(count)
+    }
+
     pub fn output_count(&self, minimum_confirmations: u64, output_list: Option<Vec<&str>>) -> Result<(usize)> {
         let wallet = self.get_wallet_instance()?;
 

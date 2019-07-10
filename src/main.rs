@@ -1134,6 +1134,12 @@ fn do_command(
             let arg_matches = matches.subcommand_matches("contacts").unwrap();
             do_contacts(&arg_matches, address_book.clone())?;
         }
+        Some("output_count") => {
+            let args = matches.subcommand_matches("output_count").unwrap();
+            let show_spent = args.is_present("show-spent");
+            let all_outputs = wallet.lock().all_output_count(show_spent)?;
+            cli_message!("{:?}", all_outputs);
+        }
         Some("outputs") => {
             let args = matches.subcommand_matches("outputs").unwrap();
 
