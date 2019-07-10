@@ -1127,8 +1127,24 @@ fn do_command(
 
             wallet.lock().info(!args.is_present("--no-refresh"), confirmations)?;
         }
+        Some("txs_count") => {
+            let count = wallet.lock().txs_count()?;
+            cli_message!("{:?}", count);
+        }
         Some("txs") => {
-            wallet.lock().txs(Some(address_book.clone()))?;
+            let args = matches.subcommand_matches("txs").unwrap();
+
+            // get pagination parameters default is to not do pagination when length == 0.
+            let pagination_length = args.value_of("length").unwrap_or("0");
+            let pagination_start = args.value_of("offset").unwrap_or("0");
+
+            let pagination_length = u32::from_str_radix(pagination_length, 10)
+                .map_err(|_| ErrorKind::InvalidPaginationLength(pagination_length.to_string()))?;
+
+            let pagination_start = u32::from_str_radix(pagination_start, 10)
+                .map_err(|_| ErrorKind::InvalidPaginationStart(pagination_length.to_string()))?;
+
+            wallet.lock().txs(Some(address_book.clone()), pagination_start, pagination_length)?;
         }
         Some("contacts") => {
             let arg_matches = matches.subcommand_matches("contacts").unwrap();

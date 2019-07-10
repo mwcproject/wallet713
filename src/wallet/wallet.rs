@@ -196,11 +196,22 @@ impl Wallet {
         Ok(id)
     }
 
-    pub fn txs(&self, address_book: Option<Arc<Mutex<AddressBook>>>) -> Result<()> {
+    pub fn txs_count(&self) -> Result<(usize)> {
+        let wallet = self.get_wallet_instance()?;
+        let mut txs_count = 0;
+        controller::owner_single_use(wallet.clone(), |api| {
+            let (_, txs) = api.retrieve_txs_with_proof_flag(true, None, None, 0, 0)?;
+            txs_count = txs.len();
+            Ok(())
+        })?;
+        Ok(txs_count)
+    }
+
+    pub fn txs(&self, address_book: Option<Arc<Mutex<AddressBook>>>, pagination_start: u32, pagination_length: u32) -> Result<()> {
         let wallet = self.get_wallet_instance()?;
         controller::owner_single_use(wallet.clone(), |api| {
             let (height, _) = api.node_height()?;
-            let (validated, txs) = api.retrieve_txs_with_proof_flag(true, None, None)?;
+            let (validated, txs) = api.retrieve_txs_with_proof_flag(true, None, None, pagination_start, pagination_length)?;
             display::txs(
                 &self.active_account,
                 height,

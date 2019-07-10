@@ -98,6 +98,8 @@ pub fn retrieve_txs<T: ?Sized, C, K>(
     tx_slate_id: Option<Uuid>,
     parent_key_id: Option<&Identifier>,
     outstanding_only: bool,
+    pagination_start: u32,
+    pagination_len: u32,
 ) -> Result<Vec<TxLogEntry>>
 where
     T: WalletBackend<C, K>,
@@ -131,7 +133,30 @@ where
         })
         .collect();
     txs.sort_by_key(|tx| tx.creation_ts);
-    Ok(txs)
+
+    let mut pag_len = pagination_len;
+    if pagination_start != 0 || pagination_len != 0 {
+        if pag_len == 0 {
+            pag_len = u32::try_from(txs.clone().len()).unwrap();
+        }
+        let mut pag_txs: Vec<TxLogEntry> = Vec::new();
+
+        let mut pre_count = 0;
+        let mut count = 0;
+
+        for tx in txs {
+            if pre_count >= pagination_start {
+                pag_txs.push(tx);
+                count = count + 1;
+                if count == pag_len { break; }
+            }
+            pre_count = pre_count + 1;
+        }
+        Ok(pag_txs)
+    }
+    else {
+        Ok(txs)
+    }
 }
 
 /// Refreshes the outputs in a wallet with the latest information
@@ -171,7 +196,7 @@ where
         .filter(|x| x.root_key_id == *parent_key_id && x.status != OutputStatus::Spent)
         .collect();
 
-    let tx_entries = retrieve_txs(wallet, None, None, Some(&parent_key_id), true)?;
+    let tx_entries = retrieve_txs(wallet, None, None, Some(&parent_key_id), true, 0, 0)?;
 
     // Only select outputs that are actually involved in an outstanding transaction
     let unspents: Vec<OutputData> = match update_all {

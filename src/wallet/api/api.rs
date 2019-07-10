@@ -75,7 +75,7 @@ where
         let mut w = self.wallet.lock();
         w.open_with_credentials()?;
         let parent_key_id = w.get_parent_key_id();
-        let tx = updater::retrieve_txs(&mut *w, None, Some(slate.id), Some(&parent_key_id), false)?;
+        let tx = updater::retrieve_txs(&mut *w, None, Some(slate.id), Some(&parent_key_id), false, 0, 0)?;
         for t in &tx {
             if t.tx_type == TxLogEntryType::TxReceived {
                 return Err(ErrorKind::TransactionAlreadyReceived(slate.id.to_string()).into());
@@ -116,7 +116,7 @@ where
    pub fn retrieve_tx_id_by_slate_id(&self, slate_id: Uuid) -> Result<u32, Error> {
        let mut w = self.wallet.lock();
        w.open_with_credentials()?;
-       let tx = updater::retrieve_txs(&mut *w, None, Some(slate_id), None, false)?;
+       let tx = updater::retrieve_txs(&mut *w, None, Some(slate_id), None, false, 0, 0)?;
        let mut ret = 1000000000;
        for t in &tx {
            ret = t.id;
@@ -173,7 +173,7 @@ where
 
         let res = Ok((
             validated,
-            updater::retrieve_txs(&mut *w, tx_id, tx_slate_id, Some(&parent_key_id), false)?,
+            updater::retrieve_txs(&mut *w, tx_id, tx_slate_id, Some(&parent_key_id), false, 0, 0)?,
         ));
 
         w.close()?;
@@ -185,6 +185,8 @@ where
         refresh_from_node: bool,
         tx_id: Option<u32>,
         tx_slate_id: Option<Uuid>,
+        pagination_start: u32,
+        pagination_length: u32,
     ) -> Result<(bool, Vec<(TxLogEntry, bool)>), Error> {
         let mut w = self.wallet.lock();
         w.open_with_credentials()?;
@@ -196,7 +198,7 @@ where
         }
 
         let txs: Vec<TxLogEntry> =
-            updater::retrieve_txs(&mut *w, tx_id, tx_slate_id, Some(&parent_key_id), false)?;
+            updater::retrieve_txs(&mut *w, tx_id, tx_slate_id, Some(&parent_key_id), false, pagination_start, pagination_length)?;
         let txs = txs
             .into_iter()
             .map(|t| {
@@ -480,7 +482,7 @@ where
         w.open_with_credentials()?;
         let parent_key_id = w.get_parent_key_id();
         let txs: Vec<TxLogEntry> =
-            updater::retrieve_txs(&mut *w, Some(id), None, Some(&parent_key_id), false)?;
+            updater::retrieve_txs(&mut *w, Some(id), None, Some(&parent_key_id), false, 0, 0)?;
         if txs.len() != 1 {
             return Err(ErrorKind::TransactionHasNoProof)?;
         }
@@ -646,7 +648,7 @@ where
         w.open_with_credentials()?;
         let parent_key_id = w.get_parent_key_id();
         // Don't do this multiple times
-        let tx = updater::retrieve_txs(&mut *w, None, Some(slate.id), Some(&parent_key_id), false)?;
+        let tx = updater::retrieve_txs(&mut *w, None, Some(slate.id), Some(&parent_key_id), false, 0, 0)?;
         for t in &tx {
             if t.tx_type == TxLogEntryType::TxReceived {
                 return Err(ErrorKind::TransactionAlreadyReceived(slate.id.to_string()).into());
