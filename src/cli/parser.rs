@@ -153,8 +153,18 @@ impl<'a, 'b> Parser {
                     )
             )
             .subcommand(
+                SubCommand::with_name("txs_count")
+                    .about("displays number of transactions")
+            )
+            .subcommand(
                 SubCommand::with_name("txs")
                     .about("displays transactions")
+                    .arg(
+                        Arg::from_usage("[offset] -o, --offset=<offset> 'the offset of the first tx to display'")
+                    )
+                    .arg(
+                        Arg::from_usage("[length] -l, --length=<length> 'the number of txs to display'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("output_count")
