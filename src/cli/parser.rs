@@ -157,6 +157,13 @@ impl<'a, 'b> Parser {
                     .about("displays transactions")
             )
             .subcommand(
+                SubCommand::with_name("output_count")
+                    .about("displays total number of outputs")
+                    .arg(
+                        Arg::from_usage("[show-spent] -s, --show-spent 'show spent outputs'")
+                    )
+            )
+            .subcommand(
                 SubCommand::with_name("outputs")
                     .about("displays outputs")
                     .arg(
