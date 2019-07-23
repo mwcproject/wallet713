@@ -570,7 +570,7 @@ fn main() {
             true => println!("Initialized"),
             false => println!("Uninitialized")
         };
-        std::process::exit();
+        std::process::exit(0);
     }
 
     if !has_seed {
