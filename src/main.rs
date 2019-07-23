@@ -63,7 +63,7 @@ use rustyline::config::OutputStreamType;
 use rustyline::error::ReadlineError;
 use rustyline::highlight::{Highlighter, MatchingBracketHighlighter};
 use rustyline::hint::Hinter;
-use rustyline::{CompletionType, Config, EditMode, Editor, Helper};
+use rustyline::{CompletionType, Config, Context, EditMode, Editor, Helper};
 use url::Url;
 
 #[macro_use]
@@ -468,19 +468,20 @@ impl Completer for EditorHelper {
         &self,
         line: &str,
         pos: usize,
+        ctx: &Context<'_>,
     ) -> std::result::Result<(usize, Vec<Pair>), ReadlineError> {
-        self.0.complete(line, pos)
+        self.0.complete(line, pos, ctx)
     }
 }
 
 impl Hinter for EditorHelper {
-    fn hint(&self, _line: &str, _pos: usize) -> Option<String> {
+    fn hint(&self, _line: &str, _pos: usize, _ctx: &Context<'_>) -> Option<String> {
         None
     }
 }
 
 impl Highlighter for EditorHelper {
-    fn highlight_prompt<'p>(&self, prompt: &'p str) -> Cow<'p, str> {
+    fn highlight_prompt<'b, 's: 'b, 'p: 'b>(&self, prompt: &'p str, _default: bool) -> Cow<'p, str> {
         if prompt == PROMPT {
             Borrowed(COLORED_PROMPT)
         } else {
@@ -831,7 +832,7 @@ fn main() {
         .join(CLI_HISTORY_PATH)
         .to_str()
     {
-        rl.load_history(path).is_ok();
+        let _ = rl.load_history(path).is_ok();
     }
 
     let prompt_plus = matches.value_of("ready-phrase").unwrap_or("").to_string();
@@ -878,7 +879,7 @@ fn main() {
         .join(CLI_HISTORY_PATH)
         .to_str()
     {
-        rl.save_history(path).is_ok();
+        let _ = rl.save_history(path).is_ok();
     }
 }
 
@@ -1577,7 +1578,7 @@ fn do_command(
                 *out_is_safe = false;
                 return Ok(());
             } else if args.is_present("display") {
-                let mut w = wallet.lock();
+                let w = wallet.lock();
                 w.show_mnemonic(config, &passphrase)?;
                 return Ok(());
             }
@@ -1587,7 +1588,7 @@ fn do_command(
                 return Err(ErrorKind::HasListener.into());
             }
             println!("checking and repairing... please wait as this could take a few minutes to complete.");
-            let mut wallet = wallet.lock();
+            let wallet = wallet.lock();
             wallet.check_repair()?;
             cli_message!("check and repair done!");
         }
@@ -1646,9 +1647,9 @@ fn do_command(
             let mut file = File::open(path)?;
             let mut proof = String::new();
             file.read_to_string(&mut proof)?;
-            let mut tx_proof: TxProof = serde_json::from_str(&proof)?;
+            let tx_proof: TxProof = serde_json::from_str(&proof)?;
 
-            let mut wallet = wallet.lock();
+            let wallet = wallet.lock();
             match wallet.verify_tx_proof(&tx_proof) {
                 Ok((sender, receiver, amount, outputs, kernel)) => {
                     proof_ok(sender, receiver, amount, outputs, kernel);
