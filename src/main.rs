@@ -47,6 +47,7 @@ extern crate grin_store;
 extern crate grin_util;
 extern crate grin_p2p;
 
+use std::env;
 use std::borrow::Cow::{self, Borrowed, Owned};
 use std::fs::File;
 use std::io;
@@ -88,6 +89,23 @@ use contacts::{Address, AddressBook, AddressType, Backend, Contact, GrinboxAddre
 const CLI_HISTORY_PATH: &str = ".history";
 static mut RECV_ACCOUNT: Option<String> = None;
 static mut RECV_PASS: Option<String> = None;
+
+fn getpassword() -> Result<String> {
+    let mwc_password = getenv("MWC_PASSWORD")?;
+    if mwc_password.is_some() {
+        return Ok(mwc_password.unwrap());
+    }
+    return Ok(rpassword::prompt_password_stdout("Password: ").unwrap_or(String::from("")));
+}
+
+fn getenv(key: &str) -> Result<Option<String>> {
+    // Accessing an env var
+    let ret = match env::var(key) {
+      Ok(val) => Some(val),
+      Err(_) => None,
+    };
+    Ok(ret)
+}
 
 fn do_config(
     args: &ArgMatches,
@@ -915,7 +933,7 @@ fn show_address(config: &Wallet713Config, include_index: bool) -> Result<()> {
 
 fn password_prompt(opt: Option<&str>) -> String {
     opt.map(String::from).unwrap_or_else(|| {
-        rpassword::prompt_password_stdout("Password: ").unwrap_or(String::from(""))
+        getpassword().unwrap()
     })
 }
 
@@ -968,7 +986,6 @@ fn do_command(
     let home_dir = dirs::home_dir()
         .map(|p| p.to_str().unwrap().to_string())
         .unwrap_or("~".to_string());
-
     let matches = Parser::parse(command)?;
     match matches.subcommand_name() {
         Some("config") => {
