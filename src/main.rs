@@ -1577,13 +1577,30 @@ fn do_command(
 
             if let Some(words) = args.values_of("words") {
                 println!("recovering... please wait as this could take a few minutes to complete.");
-                let words: Vec<&str> = words.collect();
+
+                if  getenv("MWC_MNEMONIC")?.is_some() {
+                    let envvar = env::var("MWC_MNEMONIC")?;
+                    let words: Vec<&str> = envvar.split(" ").collect();
+                    {
+                        println!("Recovering with environment variable words: {:?}", words);
+                        let mut w = wallet.lock();
+                        w.restore_seed(config, &words, passphrase.as_str())?;
+                        let seed = w.init(config, passphrase.as_str(), false)?;
+                        w.complete(seed, config, "default", passphrase.as_str(), true)?;
+                        w.restore_state()?;
+                    }
+                }
+                else
                 {
-                    let mut w = wallet.lock();
-                    w.restore_seed(config, &words, passphrase.as_str())?;
-                    let seed = w.init(config, passphrase.as_str(), false)?;
-                    w.complete(seed, config, "default", passphrase.as_str(), true)?;
-                    w.restore_state()?;
+                    let words: Vec<&str> = words.collect();
+                    {
+                        println!("Recovering with commandline specified words: {:?}", words);
+                        let mut w = wallet.lock();
+                        w.restore_seed(config, &words, passphrase.as_str())?;
+                        let seed = w.init(config, passphrase.as_str(), false)?;
+                        w.complete(seed, config, "default", passphrase.as_str(), true)?;
+                        w.restore_state()?;
+                    }
                 }
 
                 derive_address_key(config, wallet, grinbox_broker)?;
