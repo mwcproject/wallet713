@@ -275,7 +275,7 @@ impl Controller {
                             w.unlock(&config.clone().unwrap(), &RECV_ACCOUNT.clone().unwrap(), &"".to_string())?;
                         }
                     }
-                    w.process_sender_initiated_slate(address, slate)?;
+                    w.process_sender_initiated_slate(address, slate, None)?;
 
                     if config.is_some() && RECV_ACCOUNT.is_some() {
                         if RECV_PASS.is_some() {
@@ -1255,17 +1255,30 @@ fn do_command(
                 .map_err(|_| ErrorKind::InvalidTxId(id.to_string()))?;
             wallet.lock().cancel(id)?;
         }
+        Some("getnextkey") => {
+            let args =  matches.subcommand_matches("getnextkey").unwrap();
+            let amount = args.value_of("amount").unwrap_or("0");
+            let amount = core::amount_from_hr_string(amount)?;
+            if amount <= 0 {
+                cli_message!("Error: amount greater than 0 must be specified");
+            }
+            else
+            {
+                wallet.lock().getnextkey(amount)?;
+            }
+        }
         Some("receive") => {
             let args = matches.subcommand_matches("receive").unwrap();
+            let key_id = args.value_of("key_id");
             let input = args.value_of("file").unwrap();
             let mut file = File::open(input.replace("~", &home_dir))?;
             let mut slate = String::new();
             file.read_to_string(&mut slate)?;
             let mut slate = Slate::deserialize_upgrade(&slate)?;
             let mut file = File::create(&format!("{}.response", input.replace("~", &home_dir)))?;
-            wallet
-                .lock()
-                .process_sender_initiated_slate(Some(String::from("file")), &mut slate)?;
+            let w = wallet.lock();
+            w.process_sender_initiated_slate(Some(String::from("file")), &mut slate, key_id)?;
+
 
             let message = &slate.participant_data[0].message;
             let amount = core::amount_to_hr_string(slate.amount, false);
@@ -1277,6 +1290,17 @@ fn do_command(
             }
             file.write_all(serde_json::to_string(&slate)?.as_bytes())?;
             cli_message!("{}.response created successfully.", input);
+        }
+        Some("showpubkeys") => {
+            let args = matches.subcommand_matches("showpubkeys").unwrap();
+            let input = args.value_of("file").unwrap();
+            let mut file = File::open(input.replace("~", &home_dir))?;
+            let mut slate = String::new();
+            file.read_to_string(&mut slate)?;
+            let slate = Slate::deserialize_upgrade(&slate)?;
+            for p in slate.participant_data {
+                println!("pubkey[{}]={:?}", p.id, p.public_blind_excess);
+            }
         }
         Some("finalize") => {
             let args = matches.subcommand_matches("finalize").unwrap();

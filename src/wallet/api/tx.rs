@@ -15,6 +15,7 @@ pub fn receive_tx<T: ?Sized, C, K>(
     slate: &mut Slate,
     parent_key_id: &Identifier,
     message: Option<String>,
+    key_id: Option<&str>,
 ) -> Result<(), Error>
 where
     T: WalletBackend<C, K>,
@@ -27,6 +28,7 @@ where
         address,
         slate,
         parent_key_id.clone(),
+        key_id,
     )?;
 
     // fill public keys
