@@ -149,6 +149,7 @@ pub fn build_recipient_output_with_slate<T: ?Sized, C, K>(
     address: Option<String>,
     slate: &mut Slate,
     parent_key_id: Identifier,
+    key_id: Option<&str>,
 ) -> Result<
     (
         Identifier,
@@ -163,8 +164,13 @@ where
     K: Keychain,
 {
     // Create a potential output for this transaction
-    let key_id = keys::next_available_key(wallet).unwrap();
-
+    let key_id = if key_id.is_some() {
+        let key_str = key_id.unwrap();
+        Identifier::from_hex(key_str).unwrap()
+    }
+    else {
+        keys::next_available_key(wallet).unwrap()
+    };
     let keychain = wallet.keychain().clone();
     let key_id_inner = key_id.clone();
     let amount = slate.amount;

@@ -50,6 +50,20 @@ impl Wallet {
         Ok(())
     }
 
+    pub fn getnextkey(
+        &mut self,
+        amount: u64,
+    ) -> Result<()> {
+        let wallet = self.get_wallet_instance()?;
+
+        controller::owner_single_use(wallet.clone(), |api| {
+            let key = api.getnextkey(amount)?;
+            println!("{:?}", key);
+            Ok(())
+        })?;
+        Ok(())
+    }
+
     pub fn node_info(
         &mut self) -> Result<()> {
         // get wallet instance
@@ -417,10 +431,11 @@ impl Wallet {
         &self,
         address: Option<String>,
         slate: &mut Slate,
+        key_id: Option<&str>,
     ) -> Result<()> {
         let wallet = self.get_wallet_instance()?;
         controller::foreign_single_use(wallet.clone(), |api| {
-            api.receive_tx(address, slate, None)?;
+            api.receive_tx(address, slate, None, key_id)?;
             Ok(())
         })
         .map_err(|_| ErrorKind::GrinWalletReceiveError)?;

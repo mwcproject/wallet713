@@ -296,8 +296,25 @@ impl<'a, 'b> Parser {
 
             )
             .subcommand(
+                SubCommand::with_name("getnextkey")
+                    .about("gets a key, prints its identifier and pubkey")
+                    .arg(
+                        Arg::from_usage("-a, --amount=<amount> 'amount for determining pubkey in nanomwc'")
+                    )
+            )
+            .subcommand(
                 SubCommand::with_name("receive")
                     .about("receives a sender initiated slate from file and produces signed slate")
+                    .arg(
+                        Arg::from_usage("-f, --file=<file> 'the slate file'")
+                    )
+                    .arg(
+                        Arg::from_usage("[key_id] -k, --key_id=<key_id> 'optional key id for this transaction. Be careful about using this.'")
+                    )
+            )
+            .subcommand(
+                SubCommand::with_name("showpubkeys")
+                    .about("prints the public keys of a specified slate file")
                     .arg(
                         Arg::from_usage("-f, --file=<file> 'the slate file'")
                     )

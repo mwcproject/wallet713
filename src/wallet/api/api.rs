@@ -95,6 +95,17 @@ where
         w.close()?;
         res
     }
+    pub fn getnextkey(&self, amount: u64) -> Result<String, Error>
+    where
+                K: Keychain {
+        let amount = amount / 1000000000;
+        let mut w = self.wallet.lock();
+        let id = keys::next_available_key(&mut *w)?;
+        let sec_key = w.keychain().derive_key(amount, &id)?;
+        let pubkey = PublicKey::from_secret_key(w.keychain().secp(), &sec_key)?;
+        let ret = format!("{:?}, {:?}", id, pubkey);
+        Ok(ret)
+    }
 
     pub fn accounts(&self) -> Result<Vec<AcctPathMapping>, Error> {
         let mut w = self.wallet.lock();
@@ -643,6 +654,7 @@ where
         address: Option<String>,
         slate: &mut Slate,
         message: Option<String>,
+        key_id: Option<&str>,
     ) -> Result<(), Error> {
         let mut w = self.wallet.lock();
         w.open_with_credentials()?;
@@ -654,7 +666,7 @@ where
                 return Err(ErrorKind::TransactionAlreadyReceived(slate.id.to_string()).into());
             }
         }
-        let res = tx::receive_tx(&mut *w, address, slate, &parent_key_id, message);
+        let res = tx::receive_tx(&mut *w, address, slate, &parent_key_id, message, key_id);
         w.close()?;
 
         if let Err(e) = res {
