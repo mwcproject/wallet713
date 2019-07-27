@@ -633,7 +633,7 @@ fn main() {
                 println!("Set an optional password to secure your wallet with. Leave blank for no password.");
                 println!();
                 let cmd = format!("init -p {}", &passphrase);
-                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut grinbox_broker, &mut out_is_safe) {
+                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut grinbox_broker, &mut out_is_safe, &mut false) {
                     println!("{}: {}", "ERROR".bright_red(), err);
                     std::process::exit(1);
                 }
@@ -661,7 +661,7 @@ fn main() {
                 println!();
                 // TODO: refactor this
                 let cmd = format!("recover -m {} -p {}", mnemonic, &passphrase);
-                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut grinbox_broker, &mut out_is_safe) {
+                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut grinbox_broker, &mut out_is_safe, &mut false) {
                     println!("{}: {}", "ERROR".bright_red(), err);
                     std::process::exit(1);
                 }
@@ -854,6 +854,7 @@ fn main() {
     }
 
     let prompt_plus = matches.value_of("ready-phrase").unwrap_or("").to_string();
+    let mut first: bool = true;
 
     loop {
         if ! prompt_plus.is_empty() {
@@ -877,7 +878,10 @@ fn main() {
                     &mut keybase_broker,
                     &mut grinbox_broker,
                     &mut out_is_safe,
+                    &mut first,
                 );
+
+                first = false;
 
                 if let Err(err) = result {
                     cli_message!("{}", err);
@@ -981,6 +985,7 @@ fn do_command(
     keybase_broker: &mut Option<(KeybasePublisher, KeybaseSubscriber)>,
     grinbox_broker: &mut Option<(GrinboxPublisher, GrinboxSubscriber)>,
     out_is_safe: &mut bool,
+    first: &mut bool,
 ) -> Result<()> {
     *out_is_safe = true;
     let home_dir = dirs::home_dir()
@@ -1256,15 +1261,21 @@ fn do_command(
             wallet.lock().cancel(id)?;
         }
         Some("getnextkey") => {
-            let args =  matches.subcommand_matches("getnextkey").unwrap();
-            let amount = args.value_of("amount").unwrap_or("0");
-            let amount = core::amount_from_hr_string(amount)?;
-            if amount <= 0 {
-                cli_message!("Error: amount greater than 0 must be specified");
+            if *first {
+                let args =  matches.subcommand_matches("getnextkey").unwrap();
+                let amount = args.value_of("amount").unwrap_or("0");
+                let amount = core::amount_from_hr_string(amount)?;
+                if amount <= 0 {
+                    cli_message!("Error: amount greater than 0 must be specified");
+                }
+                else
+                {
+                    wallet.lock().getnextkey(amount)?;
+                }
+                std::process::exit(0);
             }
-            else
-            {
-                wallet.lock().getnextkey(amount)?;
+            else {
+                println!("getnextkey may only be run as the first command. Please exit and retry");
             }
         }
         Some("receive") => {
