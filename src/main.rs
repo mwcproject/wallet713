@@ -633,7 +633,7 @@ fn main() {
                 println!("Set an optional password to secure your wallet with. Leave blank for no password.");
                 println!();
                 let cmd = format!("init -p {}", &passphrase);
-                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut grinbox_broker, &mut out_is_safe, &mut false) {
+                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut grinbox_broker, &mut out_is_safe, &mut false, &mut false) {
                     println!("{}: {}", "ERROR".bright_red(), err);
                     std::process::exit(1);
                 }
@@ -661,7 +661,7 @@ fn main() {
                 println!();
                 // TODO: refactor this
                 let cmd = format!("recover -m {} -p {}", mnemonic, &passphrase);
-                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut grinbox_broker, &mut out_is_safe, &mut false) {
+                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut grinbox_broker, &mut out_is_safe, &mut false, &mut false) {
                     println!("{}: {}", "ERROR".bright_red(), err);
                     std::process::exit(1);
                 }
@@ -855,6 +855,7 @@ fn main() {
 
     let prompt_plus = matches.value_of("ready-phrase").unwrap_or("").to_string();
     let mut first: bool = true;
+    let mut was_init_or_getnextkey: bool = false;
 
     loop {
         if ! prompt_plus.is_empty() {
@@ -879,9 +880,12 @@ fn main() {
                     &mut grinbox_broker,
                     &mut out_is_safe,
                     &mut first,
+                    &mut was_init_or_getnextkey,
                 );
 
-                first = false;
+                if was_init_or_getnextkey == false {
+                    first = false;
+                }
 
                 if let Err(err) = result {
                     cli_message!("{}", err);
@@ -986,7 +990,9 @@ fn do_command(
     grinbox_broker: &mut Option<(GrinboxPublisher, GrinboxSubscriber)>,
     out_is_safe: &mut bool,
     first: &mut bool,
+    was_init_or_getnext_key: &mut bool,
 ) -> Result<()> {
+    *was_init_or_getnext_key = false;
     *out_is_safe = true;
     let home_dir = dirs::home_dir()
         .map(|p| p.to_str().unwrap().to_string())
@@ -1029,6 +1035,7 @@ fn do_command(
             show_address(config, true)?;
         }
         Some("init") => {
+            *was_init_or_getnext_key = true;
             *out_is_safe = false;
             if keybase_broker.is_some() || grinbox_broker.is_some() {
                 return Err(ErrorKind::HasListener.into());
@@ -1261,6 +1268,7 @@ fn do_command(
             wallet.lock().cancel(id)?;
         }
         Some("getnextkey") => {
+            *was_init_or_getnext_key = true;
             if *first {
                 let args =  matches.subcommand_matches("getnextkey").unwrap();
                 let amount = args.value_of("amount").unwrap_or("0");
