@@ -1280,7 +1280,7 @@ fn do_command(
                 {
                     wallet.lock().getnextkey(amount)?;
                 }
-                std::process::exit(0);
+                //std::process::exit(0);
             }
             else {
                 println!("getnextkey may only be run as the first command. Please exit and retry");
