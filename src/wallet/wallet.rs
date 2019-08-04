@@ -632,7 +632,7 @@ impl Wallet {
         let wallet_config = config.as_wallet_config()?;
         let node_client = HTTPNodeClient::new(
             &wallet_config.check_node_api_http_addr,
-            config.grin_node_secret().clone(),
+            config.mwc_node_secret().clone(),
         );
         let _ = WalletSeed::from_file(&wallet_config, passphrase)?;
         let mut db_wallet = Backend::new(&wallet_config, passphrase, node_client)?;
@@ -649,7 +649,7 @@ impl Wallet {
     ) -> Result<Backend<HTTPNodeClient, ExtKeychain>> {
         let node_api_client = HTTPNodeClient::new(
             &wallet_config.check_node_api_http_addr,
-            wallet713_config.grin_node_secret().clone(),
+            wallet713_config.mwc_node_secret().clone(),
         );
         let backend = Backend::new(wallet_config, passphrase, node_api_client)?;
         Ok(backend)

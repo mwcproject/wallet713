@@ -140,12 +140,12 @@ fn do_config(
     }
 
     if let Some(node_uri) = args.value_of("node-uri") {
-        config.grin_node_uri = Some(node_uri.to_string());
+        config.mwc_node_uri = Some(node_uri.to_string());
         any_matches = true;
     }
 
     if let Some(node_secret) = args.value_of("node-secret") {
-        config.grin_node_secret = Some(node_secret.to_string());
+        config.mwc_node_secret = Some(node_secret.to_string());
         any_matches = true;
     }
 
