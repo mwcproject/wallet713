@@ -50,8 +50,9 @@ extern crate grin_p2p;
 use std::env;
 use std::borrow::Cow::{self, Borrowed, Owned};
 use std::fs::File;
+use std::io::prelude::*;
 use std::io;
-use std::io::{Read, Write};
+use std::io::{Read, Write, BufReader};
 use std::path::Path;
 
 use clap::{App, Arg, ArgMatches, SubCommand};
@@ -275,7 +276,7 @@ impl Controller {
                             w.unlock(&config.clone().unwrap(), &RECV_ACCOUNT.clone().unwrap(), &"".to_string())?;
                         }
                     }
-                    w.process_sender_initiated_slate(address, slate, None)?;
+                    w.process_sender_initiated_slate(address, slate, None, None)?;
 
                     if config.is_some() && RECV_ACCOUNT.is_some() {
                         if RECV_PASS.is_some() {
@@ -1290,13 +1291,41 @@ fn do_command(
             let args = matches.subcommand_matches("receive").unwrap();
             let key_id = args.value_of("key_id");
             let input = args.value_of("file").unwrap();
+            let rfile_param = args.value_of("recv_file");
             let mut file = File::open(input.replace("~", &home_dir))?;
             let mut slate = String::new();
             file.read_to_string(&mut slate)?;
             let mut slate = Slate::deserialize_upgrade(&slate)?;
             let mut file = File::create(&format!("{}.response", input.replace("~", &home_dir)))?;
+
+            let output_amounts = if rfile_param.is_some() {
+                let mut nvec = Vec::new();
+                let rfile = File::open(rfile_param.unwrap().replace("~", &home_dir))?;
+                let mut buf = BufReader::new(rfile);
+                let mut done = false; // mut done: bool
+
+                while !done {
+                    let mut line = String::new();
+                    let len = buf.read_line(&mut line)?;
+
+                    if len == 0 {
+                        done = true;
+                    }
+                    else
+                    {
+                        line = line.trim().to_string();
+                        nvec.push(line.parse::<u64>()?);
+                    }
+
+                }
+                Some(nvec)
+            }
+            else {
+                None
+            };
+
             let w = wallet.lock();
-            w.process_sender_initiated_slate(Some(String::from("file")), &mut slate, key_id)?;
+            w.process_sender_initiated_slate(Some(String::from("file")), &mut slate, key_id, output_amounts)?;
 
 
             let message = &slate.participant_data[0].message;
@@ -1344,6 +1373,9 @@ fn do_command(
             if strategy != "smallest" && strategy != "all" && strategy != "custom" {
                 return Err(ErrorKind::InvalidStrategy.into());
             }
+
+            let routputs_arg = args.value_of("routputs").unwrap_or("1");
+            let routputs = usize::from_str_radix(routputs_arg, 10)?;
 
             let outputs_arg = args.value_of("outputs");
 
@@ -1407,6 +1439,7 @@ fn do_command(
                     message,
                     output_list,
                     version,
+                    routputs,
                 )?;
                 file.write_all(serde_json::to_string(&slate)?.as_bytes())?;
                 cli_message!("{} created successfully.", input);
@@ -1448,6 +1481,7 @@ fn do_command(
                             message,
                             output_list,
                             version,
+                            1,
                         )?;
                         let mut keybase_address =
                             contacts::KeybaseAddress::from_str(&to.to_string())?;
@@ -1470,6 +1504,7 @@ fn do_command(
                             message,
                             output_list,
                             version,
+                            1,
                         )?;
                         publisher.post_slate(&slate, to.borrow())?;
                         slate
@@ -1490,6 +1525,7 @@ fn do_command(
                         message,
                         output_list,
                         version,
+                        1,
                     )?;
                     let slate_res = post(url.as_str(), None, &slate)
                         .map_err(|_| ErrorKind::HttpRequest)?;

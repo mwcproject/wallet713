@@ -261,6 +261,7 @@ where
         message: Option<String>,
         outputs: Option<Vec<&str>>,
         version: Option<u16>,
+        routputs: usize,
     ) -> Result<
         (
             Slate,
@@ -283,6 +284,7 @@ where
             message,
             outputs,
             version,
+            routputs,
         )?;
 
         for input in slate.tx.inputs() {
@@ -655,6 +657,7 @@ where
         slate: &mut Slate,
         message: Option<String>,
         key_id: Option<&str>,
+        output_amounts: Option<Vec<u64>>,
     ) -> Result<(), Error> {
         let mut w = self.wallet.lock();
         w.open_with_credentials()?;
@@ -666,7 +669,7 @@ where
                 return Err(ErrorKind::TransactionAlreadyReceived(slate.id.to_string()).into());
             }
         }
-        let res = tx::receive_tx(&mut *w, address, slate, &parent_key_id, message, key_id);
+        let res = tx::receive_tx(&mut *w, address, slate, &parent_key_id, message, key_id, output_amounts);
         w.close()?;
 
         if let Err(e) = res {

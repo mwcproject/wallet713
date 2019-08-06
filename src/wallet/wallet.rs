@@ -340,6 +340,7 @@ impl Wallet {
         message: Option<String>,
         outputs: Option<Vec<&str>>,
         version: Option<u16>,
+        routputs: usize,
     ) -> Result<Slate> {
         let wallet = self.get_wallet_instance()?;
         let mut s: Slate = Slate::blank(0);
@@ -354,6 +355,7 @@ impl Wallet {
                 message,
                 outputs,
                 version,
+                routputs,
             )?;
             api.tx_lock_outputs(&slate.tx, lock_fn)?;
             s = slate;
@@ -432,10 +434,11 @@ impl Wallet {
         address: Option<String>,
         slate: &mut Slate,
         key_id: Option<&str>,
+        output_amounts: Option<Vec<u64>>,
     ) -> Result<()> {
         let wallet = self.get_wallet_instance()?;
         controller::foreign_single_use(wallet.clone(), |api| {
-            api.receive_tx(address, slate, None, key_id)?;
+            api.receive_tx(address, slate, None, key_id, output_amounts)?;
             Ok(())
         })
         .map_err(|_| ErrorKind::GrinWalletReceiveError)?;

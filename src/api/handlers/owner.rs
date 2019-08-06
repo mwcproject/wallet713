@@ -313,6 +313,7 @@ pub fn handle_issue_send_tx(state: &State, body: &Chunk) -> Result<Response<Body
                 body.message,
                 None,
                 body.version,
+                1,
             )?;
             serde_json::to_string(&slate)?
         }
@@ -333,6 +334,7 @@ pub fn handle_issue_send_tx(state: &State, body: &Chunk) -> Result<Response<Body
                 body.message,
                 None,
                 body.version,
+                1,
             )?;
             publisher.post_slate(&slate, &address)?;
             serde_json::to_string(&slate)?
@@ -354,6 +356,7 @@ pub fn handle_issue_send_tx(state: &State, body: &Chunk) -> Result<Response<Body
                 body.message,
                 None,
                 body.version,
+                1,
             )?;
             publisher.post_slate(&slate, &address)?;
             serde_json::to_string(&slate)?
@@ -373,6 +376,7 @@ pub fn handle_issue_send_tx(state: &State, body: &Chunk) -> Result<Response<Body
                 body.message,
                 None,
                 body.version,
+                1,
             )?;
             let slate = post(url.as_str(), None, &slate)?;
             let mut slate = Slate::deserialize_upgrade(&slate)?;
@@ -397,6 +401,7 @@ pub fn handle_issue_send_tx(state: &State, body: &Chunk) -> Result<Response<Body
                 body.message,
                 None,
                 body.version,
+                1,
             )?;
             let json = serde_json::to_string(&slate)?;
             file.write_all(json.as_bytes())?;

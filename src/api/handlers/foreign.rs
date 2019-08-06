@@ -28,7 +28,7 @@ fn handle_receive_tx(state: &State, body: &Chunk) -> Result<Response<Body>> {
     trace_state_and_body(state, body);
     let mut slate = Slate::deserialize_upgrade(&String::from_utf8(body.to_vec())?)?;
     let wallet = WalletContainer::borrow_from(&state).lock()?;
-    wallet.process_sender_initiated_slate(None, &mut slate, None)?;
+    wallet.process_sender_initiated_slate(None, &mut slate, None, None)?;
     Ok(trace_create_response(
         &state,
         StatusCode::OK,
