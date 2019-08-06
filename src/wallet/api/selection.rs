@@ -23,6 +23,7 @@ pub fn build_send_tx_slate<T: ?Sized, C, K>(
     parent_key_id: Identifier,
     outputs: Option<Vec<&str>>,
     version: Option<u16>,
+    routputs: usize,
 ) -> Result<
     (
         Slate,
@@ -39,7 +40,7 @@ where
     let (elems, inputs, change_amounts_derivations, amount, fee) = select_send_tx(
         wallet,
         amount,
-        1,
+        routputs,
         current_height,
         minimum_confirmations,
         lock_height,
@@ -149,10 +150,10 @@ pub fn build_recipient_output_with_slate<T: ?Sized, C, K>(
     address: Option<String>,
     slate: &mut Slate,
     parent_key_id: Identifier,
-    key_id: Option<&str>,
+    key_id_opt: Option<&str>,
+    output_amounts: Option<Vec<u64>>,
 ) -> Result<
     (
-        Identifier,
         Context,
         impl FnOnce(&mut T) -> Result<(), Error>,
     ),
@@ -163,23 +164,67 @@ where
     C: NodeClient,
     K: Keychain,
 {
-    // Create a potential output for this transaction
-    let key_id = if key_id.is_some() {
-        let key_str = key_id.unwrap();
-        Identifier::from_hex(key_str).unwrap()
+    let mut key_vec = Vec::new();
+    let len;
+    let mut output_vec_multi = Vec::new();
+
+    if output_amounts.is_some() {
+        let mut i = 0;
+        let output_amounts_unwrapped = output_amounts.clone().unwrap();
+        len = output_amounts_unwrapped.len();
+        let mut sum = 0;
+        while i<len {
+            let oaui = output_amounts_unwrapped[i];
+            sum = sum + oaui;
+            output_vec_multi.push(oaui);
+            key_vec.push(keys::next_available_key(wallet).unwrap());
+            i = i + 1;
+        }
+        if sum != slate.amount {
+            println!("mismatch sum = {}, amount = {}", sum, slate.amount);
+            return Err(ErrorKind::AmountMismatch {
+                amount: slate.amount,
+                sum: sum,
+            })?;
+        }
     }
-    else {
-        keys::next_available_key(wallet).unwrap()
-    };
+    else
+    {
+        len = 1;
+        output_vec_multi.push(slate.amount);
+        let key_id = if key_id_opt.is_some() {
+            let key_str = key_id_opt.unwrap();
+            Identifier::from_hex(key_str).unwrap()
+        }
+        else {
+            keys::next_available_key(wallet).unwrap()
+        };
+        key_vec.push(key_id);
+    }
+
+    let key_vec_cloned = key_vec.clone();
+
     let keychain = wallet.keychain().clone();
-    let key_id_inner = key_id.clone();
     let amount = slate.amount;
     let height = slate.height;
 
     let slate_id = slate.id.clone();
-    let blinding =
-        slate.add_transaction_elements(&keychain, vec![build::output(amount, key_id.clone())])?;
 
+    let mut out_vec = Vec::new();
+    let mut i = 0;
+
+    if output_amounts.is_some() {
+        for ao in output_amounts.unwrap() {
+            out_vec.push(build::output(ao, key_vec[i].clone()));
+            i = i + 1;
+        }
+    }
+    else
+    {
+        out_vec.push(build::output(amount, key_vec[0].clone()));
+    }
+
+    let blinding = slate.add_transaction_elements(&keychain, out_vec)?;
     // Add blinding sum to our context
     let mut context = Context::new(
         keychain.secp(),
@@ -189,37 +234,52 @@ where
         ContextType::Tx,
     );
 
-    context.add_output(&key_id, &None);
+    for key_id in key_vec {
+        context.add_output(&key_id, &None);
+    }
 
     // Create closure that adds the output to recipient's wallet
     // (up to the caller to decide when to do)
     let wallet_add_fn = move |wallet: &mut T| {
-        let commit = wallet.calc_commit_for_cache(amount, &key_id_inner)?;
+        let mut commit_vec = Vec::new();
+        let mut i = 0;
+        for key_id_inner in key_vec_cloned.clone() {
+            let commit = wallet.calc_commit_for_cache(output_vec_multi[i], &key_id_inner)?;
+            i = i + 1;
+            commit_vec.push(commit);
+        }
+
         let mut batch = wallet.batch()?;
         let log_id = batch.next_tx_log_id(&parent_key_id)?;
         let mut t = TxLogEntry::new(parent_key_id.clone(), TxLogEntryType::TxReceived, log_id);
         t.tx_slate_id = Some(slate_id);
         t.address = address;
         t.amount_credited = amount;
-        t.num_outputs = 1;
-        batch.save_output(&OutputData {
-            root_key_id: parent_key_id.clone(),
-            key_id: key_id_inner.clone(),
-            n_child: key_id_inner.to_path().last_path_index(),
-            commit,
-            mmr_index: None,
-            value: amount,
-            status: OutputStatus::Unconfirmed,
-            height: height,
-            lock_height: 0,
-            is_coinbase: false,
-            tx_log_entry: Some(log_id),
-        })?;
+        t.num_outputs = len;
         batch.save_tx_log_entry(&t)?;
+
+        let mut i = 0;
+        for key_id_inner in key_vec_cloned {
+            let commit = commit_vec[i].clone();
+            batch.save_output(&OutputData {
+                root_key_id: parent_key_id.clone(),
+                key_id: key_id_inner.clone(),
+                n_child: key_id_inner.to_path().last_path_index(),
+                commit,
+                mmr_index: None,
+                value: output_vec_multi[i],
+                status: OutputStatus::Unconfirmed,
+                height: height,
+                lock_height: 0,
+                is_coinbase: false,
+                tx_log_entry: Some(log_id),
+            })?;
+            i = i + 1;
+        }
         batch.commit()?;
         Ok(())
     };
-    Ok((key_id, context, wallet_add_fn))
+    Ok((context, wallet_add_fn))
 }
 
 fn select_send_tx<T: ?Sized, C, K>(

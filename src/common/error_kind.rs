@@ -18,6 +18,9 @@ pub enum ErrorKind {
     WalletShouldBeEmpty,
     #[fail(display = "\x1b[31;1merror:\x1b[0m default account cannot be renamed!")]
     AccountDefaultCannotBeRenamed,
+    #[fail(display = "\x1b[31;1merror:\x1b[0m Amount specified does not match slate! slate = {} / sum = {}",
+                           amount, sum)]
+    AmountMismatch { amount: u64, sum: u64 } ,
     #[fail(
         display = "\x1b[31;1merror:\x1b[0m transaction with slate id {} already received!",
         0

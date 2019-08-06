@@ -240,6 +240,9 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("[version] -v, --version=<version> 'the slate version. Default: latest version'")
                     )
+                    .arg(
+                         Arg::from_usage("[routputs] -r, --r-outputs=<routputs> 'number of outputs for the recipient. default 1.'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("invoice")
@@ -310,6 +313,9 @@ impl<'a, 'b> Parser {
                     )
                     .arg(
                         Arg::from_usage("[key_id] -k, --key_id=<key_id> 'optional key id for this transaction. Be careful about using this.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[recv_file] -r, --recv_file=<recv_file> 'optional receive file with line by line output sizes in nanomwc.'")
                     )
             )
             .subcommand(
