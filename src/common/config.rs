@@ -31,8 +31,8 @@ pub struct Wallet713Config {
     pub mwcmq_port: Option<u16>,
     pub grinbox_protocol_unsecure: Option<bool>,
     pub grinbox_address_index: Option<u32>,
-    pub grin_node_uri: Option<String>,
-    pub grin_node_secret: Option<String>,
+    pub mwc_node_uri: Option<String>,
+    pub mwc_node_secret: Option<String>,
     pub grinbox_listener_auto_start: Option<bool>,
     pub keybase_listener_auto_start: Option<bool>,
     pub max_auto_accept_invoice: Option<u64>,
@@ -118,7 +118,7 @@ impl Wallet713Config {
         let mut wallet_config = WalletConfig::default();
         wallet_config.chain_type = self.chain.clone();
         wallet_config.data_file_dir = data_path.to_string();
-        wallet_config.check_node_api_http_addr = self.grin_node_uri().clone();
+        wallet_config.check_node_api_http_addr = self.mwc_node_uri().clone();
         Ok(wallet_config)
     }
 
@@ -166,18 +166,18 @@ impl Wallet713Config {
         Ok(data_path)
     }
 
-    pub fn grin_node_uri(&self) -> String {
+    pub fn mwc_node_uri(&self) -> String {
         let chain_type = self.chain.as_ref().unwrap_or(&ChainTypes::Floonet);
-        self.grin_node_uri.clone().unwrap_or(match chain_type {
+        self.mwc_node_uri.clone().unwrap_or(match chain_type {
             ChainTypes::Mainnet => String::from("https://mwc713.mwc.mw"),
             _ => String::from("https://mwc713.mwc.mw"),
         })
     }
 
-    pub fn grin_node_secret(&self) -> Option<String> {
+    pub fn mwc_node_secret(&self) -> Option<String> {
         let chain_type = self.chain.as_ref().unwrap_or(&ChainTypes::Mainnet);
-        match self.grin_node_uri {
-            Some(_) => self.grin_node_secret.clone(),
+        match self.mwc_node_uri {
+            Some(_) => self.mwc_node_secret.clone(),
             None => match chain_type {
                 ChainTypes::Mainnet => Some(String::from("11ne3EAUtOXVKwhxm84U")),
                 _ => Some(String::from("11ne3EAUtOXVKwhxm84U")),
@@ -230,11 +230,11 @@ impl Wallet713Config {
 
 impl fmt::Display for Wallet713Config {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "wallet713_data_path={}\nmwcmq_domain={}\nmwcmq_port={}\ngrin_node_uri={}\ngrin_node_secret={}",
+        write!(f, "wallet713_data_path={}\nmwcmq_domain={}\nmwcmq_port={}\nmwc_node_uri={}\nmwc_node_secret={}",
                self.wallet713_data_path,
                self.mwcmq_domain,
                self.mwcmq_port.unwrap_or(DEFAULT_GRINBOX_PORT),
-               self.grin_node_uri.clone().unwrap_or(String::from("provided by vault713")),
+               self.mwc_node_uri.clone().unwrap_or(String::from("provided by vault713")),
                "{...}")?;
         Ok(())
     }
