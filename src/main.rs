@@ -298,7 +298,7 @@ impl Controller {
 
 impl SubscriptionHandler for Controller {
     fn on_open(&self) {
-        cli_message!("listener started for [{}]", self.name.bright_green());
+        //println!("listener started for [{}]", self.name.bright_green());
     }
 
     fn on_slate(&self, from: &Address, slate: &mut Slate, tx_proof: Option<&mut TxProof>, config: Option<Wallet713Config>) {
@@ -411,7 +411,7 @@ fn start_grinbox_listener(
         }
     }
 
-    cli_message!("starting mwcmq listener...");
+    println!("starting mwcmq listener...");
     let grinbox_address = config.get_grinbox_address()?;
     let grinbox_secret_key = config.get_grinbox_secret_key()?;
 
@@ -500,8 +500,31 @@ impl Hinter for EditorHelper {
 }
 
 impl Highlighter for EditorHelper {
-    fn highlight_prompt<'b, 's: 'b, 'p: 'b>(&self, prompt: &'p str, _default: bool) -> Cow<'p, str> {
-        if prompt == PROMPT {
+    fn highlight<'l>(&self, line: &'l str, pos: usize) -> Cow<'l, str> {
+        self.1.highlight(line, pos)
+    }
+
+    fn highlight_prompt<'b, 's: 'b, 'p: 'b>(&'s self, prompt: &'p str, default: bool) -> Cow<'b, str> {
+        if default {
+            Borrowed(COLORED_PROMPT)
+        } else {
+            Borrowed(prompt)
+        }
+    }
+
+    fn highlight_hint<'h>(&self, hint: &'h str) -> Cow<'h, str> {
+        Owned("\x1b[1m".to_owned() + hint + "\x1b[m")
+    }
+
+    fn highlight_char(&self, line: &str, pos: usize) -> bool {
+        self.1.highlight_char(line, pos)
+    }
+}
+
+/*
+impl Highlighter for EditorHelper {
+    fn highlight_prompt<'b, 's: 'b, 'p: 'b>(&'s self, prompt: &'p str, default: bool) -> Cow<'b, str> {
+        if default {
             Borrowed(COLORED_PROMPT)
         } else {
             Borrowed(prompt)
@@ -520,6 +543,7 @@ impl Highlighter for EditorHelper {
         self.1.highlight_char(line, pos)
     }
 }
+*/
 
 impl Helper for EditorHelper {}
 
@@ -719,7 +743,7 @@ fn main() {
         }
     }
 
-    cli_message!("{}", WELCOME_FOOTER.bright_blue());
+    println!("{}", WELCOME_FOOTER.bright_blue());
 
     let mut grinbox_listener_handle: Option<std::thread::JoinHandle<()>> = None;
     let mut keybase_listener_handle: Option<std::thread::JoinHandle<()>> = None;

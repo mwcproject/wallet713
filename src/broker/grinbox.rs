@@ -237,7 +237,7 @@ impl GrinboxBroker {
     fn stop(&self) {
         let mut guard = self.inner.lock();
         if let Some(ref sender) = *guard {
-            let _ = sender.close(CloseCode::Normal).is_ok();
+            let _ = sender.close(CloseCode::Normal);
         }
         *guard = None;
     }
