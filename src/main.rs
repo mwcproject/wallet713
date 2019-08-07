@@ -298,7 +298,7 @@ impl Controller {
 
 impl SubscriptionHandler for Controller {
     fn on_open(&self) {
-        //println!("listener started for [{}]", self.name.bright_green());
+        println!("listener started for [{}]", self.name.bright_green());
     }
 
     fn on_slate(&self, from: &Address, slate: &mut Slate, tx_proof: Option<&mut TxProof>, config: Option<Wallet713Config>) {
