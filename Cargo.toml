@@ -9,6 +9,7 @@ readme = "README.md"
 
 [dependencies]
 serde = "1.0"
+dont_disappear = "3.0.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 toml = "0.4"
