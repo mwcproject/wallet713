@@ -96,6 +96,7 @@ fn getpassword() -> Result<String> {
     if mwc_password.is_some() {
         return Ok(mwc_password.unwrap());
     }
+
     return Ok(rpassword::prompt_password_stdout("Password: ").unwrap_or(String::from("")));
 }
 
