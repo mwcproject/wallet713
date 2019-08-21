@@ -39,11 +39,11 @@ impl AddressBookBackend for Backend {
         .map_err(|e| e.into())
     }
 
-    fn contacts(&self) -> Box<Iterator<Item = Contact>> {
+    fn contacts(&self) -> Box<dyn Iterator<Item = Contact>> {
         Box::new(self.db.iter(&[CONTACT_PREFIX]).unwrap().map(|x| x.1))
     }
 
-    fn batch<'a>(&'a self) -> Result<Box<AddressBookBatch + 'a>, Error> {
+    fn batch<'a>(&'a self) -> Result<Box<dyn AddressBookBatch + 'a>, Error> {
         let batch = self.db.batch()?;
         let batch = Batch {
             _store: self,
@@ -98,7 +98,7 @@ impl Writeable for Contact {
 }
 
 impl Readable for Contact {
-    fn read(reader: &mut Reader) -> Result<Contact, CoreError> {
+    fn read(reader: &mut dyn Reader) -> Result<Contact, CoreError> {
         let data = reader.read_bytes_len_prefix()?;
         let data = std::str::from_utf8(&data).map_err(|_| CoreError::CorruptedData)?;
 

@@ -175,10 +175,10 @@ fn do_contacts(args: &ArgMatches, address_book: Arc<Mutex<AddressBook>>) -> Resu
 
         // try parse as a general address and fallback to mwcmq address
         let contact_address = Address::parse(address);
-        let contact_address: Result<Box<Address>> = match contact_address {
+        let contact_address: Result<Box<dyn Address>> = match contact_address {
             Ok(address) => Ok(address),
             Err(e) => {
-                Ok(Box::new(GrinboxAddress::from_str(address).map_err(|_| e)?) as Box<Address>)
+                Ok(Box::new(GrinboxAddress::from_str(address).map_err(|_| e)?) as Box<dyn Address>)
             }
         };
 
@@ -234,7 +234,7 @@ struct Controller {
     name: String,
     wallet: Arc<Mutex<Wallet>>,
     address_book: Arc<Mutex<AddressBook>>,
-    publisher: Box<Publisher + Send>,
+    publisher: Box<dyn Publisher + Send>,
 }
 
 impl Controller {
@@ -242,7 +242,7 @@ impl Controller {
         name: &str,
         wallet: Arc<Mutex<Wallet>>,
         address_book: Arc<Mutex<AddressBook>>,
-        publisher: Box<Publisher + Send>,
+        publisher: Box<dyn Publisher + Send>,
     ) -> Result<Self> {
         Ok(Self {
             name: name.to_string(),
@@ -302,7 +302,7 @@ impl SubscriptionHandler for Controller {
         println!("listener started for [{}]", self.name.bright_green());
     }
 
-    fn on_slate(&self, from: &Address, slate: &mut Slate, tx_proof: Option<&mut TxProof>, config: Option<Wallet713Config>) {
+    fn on_slate(&self, from: &dyn Address, slate: &mut Slate, tx_proof: Option<&mut TxProof>, config: Option<Wallet713Config>) {
         let mut display_from = from.stripped();
         if let Ok(contact) = self
             .address_book
@@ -1482,10 +1482,10 @@ fn do_command(
 
             // try parse as a general address and fallback to mwcmq address
             let address = Address::parse(&to);
-            let address: Result<Box<Address>> = match address {
+            let address: Result<Box<dyn Address>> = match address {
                 Ok(address) => Ok(address),
                 Err(e) => {
-                    Ok(Box::new(GrinboxAddress::from_str(&to).map_err(|_| e)?) as Box<Address>)
+                    Ok(Box::new(GrinboxAddress::from_str(&to).map_err(|_| e)?) as Box<dyn Address>)
                 }
             };
 
@@ -1597,10 +1597,10 @@ fn do_command(
 
             // try parse as a general address
             let address = Address::parse(&to);
-            let address: Result<Box<Address>> = match address {
+            let address: Result<Box<dyn Address>> = match address {
                 Ok(address) => Ok(address),
                 Err(e) => {
-                    Ok(Box::new(GrinboxAddress::from_str(&to).map_err(|_| e)?) as Box<Address>)
+                    Ok(Box::new(GrinboxAddress::from_str(&to).map_err(|_| e)?) as Box<dyn Address>)
                 }
             };
 

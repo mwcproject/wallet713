@@ -42,7 +42,7 @@ impl GrinboxPublisher {
 }
 
 impl Publisher for GrinboxPublisher {
-    fn post_slate(&self, slate: &Slate, to: &Address) -> Result<()> {
+    fn post_slate(&self, slate: &Slate, to: &dyn Address) -> Result<()> {
         let to = GrinboxAddress::from_str(&to.to_string())?;
         self.broker.post_slate(slate, &to, &self.address, &self.secret_key)?;
         Ok(())
@@ -69,7 +69,7 @@ impl GrinboxSubscriber {
 }
 
 impl Subscriber for GrinboxSubscriber {
-    fn start(&mut self, handler: Box<SubscriptionHandler + Send>) -> Result<()> {
+    fn start(&mut self, handler: Box<dyn SubscriptionHandler + Send>) -> Result<()> {
         self.broker
             .subscribe(&self.address, &self.secret_key, handler, self.config.clone())?;
         Ok(())
@@ -159,7 +159,7 @@ impl GrinboxBroker {
         &mut self,
         address: &GrinboxAddress,
         secret_key: &SecretKey,
-        handler: Box<SubscriptionHandler + Send>,
+        handler: Box<dyn SubscriptionHandler + Send>,
         config: Wallet713Config,
     ) -> Result<()> {
         let handler = Arc::new(Mutex::new(handler));
@@ -250,7 +250,7 @@ impl GrinboxBroker {
 
 struct GrinboxClient {
     sender: Sender,
-    handler: Arc<Mutex<Box<SubscriptionHandler + Send>>>,
+    handler: Arc<Mutex<Box<dyn SubscriptionHandler + Send>>>,
     challenge: Option<String>,
     address: GrinboxAddress,
     secret_key: SecretKey,
