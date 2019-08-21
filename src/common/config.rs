@@ -170,7 +170,7 @@ impl Wallet713Config {
         let chain_type = self.chain.as_ref().unwrap_or(&ChainTypes::Floonet);
         self.mwc_node_uri.clone().unwrap_or(match chain_type {
             ChainTypes::Mainnet => String::from("https://mwc713.mwc.mw"),
-            _ => String::from("https://mwc713.mwc.mw"),
+            _ => String::from("https://mwc713.floonet.mwc.mw"),
         })
     }
 
