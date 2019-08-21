@@ -34,8 +34,8 @@ pub trait Address: Debug + Display {
     fn stripped(&self) -> String;
 }
 
-impl Address {
-    pub fn parse(address: &str) -> Result<Box<Address>> {
+impl dyn Address {
+    pub fn parse(address: &str) -> Result<Box<dyn Address>> {
         let re = Regex::new(ADDRESS_REGEX)?;
         let captures = re.captures(address);
         if captures.is_none() {
@@ -44,7 +44,7 @@ impl Address {
 
         let captures = captures.unwrap();
         let address_type = captures.name("address_type").unwrap().as_str().to_string();
-        let address: Box<Address> = match address_type.as_ref() {
+        let address: Box<dyn Address> = match address_type.as_ref() {
             "keybase" => Box::new(KeybaseAddress::from_str(address)?),
             "mwcmq" => Box::new(GrinboxAddress::from_str(address)?),
             "https" => Box::new(HttpsAddress::from_str(address)?),
@@ -56,8 +56,8 @@ impl Address {
 
 pub trait AddressBookBackend {
     fn get_contact(&mut self, name: &[u8]) -> Result<Contact>;
-    fn contacts(&self) -> Box<Iterator<Item = Contact>>;
-    fn batch<'a>(&'a self) -> Result<Box<AddressBookBatch + 'a>>;
+    fn contacts(&self) -> Box<dyn Iterator<Item = Contact>>;
+    fn batch<'a>(&'a self) -> Result<Box<dyn AddressBookBatch + 'a>>;
 }
 
 pub trait AddressBookBatch {
@@ -67,11 +67,11 @@ pub trait AddressBookBatch {
 }
 
 pub struct AddressBook {
-    backend: Box<AddressBookBackend + Send>,
+    backend: Box<dyn AddressBookBackend + Send>,
 }
 
 impl AddressBook {
-    pub fn new(backend: Box<AddressBookBackend + Send>) -> Result<Self> {
+    pub fn new(backend: Box<dyn AddressBookBackend + Send>) -> Result<Self> {
         let address_book = Self { backend };
         Ok(address_book)
     }
@@ -108,7 +108,7 @@ impl AddressBook {
         Err(ErrorKind::ContactNotFound(address.to_string()))?
     }
 
-    pub fn contacts(&self) -> Box<Iterator<Item = Contact>> {
+    pub fn contacts(&self) -> Box<dyn Iterator<Item = Contact>> {
         self.backend.contacts()
     }
 }
@@ -120,7 +120,7 @@ pub struct Contact {
 }
 
 impl Contact {
-    pub fn new(name: &str, address: Box<Address>) -> Result<Self> {
+    pub fn new(name: &str, address: Box<dyn Address>) -> Result<Self> {
         Ok(Self {
             name: name.to_string(),
             address: address.to_string(),

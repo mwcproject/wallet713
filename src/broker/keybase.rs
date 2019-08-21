@@ -46,7 +46,7 @@ impl KeybaseSubscriber {
 }
 
 impl Publisher for KeybasePublisher {
-    fn post_slate(&self, slate: &Slate, to: &Address) -> Result<()> {
+    fn post_slate(&self, slate: &Slate, to: &dyn Address) -> Result<()> {
         let keybase_address = KeybaseAddress::from_str(&to.to_string())?;
 
         // make sure we don't send message with ttl to wallet713 as keybase oneshot does not support exploding lifetimes
@@ -67,7 +67,7 @@ impl Publisher for KeybasePublisher {
 }
 
 impl Subscriber for KeybaseSubscriber {
-    fn start(&mut self, handler: Box<SubscriptionHandler + Send>) -> Result<()> {
+    fn start(&mut self, handler: Box<dyn SubscriptionHandler + Send>) -> Result<()> {
         {
             let mut guard = self.stop_signal.lock();
             *guard = false;

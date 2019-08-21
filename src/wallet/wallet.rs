@@ -618,7 +618,7 @@ impl Wallet {
 
     pub fn get_wallet_instance(
         &self,
-    ) -> Result<Arc<Mutex<WalletInst<impl NodeClient + 'static, ExtKeychain>>>> {
+    ) -> Result<Arc<Mutex<dyn WalletInst<impl NodeClient + 'static, ExtKeychain>>>> {
         if let Some(ref backend) = self.backend {
             Ok(backend.clone())
         } else {
