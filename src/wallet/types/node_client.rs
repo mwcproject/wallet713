@@ -19,6 +19,7 @@ use grin_api::client;
 use grin_p2p::types::PeerInfoDisplay;
 use grin_util::secp::pedersen::{Commitment, RangeProof};
 use grin_util::to_hex;
+use grin_core::global;
 use std::collections::HashMap;
 use tokio::runtime::Runtime;
 
@@ -119,7 +120,13 @@ impl NodeClient for HTTPNodeClient {
 		} else {
 			url = format!("{}/v1/pool/push", dest);
 		}
-		let res = client::post_no_ret(url.as_str(), self.node_api_secret(), tx);
+		let res = if global::is_main() {
+                        client::post_no_ret(url.as_str(), self.node_api_secret(), tx, global::ChainTypes::Mainnet)
+                } else if global::is_floo() {
+                        client::post_no_ret(url.as_str(), self.node_api_secret(), tx, global::ChainTypes::Floonet)
+                } else {
+                        client::post_no_ret(url.as_str(), self.node_api_secret(), tx, global::ChainTypes::UserTesting)
+                };
 		if let Err(e) = res {
 			let report = format!("Posting transaction to node: {}", e);
 			error!("Post TX Error: {}", e);
@@ -132,7 +139,15 @@ impl NodeClient for HTTPNodeClient {
         fn get_connected_peer_info(&self) -> Result<Vec<PeerInfoDisplay>, grin_api::Error> {
                 let addr = self.node_url();
                 let url = format!("{}/v1/peers/connected", addr);
-                let peers = client::get::<Vec<PeerInfoDisplay>>(url.as_str(), self.node_api_secret());
+                
+                let peers = if global::is_main() {
+                        client::get::<Vec<PeerInfoDisplay>>(url.as_str(), self.node_api_secret(), global::ChainTypes::Mainnet)
+                } else if global::is_floo() {
+                        client::get::<Vec<PeerInfoDisplay>>(url.as_str(), self.node_api_secret(), global::ChainTypes::Floonet)
+                } else {
+                        client::get::<Vec<PeerInfoDisplay>>(url.as_str(), self.node_api_secret(), global::ChainTypes::UserTesting)
+                };
+                
                 peers
         }
 
@@ -140,7 +155,15 @@ impl NodeClient for HTTPNodeClient {
         fn get_total_difficulty(&self) -> Result<u64, Error> {
                 let addr = self.node_url();
                 let url = format!("{}/v1/chain", addr);
-                let res = client::get::<Tip>(url.as_str(), self.node_api_secret());
+
+                let res = if global::is_main() {
+                        client::get::<Tip>(url.as_str(), self.node_api_secret(), global::ChainTypes::Mainnet)
+                } else if global::is_floo() {
+                        client::get::<Tip>(url.as_str(), self.node_api_secret(), global::ChainTypes::Floonet)
+                } else {
+                        client::get::<Tip>(url.as_str(), self.node_api_secret(), global::ChainTypes::UserTesting)
+                };
+
                 match res {
                         Err(e) => {
                                 let report = format!("Getting chain difficulty from node: {}", e);
@@ -155,7 +178,13 @@ impl NodeClient for HTTPNodeClient {
 	fn get_chain_height(&self) -> Result<u64, Error> {
 		let addr = self.node_url();
 		let url = format!("{}/v1/chain", addr);
-		let res = client::get::<Tip>(url.as_str(), self.node_api_secret());
+                let res = if global::is_main() {
+                        client::get::<Tip>(url.as_str(), self.node_api_secret(), global::ChainTypes::Mainnet)
+                } else if global::is_floo() {
+                        client::get::<Tip>(url.as_str(), self.node_api_secret(), global::ChainTypes::Floonet)
+                } else {
+                        client::get::<Tip>(url.as_str(), self.node_api_secret(), global::ChainTypes::UserTesting)
+                };
 		match res {
 			Err(e) => {
 				let report = format!("Getting chain height from node: {}", e);
@@ -185,10 +214,26 @@ impl NodeClient for HTTPNodeClient {
 
 		for query_chunk in query_params.chunks(120) {
 			let url = format!("{}/v1/chain/outputs/byids?id={}", addr, query_chunk.join(","),);
-			tasks.push(client::get_async::<Vec<Output>>(
-				url.as_str(),
-				self.node_api_secret(),
-			));
+
+                        if global::is_main() {
+                                tasks.push(client::get_async::<Vec<Output>>(
+                                        url.as_str(),
+                                        self.node_api_secret(),
+                                        global::ChainTypes::Mainnet
+                                ));
+                        } else if global::is_floo() {
+                                tasks.push(client::get_async::<Vec<Output>>(
+                                        url.as_str(),
+                                        self.node_api_secret(),
+                                        global::ChainTypes::Floonet
+                                ));
+                        } else {
+                                tasks.push(client::get_async::<Vec<Output>>(
+                                        url.as_str(),
+                                        self.node_api_secret(),
+                                        global::ChainTypes::UserTesting
+                                ));
+                        }
 		}
 
 		let task = stream::futures_unordered(tasks).collect();
@@ -234,7 +279,15 @@ impl NodeClient for HTTPNodeClient {
 		let mut api_outputs: Vec<(Commitment, RangeProof, bool, u64, u64)> =
 			Vec::new();
 
-		match client::get::<OutputListing>(url.as_str(), self.node_api_secret()) {
+                let res = if global::is_main() {
+                        client::get::<OutputListing>(url.as_str(), self.node_api_secret(), global::ChainTypes::Mainnet)
+                } else if global::is_floo() {
+                        client::get::<OutputListing>(url.as_str(), self.node_api_secret(), global::ChainTypes::Floonet)
+                } else {
+                        client::get::<OutputListing>(url.as_str(), self.node_api_secret(), global::ChainTypes::UserTesting)
+                };
+
+		match res {
 			Ok(o) => {
 				for out in o.outputs {
 					let is_coinbase = match out.output_type {

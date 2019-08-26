@@ -1,6 +1,7 @@
 use colored::Colorize;
 use failure::Error;
 use grin_api::client;
+use grin_core::global;
 use semver::Version;
 use std::io;
 use std::io::Write;
@@ -20,10 +21,25 @@ pub struct MOTD {
 pub fn get_motd() -> Result<(), Error> {
     let crate_version = Version::parse(crate_version!())?;
 
-    let motd: MOTD = client::get(
-        "https://wallet.mwc.mw/motd.json",
-        None,
-    )?;
+    let motd: MOTD = if global::is_main() {
+        client::get(
+            "https://wallet.mwc.mw/motd.json",
+            None,
+            global::ChainTypes::Mainnet
+        )?
+    } else if global::is_floo() {
+        client::get(
+            "https://wallet.mwc.mw/motd.json",
+            None,
+            global::ChainTypes::Floonet
+        )?
+    } else {
+        client::get(
+            "https://wallet.mwc.mw/motd.json",
+            None,
+            global::ChainTypes::UserTesting
+        )?
+    };
 
     if let Some(version) = motd.version {
         if version > crate_version {
