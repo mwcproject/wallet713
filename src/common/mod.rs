@@ -12,6 +12,7 @@ pub use self::error_kind::ErrorKind;
 pub use self::macros::*;
 pub use failure::Error;
 use grin_api;
+use grin_core::global;
 pub use parking_lot::{Mutex, MutexGuard};
 use serde::Serialize;
 use std::result::Result as StdResult;
@@ -44,7 +45,15 @@ pub fn post<IN>(url: &str, api_secret: Option<String>, input: &IN) -> StdResult<
 where
 	IN: Serialize,
 {
-	let req = grin_api::client::create_post_request(url, api_secret, input)?;
+
+        let req = if global::is_main() {
+                grin_api::client::create_post_request(url, api_secret, input, global::ChainTypes::Mainnet)?
+        } else if global::is_floo() {
+                grin_api::client::create_post_request(url, api_secret, input, global::ChainTypes::Floonet)?
+        } else {
+                grin_api::client::create_post_request(url, api_secret, input, global::ChainTypes::UserTesting)?
+        };
+
 	let res = grin_api::client::send_request(req)?;
 	Ok(res)
 }
