@@ -47,6 +47,7 @@ jobs:
         CI_JOB: release
         PLATFORM: macos
   steps:
+    - template: '.ci/install.yml'
     - template: '.ci/release.yml'
 - job: windows
   pool:
@@ -57,4 +58,5 @@ jobs:
         CI_JOB: release
         PLATFORM: win-x64
   steps:
+    - template: '.ci/install.yml'
     - template: '.ci/windows-release.yml'
