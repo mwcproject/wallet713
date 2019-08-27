@@ -19,17 +19,17 @@ steps:
     condition:  and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/'), eq(variables['CI_JOB'], 'release' ))
     inputs:
       sourceFolder: '$(Build.SourcesDirectory)\target\release'
-      contents: 'mwc-wallet.exe'
-      targetFolder: '$(Build.BinariesDirectory)\mwc-wallet'
+      contents: 'mwc713.exe'
+      targetFolder: '$(Build.BinariesDirectory)\mwc713'
   - task: ArchiveFiles@2
     displayName: Gather assets
     condition:  and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/'), eq(variables['CI_JOB'], 'release' ))
     inputs:
-      rootFolderOrFile: '$(Build.BinariesDirectory)\mwc-wallet'
+      rootFolderOrFile: '$(Build.BinariesDirectory)\mwc713'
       archiveType: 'zip'
-      archiveFile: '$(Build.ArtifactStagingDirectory)\mwc-wallet-$(build.my_tag)-$(build.platform).zip'
+      archiveFile: '$(Build.ArtifactStagingDirectory)\mwc713-$(build.my_tag)-$(build.platform).zip'
   - script: |
-      powershell -Command "get-filehash -algorithm sha256 $(Build.ArtifactStagingDirectory)\mwc-wallet-$(build.my_tag)-$(build.platform).zip | Format-List |  Out-String | ForEach-Object { $_.Trim() } > $(Build.ArtifactStagingDirectory)\mwc-wallet-$(build.my_tag)-$(build.platform)-sha256sum.txt"
+      powershell -Command "get-filehash -algorithm sha256 $(Build.ArtifactStagingDirectory)\mwc713-$(build.my_tag)-$(build.platform).zip | Format-List |  Out-String | ForEach-Object { $_.Trim() } > $(Build.ArtifactStagingDirectory)\mwc713-$(build.my_tag)-$(build.platform)-sha256sum.txt"
     displayName: Create Checksum
     condition:  and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/'), eq(variables['CI_JOB'], 'release' ))
   - task: GithubRelease@0
@@ -37,14 +37,14 @@ steps:
     condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'), eq(variables['CI_JOB'], 'release' ))
     inputs:
       gitHubConnection: 'github-release'
-      repositoryName: 'mwcproject/mwc-wallet'
+      repositoryName: 'mwcproject/mwc713'
       action: 'edit'
       target: '$(build.sourceVersion)'
       tagSource: 'manual'
       tag: '$(build.my_tag)'
       assets: |
-        $(Build.ArtifactStagingDirectory)\mwc-wallet-$(build.my_tag)-$(build.platform).zip
-        $(Build.ArtifactStagingDirectory)\mwc-wallet-$(build.my_tag)-$(build.platform)-sha256sum.txt
+        $(Build.ArtifactStagingDirectory)\mwc713-$(build.my_tag)-$(build.platform).zip
+        $(Build.ArtifactStagingDirectory)\mwc713-$(build.my_tag)-$(build.platform)-sha256sum.txt
       title: '$(build.my_tag)'
       assetUploadMode: 'replace'
       addChangeLog: true
