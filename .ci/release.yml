@@ -18,18 +18,18 @@ steps:
     condition:  and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/'), eq(variables['CI_JOB'], 'release' ))
     inputs:
       sourceFolder: '$(Build.SourcesDirectory)/target/release'
-      contents: 'mwc-wallet'
-      targetFolder: '$(Build.BinariesDirectory)/mwc-wallet'
+      contents: 'mwc713'
+      targetFolder: '$(Build.BinariesDirectory)/mwc713'
   - task: ArchiveFiles@2
     displayName: Gather assets
     condition:  and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/'), eq(variables['CI_JOB'], 'release' ))
     inputs:
-      rootFolderOrFile: '$(Build.BinariesDirectory)/mwc-wallet'
+      rootFolderOrFile: '$(Build.BinariesDirectory)/mwc713'
       archiveType: 'tar'
       tarCompression: 'gz'
-      archiveFile: '$(Build.ArtifactStagingDirectory)/mwc-wallet-$(build.my_tag)-$(build.platform).tar.gz'
+      archiveFile: '$(Build.ArtifactStagingDirectory)/mwc713-$(build.my_tag)-$(build.platform).tar.gz'
   - script: |
-      openssl sha256 $(Build.ArtifactStagingDirectory)/mwc-wallet-$(build.my_tag)-$(build.platform).tar.gz > $(Build.ArtifactStagingDirectory)/mwc-wallet-$(build.my_tag)-$(build.platform)-sha256sum.txt
+      openssl sha256 $(Build.ArtifactStagingDirectory)/mwc713-$(build.my_tag)-$(build.platform).tar.gz > $(Build.ArtifactStagingDirectory)/mwc713-$(build.my_tag)-$(build.platform)-sha256sum.txt
     displayName: Create Checksum
     condition:  and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/'), eq(variables['CI_JOB'], 'release' ))
   - task: GithubRelease@0
@@ -37,14 +37,14 @@ steps:
     condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'), eq(variables['CI_JOB'], 'release' ))
     inputs:
       gitHubConnection: 'github-release'
-      repositoryName: 'mwcproject/mwc-wallet'
+      repositoryName: 'mwcproject/mwc713'
       action: 'edit'
       target: '$(build.sourceVersion)'
       tagSource: 'manual'
       tag: '$(build.my_tag)'
       assets: |
-        $(Build.ArtifactStagingDirectory)/mwc-wallet-$(build.my_tag)-$(build.platform).tar.gz
-        $(Build.ArtifactStagingDirectory)/mwc-wallet-$(build.my_tag)-$(build.platform)-sha256sum.txt
+        $(Build.ArtifactStagingDirectory)/mwc713-$(build.my_tag)-$(build.platform).tar.gz
+        $(Build.ArtifactStagingDirectory)/mwc713-$(build.my_tag)-$(build.platform)-sha256sum.txt
       title: '$(build.my_tag)'
       assetUploadMode: 'replace'
       addChangeLog: true
