@@ -9,19 +9,22 @@ use common::crypto::{
 };
 use common::{ErrorKind, Result};
 
-const ADDRESS_REGEX: &str = r"^((?P<address_type>keybase|mwcmq|https)://).+$";
+const ADDRESS_REGEX: &str = r"^((?P<address_type>keybase|mwcmq|mwcmqs|https)://).+$";
 const GRINBOX_ADDRESS_REGEX: &str = r"^(mwcmq://)?(?P<public_key>[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{52})(@(?P<domain>[a-zA-Z0-9\.]+)(:(?P<port>[0-9]*))?)?$";
+const MWCMQ_ADDRESS_REGEX: &str = r"^(mwcmqs://)?(?P<public_key>[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{52})(@(?P<domain>[a-zA-Z0-9\.]+)(:(?P<port>[0-9]*))?)?$";
 const KEYBASE_ADDRESS_REGEX: &str = r"^(keybase://)?(?P<username>[0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_]{1,16})(:(?P<topic>[a-zA-Z0-9_-]+))?$";
 const DEFAULT_GRINBOX_DOMAIN: &str = "mq.mwc.mw";
+const DEFAULT_MWCMQS_DOMAIN: &str = "mqs.mwc.mw";
 
 #[cfg(not(windows))]
 pub const DEFAULT_GRINBOX_PORT: u16 = 443;
 #[cfg(windows)]
 pub const DEFAULT_GRINBOX_PORT: u16 = 80;
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum AddressType {
     Grinbox,
+    MWCMQS,
     Keybase,
     Https,
 }
@@ -46,6 +49,7 @@ impl dyn Address {
         let address_type = captures.name("address_type").unwrap().as_str().to_string();
         let address: Box<dyn Address> = match address_type.as_ref() {
             "keybase" => Box::new(KeybaseAddress::from_str(address)?),
+            "mwcmqs" => Box::new(MWCMQSAddress::from_str(address)?),
             "mwcmq" => Box::new(GrinboxAddress::from_str(address)?),
             "https" => Box::new(HttpsAddress::from_str(address)?),
             x => Err(ErrorKind::UnknownAddressType(x.to_string()))?,
@@ -187,6 +191,71 @@ pub fn version_bytes() -> Vec<u8> {
         GRINBOX_ADDRESS_VERSION_MAINNET.to_vec()
     } else {
         GRINBOX_ADDRESS_VERSION_TESTNET.to_vec()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct MWCMQSAddress {
+    pub public_key: String,
+    pub domain: String,
+    pub port: Option<u16>,
+}
+
+impl MWCMQSAddress {
+    pub fn new(public_key: PublicKey, domain: Option<String>, port: Option<u16>) -> Self {
+        Self {
+            public_key: public_key.to_base58_check(version_bytes()),
+            domain: domain.unwrap_or(DEFAULT_MWCMQS_DOMAIN.to_string()),
+            port,
+        }
+    }
+    
+    pub fn public_key(&self) -> Result<PublicKey> {
+        PublicKey::from_base58_check(&self.public_key, version_bytes())
+    }
+}
+
+impl Address for MWCMQSAddress {
+    fn from_str(s: &str) -> Result<Self> {
+        let re = Regex::new(MWCMQ_ADDRESS_REGEX).unwrap();
+        let captures = re.captures(s);
+        if captures.is_none() {
+            Err(ErrorKind::GrinboxAddressParsingError(s.to_string()))?;
+        }
+
+        let captures = captures.unwrap();
+        let public_key = captures.name("public_key").unwrap().as_str().to_string();
+        let domain = captures.name("domain").map(|m| m.as_str().to_string());
+        let port = captures
+            .name("port")
+            .map(|m| u16::from_str_radix(m.as_str(), 10).unwrap());
+
+        let public_key = PublicKey::from_base58_check(&public_key, version_bytes())?;
+
+        Ok(MWCMQSAddress::new(public_key, domain, port))
+    }
+
+    fn address_type(&self) -> AddressType {
+        AddressType::MWCMQS
+    }
+
+    fn stripped(&self) -> String {
+        format!("{}", self)[9..].to_string()
+    }
+}
+
+impl Display for MWCMQSAddress {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "mwcmqs://{}", self.public_key)?;
+        if self.domain != DEFAULT_MWCMQS_DOMAIN
+            || (self.port.is_some() && self.port.unwrap() != DEFAULT_GRINBOX_PORT)
+        {
+            write!(f, "@{}", self.domain)?;
+            if self.port.is_some() && self.port.unwrap() != DEFAULT_GRINBOX_PORT {
+                write!(f, ":{}", self.port.unwrap())?;
+            }
+        }
+        Ok(())
     }
 }
 
