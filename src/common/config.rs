@@ -10,7 +10,7 @@ use grin_util::LoggingConfig;
 use super::crypto::{public_key_from_secret_key, PublicKey, SecretKey};
 use super::{ErrorKind, Result};
 use super::is_cli;
-use crate::contacts::{GrinboxAddress, DEFAULT_GRINBOX_PORT};
+use crate::contacts::{GrinboxAddress, MWCMQSAddress, DEFAULT_GRINBOX_PORT};
 
 const WALLET713_HOME: &str = ".mwc713";
 const WALLET713_DEFAULT_CONFIG_FILENAME: &str = "wallet713.toml";
@@ -29,6 +29,8 @@ pub struct Wallet713Config {
     pub keybase_binary: Option<String>,
     pub mwcmq_domain: String,
     pub mwcmq_port: Option<u16>,
+    pub mwcmqs_domain: Option<String>,
+    pub mwcmqs_port: Option<u16>,
     pub grinbox_protocol_unsecure: Option<bool>,
     pub grinbox_address_index: Option<u32>,
     pub mwc_node_uri: Option<String>,
@@ -122,8 +124,30 @@ impl Wallet713Config {
         Ok(wallet_config)
     }
 
+    pub fn get_mwcmqs_address(&self) -> Result<MWCMQSAddress> {
+        let public_key = self.get_grinbox_public_key()?;
+        Ok(MWCMQSAddress::new(
+            public_key,
+            Some(self.mwcmqs_domain()),
+            self.mwcmqs_port,
+        ))
+    }
+
+    pub fn get_mwcmqs_secret_key(&self) -> Result<SecretKey> {
+        self.grinbox_address_key
+            .ok_or_else(|| ErrorKind::NoWallet.into())
+    }
+
     pub fn grinbox_protocol_unsecure(&self) -> bool {
         self.grinbox_protocol_unsecure.unwrap_or(cfg!(windows))
+    }
+
+    pub fn mwcmqs_domain(&self) -> String {
+        self.mwcmqs_domain.clone().unwrap_or("mqs.mwc.mw".to_string())
+    }
+
+    pub fn mwcmqs_port(&self) -> u16 {
+        self.mwcmqs_port.unwrap_or(443)
     }
 
     pub fn grinbox_address_index(&self) -> u32 {

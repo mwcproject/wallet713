@@ -82,7 +82,6 @@ impl EncryptedMessage {
         let decrypted_data =
             aead::open_in_place(&opening_key, &nonce, &[], 0, &mut encrypted_message)
                 .map_err(|_| ErrorKind::Decryption)?;
-
         String::from_utf8(decrypted_data.to_vec()).map_err(|_| ErrorKind::Decryption.into())
     }
 }

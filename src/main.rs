@@ -226,6 +226,7 @@ fn welcome(args: &ArgMatches, runtime_mode: &RuntimeMode) -> Result<Wallet713Con
 
 use broker::{
     CloseReason, GrinboxPublisher, GrinboxSubscriber, KeybasePublisher, KeybaseSubscriber,
+    MWCMQPublisher, MWCMQSubscriber,
     Publisher, Subscriber, SubscriptionHandler,
 };
 use std::borrow::Borrow;
@@ -397,6 +398,52 @@ impl SubscriptionHandler for Controller {
             self.name.bright_green()
         )
     }
+}
+
+fn start_mwcmqs_listener(
+    config: &Wallet713Config,
+    wallet: Arc<Mutex<Wallet>>,
+    address_book: Arc<Mutex<AddressBook>>,
+) -> Result<(MWCMQPublisher, MWCMQSubscriber)> {
+    // make sure wallet is not locked, if it is try to unlock with no passphrase
+    {
+        let mut wallet = wallet.lock();
+        if wallet.is_locked() {
+            wallet.unlock(config, "default", "")?;
+        }
+    }
+
+    println!("starting mwcmqs listener...");
+
+    let mwcmqs_address = config.get_mwcmqs_address()?;
+    let mwcmqs_secret_key = config.get_mwcmqs_secret_key()?;
+
+    let mwcmqs_publisher = MWCMQPublisher::new(
+        &mwcmqs_address,
+        &mwcmqs_secret_key,
+        config,
+    )?;
+
+    let mwcmqs_subscriber = MWCMQSubscriber::new(
+        &mwcmqs_publisher
+    )?;
+
+    let cloned_publisher = mwcmqs_publisher.clone();
+    let mut cloned_subscriber = mwcmqs_subscriber.clone();
+    let _ = std::thread::spawn(move || {
+        let controller = Controller::new(
+            &mwcmqs_address.stripped(),
+            wallet.clone(),
+            address_book.clone(),
+            Box::new(cloned_publisher),
+        )
+        .expect("could not start mwcmqs controller!");
+        cloned_subscriber
+            .start(Box::new(controller))
+            .expect("something went wrong!");
+    });
+
+    Ok((mwcmqs_publisher, mwcmqs_subscriber))
 }
 
 fn start_grinbox_listener(
@@ -606,6 +653,7 @@ fn main() {
 
     let mut grinbox_broker: Option<(GrinboxPublisher, GrinboxSubscriber)> = None;
     let mut keybase_broker: Option<(KeybasePublisher, KeybaseSubscriber)> = None;
+    let mut mwcmqs_broker: Option<(MWCMQPublisher, MWCMQSubscriber)> = None;
 
     let has_seed = Wallet::seed_exists(&config);
 
@@ -659,7 +707,7 @@ fn main() {
                 println!("Set an optional password to secure your wallet with. Leave blank for no password.");
                 println!();
                 let cmd = format!("init -p {}", &passphrase);
-                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut grinbox_broker, &mut out_is_safe, &mut false, &mut false) {
+                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut grinbox_broker, &mut mwcmqs_broker, &mut out_is_safe, &mut false, &mut false) {
                     println!("{}: {}", "ERROR".bright_red(), err);
                     std::process::exit(1);
                 }
@@ -687,7 +735,7 @@ fn main() {
                 println!();
                 // TODO: refactor this
                 let cmd = format!("recover -m {} -p {}", mnemonic, &passphrase);
-                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut grinbox_broker, &mut out_is_safe, &mut false, &mut false) {
+                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut grinbox_broker, &mut mwcmqs_broker, &mut out_is_safe, &mut false, &mut false) {
                     println!("{}: {}", "ERROR".bright_red(), err);
                     std::process::exit(1);
                 }
@@ -904,6 +952,7 @@ fn main() {
                     address_book.clone(),
                     &mut keybase_broker,
                     &mut grinbox_broker,
+                    &mut mwcmqs_broker,
                     &mut out_is_safe,
                     &mut first,
                     &mut was_init_or_getnextkey,
@@ -1014,6 +1063,7 @@ fn do_command(
     address_book: Arc<Mutex<AddressBook>>,
     keybase_broker: &mut Option<(KeybasePublisher, KeybaseSubscriber)>,
     grinbox_broker: &mut Option<(GrinboxPublisher, GrinboxSubscriber)>,
+    mwcmqs_broker: &mut Option<(MWCMQPublisher, MWCMQSubscriber)>,
     out_is_safe: &mut bool,
     first: &mut bool,
     was_init_or_getnext_key: &mut bool,
@@ -1148,6 +1198,10 @@ fn do_command(
             return Ok(());
         }
         Some("listen") => {
+            let mwcmqs = matches
+                .subcommand_matches("listen")
+                .unwrap()
+                .is_present("mwcmqs");
             let grinbox = matches
                 .subcommand_matches("listen")
                 .unwrap()
@@ -1156,7 +1210,7 @@ fn do_command(
                 .subcommand_matches("listen")
                 .unwrap()
                 .is_present("keybase");
-            if grinbox || !keybase {
+            if grinbox || (!keybase && !mwcmqs) {
                 let is_running = match grinbox_broker {
                     Some((_, subscriber)) => subscriber.is_running(),
                     _ => false,
@@ -1167,6 +1221,19 @@ fn do_command(
                     let (publisher, subscriber, _) =
                         start_grinbox_listener(config, wallet.clone(), address_book.clone())?;
                     *grinbox_broker = Some((publisher, subscriber));
+                }
+            }
+            if mwcmqs  && !keybase {
+                let is_running = match mwcmqs_broker {
+                    Some((_, subscriber)) => subscriber.is_running(),
+                    _ => false,
+                };
+                if is_running {
+                    Err(ErrorKind::AlreadyListening("mwcmqs".to_string()))?
+                } else {
+                    let (publisher, subscriber) = 
+                        start_mwcmqs_listener(config, wallet.clone(), address_book.clone())?;
+                    *mwcmqs_broker = Some((publisher, subscriber));
                 }
             }
             if keybase {
@@ -1184,6 +1251,10 @@ fn do_command(
             }
         }
         Some("stop") => {
+            let mwcmqs = matches
+                .subcommand_matches("stop")
+                .unwrap()
+                .is_present("mwcmqs");
             let grinbox = matches
                 .subcommand_matches("stop")
                 .unwrap()
@@ -1192,7 +1263,7 @@ fn do_command(
                 .subcommand_matches("stop")
                 .unwrap()
                 .is_present("keybase");
-            if grinbox || !keybase {
+            if grinbox || (!keybase && !mwcmqs) {
                 let is_running = match grinbox_broker {
                     Some((_, subscriber)) => subscriber.is_running(),
                     _ => false,
@@ -1205,6 +1276,21 @@ fn do_command(
                     *grinbox_broker = None;
                 } else {
                     Err(ErrorKind::ClosedListener("mwcmq".to_string()))?
+                }
+            }
+            if mwcmqs && !keybase {
+                let is_running = match mwcmqs_broker {
+                    Some((_, subscriber)) => subscriber.is_running(),
+                    _ => false,
+                };
+                if is_running {
+                    cli_message!("stopping mwcmqs listener...");
+                    if let Some((_, subscriber)) = mwcmqs_broker {
+                        subscriber.stop();
+                    };
+                    *mwcmqs_broker = None;
+                } else {
+                    Err(ErrorKind::ClosedListener("mwcmqs".to_string()))?
                 }
             }
             if keybase {
@@ -1479,7 +1565,6 @@ fn do_command(
                 to = contact.get_address().to_string();
                 display_to = Some(contact.get_name().to_string());
             }
-
             // try parse as a general address and fallback to mwcmq address
             let address = Address::parse(&to);
             let address: Result<Box<dyn Address>> = match address {
@@ -1493,7 +1578,30 @@ fn do_command(
             if display_to.is_none() {
                 display_to = Some(to.stripped());
             }
+
             let mut slate: Slate = match to.address_type() {
+                AddressType::MWCMQS => {
+                    if let Some((publisher, _)) = mwcmqs_broker {
+                        let slate = wallet.lock().initiate_send_tx(
+                            Some(to.to_string()),
+                            amount,
+                            confirmations,
+                            strategy,
+                            change_outputs,
+                            500,
+                            message,
+                            output_list,
+                            version,
+                            1,
+                        )?;
+                        let mwcmqs_address =
+                            contacts::MWCMQSAddress::from_str(&to.to_string())?;
+                        publisher.post_slate(&slate, mwcmqs_address.borrow())?;
+                        slate
+                    } else {
+                        return Err(ErrorKind::ClosedListener("mwcmqs".to_string()).into());
+                    }
+                }
                 AddressType::Keybase => {
                     if let Some((publisher, _)) = keybase_broker {
                         let slate = wallet.lock().initiate_send_tx(
