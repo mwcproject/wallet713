@@ -88,6 +88,24 @@ impl Subscriber for MWCMQSubscriber {
 
     fn stop(&self) {
         self.broker.stop();
+
+
+        let client = reqwest::Client::builder()
+                         .timeout(Duration::from_secs(60))
+                         .build().unwrap();
+
+
+
+        let mut params = HashMap::new();
+        params.insert("mapmessage", "nil");
+        let _response = client.post(&format!("https://{}:{}/sender?address={}",
+                                              self.config.mwcmqs_domain(),
+                                              self.config.mwcmqs_port(),
+                                              self.address.stripped()))
+                        .form(&params)
+                        .send()
+                        .expect("Failed to send request");
+
     }
 
     fn is_running(&self) -> bool {
@@ -208,6 +226,7 @@ impl MWCMQSBroker {
                     // This was not a timeout. Sleep first.
                     println!("io error occured while trying to connect to {}. Will sleep for 5 second and will reconnect.",
                              &format!("https://{}:{}", config.mwcmqs_domain(), config.mwcmqs_port()));
+                    println!("Error: {}", err_message);
                     let second = time::Duration::from_millis(5000);
                     thread::sleep(second);
                 }
@@ -242,6 +261,7 @@ impl MWCMQSBroker {
 
                         let from =
                             if i == 0 {
+                                if splitxvec.len() <= 1 { continue; }
                                 let tmp = splitxvec[1].split("=");
                                 let vecs:Vec<&str> = tmp.collect();
                                 vecs[1].trim()
@@ -292,6 +312,8 @@ impl MWCMQSBroker {
 
             }
         }
+
+        println!("mwcmqs listener [{}] stopped", address.stripped().bright_green());
         let mut guard = cloned_inner.lock();
         *guard = None;
         Ok(())
