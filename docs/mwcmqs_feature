@@ -36,5 +36,6 @@ roapdmap.
 
 # TODO
 
+- TxProofs
 - Federation
 - More robust messaging about status of other connected parties
