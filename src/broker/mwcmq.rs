@@ -238,9 +238,10 @@ impl MWCMQSBroker {
             else
             {
                 if count == 1 {
-                    println!("mwcmqs listener started for [{}]",
+                    println!("mwcmqs listener started for: [{}]",
                              cloned_cloned_address.stripped().bright_green());
                 }
+
                 let mut resp = resp_result.unwrap();
                 let mut resp_str = "".to_string();
                 let read_resp = resp.read_to_string(&mut resp_str);
@@ -250,66 +251,86 @@ impl MWCMQSBroker {
                     thread::sleep(second);
                     continue;
                 }
+                let msgvec: Vec<&str> = if resp_str.starts_with("messagelist: ") {
+                    let mut ret: Vec<&str> = Vec::new();
+                    let lines: Vec<&str> = resp_str.split("\n").collect();
+                    for i in 1..lines.len() {
+                        let params: Vec<&str> = lines[i].split(" ").collect();
+                        if params.len() >= 2 {
+                            ret.push(&params[1]);
+                        }
+                    }
+                    ret
+                } else {
+                    vec![&resp_str]
+                };
 
-                let split = resp_str.split(" ");
-                let vec: Vec<&str> = split.collect();
-                let splitx = vec[1].split("&");
-                let splitxvec: Vec<&str> = splitx.collect();
+                for itt in 0..msgvec.len() {
+                    let split = msgvec[itt].split(" ");
+                    let vec: Vec<&str> = split.collect();
+                    let splitx = if vec.len() <= 1 {
+                        vec[0].split("&")
+                    }
+                    else {
+                        vec[1].split("&")
+                    };
+
+                    let splitxvec: Vec<&str> = splitx.collect();
         
-                for i in 0..splitxvec.len() {
-                    if splitxvec[i].starts_with("mapmessage=") {
+                    for i in 0..splitxvec.len() {
+                        if splitxvec[i].starts_with("mapmessage=") {
 
-                        let from =
-                            if i == 0 {
-                                if splitxvec.len() <= 1 { continue; }
-                                let tmp = splitxvec[1].split("=");
-                                let vecs:Vec<&str> = tmp.collect();
-                                vecs[1].trim()
-                            } else {
-                                let tmp = splitxvec[0].split("=");
-                                let vecs:Vec<&str> = tmp.collect();
-                                vecs[1].trim()
-                            };
+                            let from =
+                                if i == 0 {
+                                    if splitxvec.len() <= 1 { continue; }
+                                    let tmp = splitxvec[1].split("=");
+                                    let vecs:Vec<&str> = tmp.collect();
+                                    vecs[1].trim()
+                                } else {
+                                    let tmp = splitxvec[0].split("=");
+                                    let vecs:Vec<&str> = tmp.collect();
+                                    vecs[1].trim()
+                                };
 
-                        let split2 = splitxvec[i].split("=");
-                        let vec2: Vec<&str> = split2.collect();
-	                let r1 = str::replace(vec2[1], "%22", "\"");
-                        let r2 = str::replace(&r1, "%7B", "{");
-                        let r3 = str::replace(&r2, "%7D", "}");
-                        let r4 = str::replace(&r3, "%3A", ":");
-                        let r5 = str::replace(&r4, "%2C", ",");
-                        let v: Value = serde_json::from_str(&r5)?;
-                        let salt = str::replace(&v.get("salt").unwrap().to_string(), "\"", "");
-                        let nonce = str::replace(&v.get("nonce").unwrap().to_string(), "\"", "");
-                        let encrypted_message = str::replace(&v.get("encrypted_message").unwrap().to_string(), "\"", "");
-                        let mut encrypted =
-                            from_hex(encrypted_message.clone()).map_err(|_| ErrorKind::Decryption)?;
-                        let nonce_x = from_hex(nonce).map_err(|_| ErrorKind::Decryption)?;
+                            let split2 = splitxvec[i].split("=");
+                            let vec2: Vec<&str> = split2.collect();
+	                    let r1 = str::replace(vec2[1], "%22", "\"");
+                            let r2 = str::replace(&r1, "%7B", "{");
+                            let r3 = str::replace(&r2, "%7D", "}");
+                            let r4 = str::replace(&r3, "%3A", ":");
+                            let r5 = str::replace(&r4, "%2C", ",");
+                            let v: Value = serde_json::from_str(&r5)?;
+                            let salt = str::replace(&v.get("salt").unwrap().to_string(), "\"", "");
+                            let nonce = str::replace(&v.get("nonce").unwrap().to_string(), "\"", "");
+                            let encrypted_message = str::replace(&v.get("encrypted_message").unwrap().to_string(), "\"", "");
+                            let mut encrypted =
+                                from_hex(encrypted_message.clone()).map_err(|_| ErrorKind::Decryption)?;
+                            let nonce_x = from_hex(nonce).map_err(|_| ErrorKind::Decryption)?;
 
-                        let pubkey = MWCMQSAddress::from_str(from).unwrap().public_key().unwrap();
+                            let pubkey = MWCMQSAddress::from_str(from).unwrap().public_key().unwrap();
 
-                        let skey = self.key(salt, &pubkey, &secret_key).unwrap();
-                        let opening_key = aead::OpeningKey::new(&aead::CHACHA20_POLY1305, &skey)
-                            .map_err(|_| ErrorKind::Decryption)?;
+                            let skey = self.key(salt, &pubkey, &secret_key).unwrap();
+                            let opening_key = aead::OpeningKey::new(&aead::CHACHA20_POLY1305, &skey)
+                                .map_err(|_| ErrorKind::Decryption)?;
 
-                        let decrypted_data =
-                            aead::open_in_place(&opening_key, &nonce_x, &[], 0, &mut encrypted)
-                            .map_err(|_| ErrorKind::Decryption)?;
+                            let decrypted_data =
+                                aead::open_in_place(&opening_key, &nonce_x, &[], 0, &mut encrypted)
+                                .map_err(|_| ErrorKind::Decryption)?;
 
-                        let decr = String::from_utf8(decrypted_data.to_vec()).unwrap();
+                            let decr = String::from_utf8(decrypted_data.to_vec()).unwrap();
 
-                        let mut slate = Slate::deserialize_upgrade(&decr).unwrap();
+                            let mut slate = Slate::deserialize_upgrade(&decr).unwrap();
 
-                        let address = MWCMQSAddress::from_str(from).unwrap();
-                        handler.lock().on_slate(
+                            let address = MWCMQSAddress::from_str(from).unwrap();
+                            handler.lock().on_slate(
                                     &address,
                                     &mut slate,
                                     None,
                                     Some(self.config.clone()));
-                        break;
+                            break;
+                        }
                     }
                 }
-
             }
         }
 
