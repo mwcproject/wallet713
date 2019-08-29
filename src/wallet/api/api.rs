@@ -204,12 +204,36 @@ where
         let parent_key_id = w.get_parent_key_id();
 
         let mut validated = false;
+        let mut output_list = None;
         if refresh_from_node {
             validated = self.update_outputs(&mut w, false);
+
+            // we need to check outputs for confirmations of ALL
+            let res_outputs: Result<(bool, Vec<(OutputData, pedersen::Commitment)>), Error> = Ok((
+            validated,
+            updater::retrieve_outputs(&mut *w,
+                                      false,
+                                      None,
+                                      Some(&parent_key_id),
+                                      pagination_start,
+                                      pagination_length)?,
+        ));
+            output_list = if res_outputs.is_ok() {
+                Some(res_outputs.unwrap())
+            } else {
+                None
+            };
         }
 
         let txs: Vec<TxLogEntry> =
-            updater::retrieve_txs(&mut *w, tx_id, tx_slate_id, Some(&parent_key_id), false, pagination_start, pagination_length)?;
+            updater::retrieve_txs_with_outputs(&mut *w,
+                                               tx_id,
+                                               tx_slate_id,
+                                               Some(&parent_key_id),
+                                               false,
+                                               pagination_start,
+                                               pagination_length,
+                                               output_list)?;
         let txs = txs
             .into_iter()
             .map(|t| {
