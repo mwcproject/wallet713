@@ -105,7 +105,6 @@ impl Subscriber for MWCMQSubscriber {
                         .form(&params)
                         .send()
                         .expect("Failed to send request");
-
     }
 
     fn is_running(&self) -> bool {
@@ -165,13 +164,47 @@ impl MWCMQSBroker {
         let mut params = HashMap::new();
         params.insert("mapmessage", mser);
         params.insert("from", &fromstripped);
-        let _response = client.post(&format!("https://{}:{}/sender?address={}",
+        let response = client.post(&format!("https://{}:{}/sender?address={}",
                                               self.config.mwcmqs_domain(),
                                               self.config.mwcmqs_port(),
                                               to.stripped()))
                         .form(&params)
-                        .send()
-                        .expect("Failed to send request");
+                        .send();
+
+        if !response.is_ok() {
+            println!("ERROR: could not connect to mwcmqs server");
+        } else {
+            let mut response = response.unwrap();
+            let mut resp_str = "".to_string();
+            let read_resp = response.read_to_string(&mut resp_str);
+
+            if !read_resp.is_ok() {
+                println!("ERROR: Could not send slate due to i/o error");
+            }
+            else {
+                let data: Vec<&str> = resp_str.split(" ").collect();
+                if data.len() <= 1 {
+                    println!("Invalid response from send");
+                } else {
+                    let last_seen = data[1].parse::<i64>();
+                    if !last_seen.is_ok() {
+                        println!("Error: could not parse int returned");
+                    } else {
+                        let last_seen = last_seen.unwrap();
+                        if last_seen > 10000000000 {
+                            println!("WARNING: [{}] has not been connected to mwcmqs recently. This user might not receive the slate.",
+                                  to.stripped().bright_green());
+                        }
+                        else if last_seen > 150000 {
+                            let seconds = last_seen / 1000;
+                            println!("WARNING: [{}] has not been connected to mwcmqs for {} seconds. This user might not receive the slate.",
+                                  to.stripped().bright_green(), seconds);
+                        }
+                    }
+                }
+            }
+        }
+
         Ok(())
     }
 
@@ -247,6 +280,9 @@ impl MWCMQSBroker {
                 let read_resp = resp.read_to_string(&mut resp_str);
                 if !read_resp.is_ok() {
                     // read error occured. Sleep and try again in 5 seconds
+                    println!("io error occured while trying to connect to {}. Will sleep for 5 second and will reconnect.",
+                             &format!("https://{}:{}", config.mwcmqs_domain(), config.mwcmqs_port()));
+                    println!("Error: {:?}", read_resp);
                     let second = time::Duration::from_millis(5000);
                     thread::sleep(second);
                     continue;
@@ -268,11 +304,13 @@ impl MWCMQSBroker {
                 for itt in 0..msgvec.len() {
                     let split = msgvec[itt].split(" ");
                     let vec: Vec<&str> = split.collect();
-                    let splitx = if vec.len() <= 1 {
+                    let splitx = if vec.len() == 1 {
                         vec[0].split("&")
                     }
-                    else {
+                    else if vec.len() >= 2 {
                         vec[1].split("&")
+                    } else {
+                        continue;
                     };
 
                     let splitxvec: Vec<&str> = splitx.collect();
@@ -285,45 +323,120 @@ impl MWCMQSBroker {
                                     if splitxvec.len() <= 1 { continue; }
                                     let tmp = splitxvec[1].split("=");
                                     let vecs:Vec<&str> = tmp.collect();
+                                    if vecs.len() <= 1 { continue; }
                                     vecs[1].trim()
                                 } else {
                                     let tmp = splitxvec[0].split("=");
                                     let vecs:Vec<&str> = tmp.collect();
+                                    if vecs.len() <= 1 { continue; }
                                     vecs[1].trim()
                                 };
 
                             let split2 = splitxvec[i].split("=");
                             let vec2: Vec<&str> = split2.collect();
+                            if vec2.len() <= 1 { continue; }
 	                    let r1 = str::replace(vec2[1], "%22", "\"");
                             let r2 = str::replace(&r1, "%7B", "{");
                             let r3 = str::replace(&r2, "%7D", "}");
                             let r4 = str::replace(&r3, "%3A", ":");
                             let r5 = str::replace(&r4, "%2C", ",");
-                            let v: Value = serde_json::from_str(&r5)?;
-                            let salt = str::replace(&v.get("salt").unwrap().to_string(), "\"", "");
-                            let nonce = str::replace(&v.get("nonce").unwrap().to_string(), "\"", "");
-                            let encrypted_message = str::replace(&v.get("encrypted_message").unwrap().to_string(), "\"", "");
-                            let mut encrypted =
-                                from_hex(encrypted_message.clone()).map_err(|_| ErrorKind::Decryption)?;
-                            let nonce_x = from_hex(nonce).map_err(|_| ErrorKind::Decryption)?;
+                            let v = serde_json::from_str(&r5);
+                            let v: Value = if !v.is_ok() {
+                                continue;
+                            } else {
+                                v.unwrap()
+                            };
+                            let salt = v.get("salt");
+                            let salt = if salt.is_some() {
+                                str::replace(&salt.unwrap().to_string(), "\"", "")
+                            } else {
+                                continue;
+                            };
+ 
+                            let nonce = v.get("nonce");
+                            let nonce = if nonce.is_some() {
+                                str::replace(&nonce.unwrap().to_string(), "\"", "")
+                            } else {
+                                continue;
+                            };
 
-                            let pubkey = MWCMQSAddress::from_str(from).unwrap().public_key().unwrap();
+                            let encrypted_message = v.get("encrypted_message");
+                            let encrypted_message = if encrypted_message.is_some() {
+                                str::replace(&encrypted_message.unwrap().to_string(), "\"", "")
+                            } else {
+                                continue;
+                            };
 
-                            let skey = self.key(salt, &pubkey, &secret_key).unwrap();
+                            let encrypted =
+                                from_hex(encrypted_message.clone()).map_err(|_| ErrorKind::Decryption);
+                            let mut encrypted = if !encrypted.is_ok() {
+                                continue;
+                            } else {
+                                encrypted.unwrap()
+                            };
+
+                            let nonce_x = from_hex(nonce).map_err(|_| ErrorKind::Decryption);
+                            let nonce_x = if !nonce_x.is_ok() {
+                                continue;
+                            } else {
+                                nonce_x.unwrap()
+                            };
+
+                            let from = MWCMQSAddress::from_str(from);
+                            let from = if !from.is_ok() {
+                                continue;
+                            } else {
+                                from.unwrap()
+                            };
+
+                            let pubkey = from.public_key();
+                            let pubkey = if !pubkey.is_ok() {
+                                continue;
+                            } else {
+                                pubkey.unwrap()
+                            };
+
+                            let skey = self.key(salt, &pubkey, &secret_key);
+                            let skey = if !skey.is_ok() {
+                                continue;
+                            } else {
+                                skey.unwrap()
+                            };
+
                             let opening_key = aead::OpeningKey::new(&aead::CHACHA20_POLY1305, &skey)
-                                .map_err(|_| ErrorKind::Decryption)?;
+                                .map_err(|_| ErrorKind::Decryption);
+                            let opening_key = if !opening_key.is_ok() {
+                                continue;
+                            } else {
+                                 opening_key.unwrap()
+                            };
 
                             let decrypted_data =
                                 aead::open_in_place(&opening_key, &nonce_x, &[], 0, &mut encrypted)
-                                .map_err(|_| ErrorKind::Decryption)?;
+                                .map_err(|_| ErrorKind::Decryption);
+                            let decrypted_data = if !decrypted_data.is_ok() {
+                                continue;
+                            } else {
+                                decrypted_data.unwrap()
+                            };
 
-                            let decr = String::from_utf8(decrypted_data.to_vec()).unwrap();
+                            let decr = String::from_utf8(decrypted_data.to_vec());
 
-                            let mut slate = Slate::deserialize_upgrade(&decr).unwrap();
+                            let decr = if !decr.is_ok() {
+                                continue;
+                            } else {
+                                decr.unwrap()
+                            };
 
-                            let address = MWCMQSAddress::from_str(from).unwrap();
+                            let slate = Slate::deserialize_upgrade(&decr);
+                            let mut slate = if !slate.is_ok() {
+                                continue;
+                            } else {
+                                slate.unwrap()
+                            };
+
                             handler.lock().on_slate(
-                                    &address,
+                                    &from,
                                     &mut slate,
                                     None,
                                     Some(self.config.clone()));
