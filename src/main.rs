@@ -941,6 +941,12 @@ fn main() {
                 let command = command.trim();
 
                 if command == "exit" {
+                    if mwcmqs_broker.is_some() {
+                        let mqs = mwcmqs_broker.unwrap();
+                        if mqs.1.is_running() {
+                            mqs.1.stop();
+                        }
+                    }
                     break;
                 }
 
