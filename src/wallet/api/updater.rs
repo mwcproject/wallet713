@@ -106,6 +106,33 @@ where
     C: NodeClient,
     K: Keychain,
 {
+    retrieve_txs_with_outputs(wallet,
+                              tx_id,
+                              tx_slate_id,
+                              parent_key_id,
+                              outstanding_only,
+                              pagination_start,
+                              pagination_len,
+                              None)
+}
+
+/// Retrieve all of the transaction entries, or a particular entry
+/// if `parent_key_id` is set, only return entries from that key
+pub fn retrieve_txs_with_outputs<T: ?Sized, C, K>(
+    wallet: &mut T,
+    tx_id: Option<u32>,
+    tx_slate_id: Option<Uuid>,
+    parent_key_id: Option<&Identifier>,
+    outstanding_only: bool,
+    pagination_start: u32,
+    pagination_len: u32,
+    output_list: Option<(bool, Vec<(OutputData, pedersen::Commitment)>)>,
+) -> Result<Vec<TxLogEntry>>
+where
+    T: WalletBackend<C, K>,
+    C: NodeClient,
+    K: Keychain,
+{
     let mut txs: Vec<TxLogEntry> = wallet
         .tx_logs()
         .filter(|tx_entry| {
@@ -132,6 +159,35 @@ where
             f_pk && f_tx_id && f_txs && f_outstanding
         })
         .collect();
+
+    if output_list.is_some() {
+        let mut batch = wallet.batch()?;
+        let output_list = output_list.unwrap().1;
+        for i in 0..txs.len() {
+            let mut tx = &mut txs[i];
+            if !tx.confirmed && tx.tx_type == TxLogEntryType::TxSent {
+                // if it's not confirmed, see if we have any outputs
+                let mut confirmed = true;
+                for j in 0..output_list.len() {
+                     if output_list[j].0.tx_log_entry.is_some() {
+                         let id = output_list[j].0.tx_log_entry.unwrap();
+                         if id == tx.id {
+                             confirmed = false;
+                             break;
+                         }
+                     }
+                }
+                tx.confirmed = confirmed;
+                if tx.confirmed {
+                    tx.update_confirmation_ts();
+                    batch.save_tx_log_entry(&tx)?;
+                }
+            }
+        }
+        batch.commit()?;
+    }
+
+
     txs.sort_by_key(|tx| tx.creation_ts);
 
     let mut pag_len = pagination_len;
