@@ -6,21 +6,18 @@ use ws::{
 
 
 
-use crate::common::crypto::from_hex;
 use colored::Colorize;
-use grin_util::secp::Secp256k1;
-use ring::{digest, pbkdf2};
 
-use ring::aead;
+use common::crypto::sign_challenge;
+use common::crypto::Hex;
 use regex::Regex;
 use std::{thread, time};
-use crate::wallet::types::Slate;
+use crate::wallet::types::{Slate, TxProof, TxProofErrorKind};
 use std::time::Duration;
-use serde_json::Value;
 use std::io::Read;
 use std::collections::HashMap;
 use common::config::Wallet713Config;
-use common::crypto::{PublicKey, SecretKey};
+use common::crypto::SecretKey;
 use common::message::EncryptedMessage;
 use common::{Arc, ErrorKind, Mutex, Result};
 use contacts::{Address, GrinboxAddress, MWCMQSAddress};
@@ -82,7 +79,7 @@ impl MWCMQSubscriber {
 impl Subscriber for MWCMQSubscriber {
     fn start(&mut self, handler: Box<dyn SubscriptionHandler + Send>) -> Result<()> {
         self.broker
-            .subscribe(&self.address, &self.secret_key, handler, self.config.clone())?;
+            .subscribe(&self.address, &self.secret_key, handler, self.config.clone());
         Ok(())
     }
 
@@ -152,6 +149,10 @@ impl MWCMQSBroker {
                 WsError::new(WsErrorKind::Protocol, "could not encrypt slate!")
             })?;
         let message_ser = &serde_json::to_string(&message)?;
+        let mut challenge = String::new();
+        challenge.push_str(&message_ser);
+        let signature = sign_challenge(&challenge, secret_key).expect("could not sign challenge!");
+        let signature = signature.to_hex();
 
         let client = reqwest::Client::builder()
                          .timeout(Duration::from_secs(60))
@@ -160,10 +161,10 @@ impl MWCMQSBroker {
         let mser: &str = &message_ser;
         let fromstripped = from.stripped();
 
-
         let mut params = HashMap::new();
         params.insert("mapmessage", mser);
         params.insert("from", &fromstripped);
+        params.insert("signature", &signature);
         let response = client.post(&format!("https://{}:{}/sender?address={}",
                                               self.config.mwcmqs_domain(),
                                               self.config.mwcmqs_port(),
@@ -208,13 +209,22 @@ impl MWCMQSBroker {
         Ok(())
     }
 
+    fn print_error(&mut self, messages: Vec<&str>, error: &str, code: i16)
+    {
+        println!("{}: messages=[{:?}] produced error: {} (code={})",
+                 "ERROR".bright_red(),
+                 messages,
+                 error,
+                 code);
+    }
+
     fn subscribe(
         &mut self,
         address: &MWCMQSAddress,
         secret_key: &SecretKey,
         handler: Box<dyn SubscriptionHandler + Send>,
         config: Wallet713Config,
-    ) -> Result<()> {
+    ) -> () {
         let handler = Arc::new(Mutex::new(handler));
         {
              let mut guard = self.inner.lock();
@@ -237,14 +247,15 @@ impl MWCMQSBroker {
             let is_stopped = cloned_inner.lock().is_none();
             if is_stopped { break; }
 
-            let client = if count == 1 {
-                reqwest::Client::builder()
-                         .timeout(Duration::from_secs(1))
-                         .build()?
+            let secs = if count == 1 { 1 } else { 120 };
+            let cl = reqwest::Client::builder()
+                         .timeout(Duration::from_secs(secs))
+                         .build();
+            let client = if cl.is_ok() {
+                cl.unwrap()
             } else {
-                reqwest::Client::builder()
-                         .timeout(Duration::from_secs(120))
-                         .build()?
+                self.print_error([].to_vec(), "couldn't instantiate client", -101);
+                continue;
             };
          
             let resp_result = client.get(&format!("https://{}:{}/listener?address={}",
@@ -253,7 +264,7 @@ impl MWCMQSBroker {
                                         cloned_cloned_address.stripped())).send();
             if !resp_result.is_ok() {
                 let err_message = format!("{:?}", resp_result);
-                let re = Regex::new(TIMEOUT_ERROR_REGEX)?;
+                let re = Regex::new(TIMEOUT_ERROR_REGEX).unwrap();
                 let captures = re.captures(&err_message);
                 if captures.is_none() {
                     // This was not a timeout. Sleep first.
@@ -302,6 +313,10 @@ impl MWCMQSBroker {
                 };
 
                 for itt in 0..msgvec.len() {
+                    if msgvec[itt] == "message: mapmessage=nil\n" || msgvec[itt] == "mapmessage=nil" {
+                        // this is our exit message. Just ignore.
+                        continue;
+                    }
                     let split = msgvec[itt].split(" ");
                     let vec: Vec<&str> = split.collect();
                     let splitx = if vec.len() == 1 {
@@ -310,135 +325,124 @@ impl MWCMQSBroker {
                     else if vec.len() >= 2 {
                         vec[1].split("&")
                     } else {
+                        self.print_error(msgvec.clone(), "too many spaced messages", -1);
                         continue;
                     };
 
                     let splitxvec: Vec<&str> = splitx.collect();
-        
-                    for i in 0..splitxvec.len() {
+                    let splitxveclen = splitxvec.len();
+                    if splitxveclen != 3 {
+                        self.print_error(msgvec.clone(),
+                                         "splitxveclen != 3",
+                                         -2);
+                        continue;
+                    }
+                    let mut from = "".to_string();
+                    for i in 0..3 {
+                        if splitxvec[i].starts_with("from=") {
+                            let vec: Vec<&str> = splitxvec[i].split("=").collect();
+                            if vec.len() <= 1 {
+                                self.print_error(msgvec.clone(),
+                                         "vec.len <= 1",
+                                         -3);
+                                continue;
+                            }
+                            from = vec[1].to_string().trim().to_string();
+                        }
+                    }
+                    let mut signature = "".to_string();
+                    for i in 0..3 {
+                        if splitxvec[i].starts_with("signature=") {
+                            let vec: Vec<&str> = splitxvec[i].split("=").collect();
+                            if vec.len() <= 1 {
+                                self.print_error(msgvec.clone(),
+                                         "vec.len <= 1",
+                                         -4);
+                                continue;
+                            }
+                            signature = vec[1].to_string().trim().to_string();
+                        }
+                    }
+                    for i in 0..3 {
                         if splitxvec[i].starts_with("mapmessage=") {
 
-                            let from =
-                                if i == 0 {
-                                    if splitxvec.len() <= 1 { continue; }
-                                    let tmp = splitxvec[1].split("=");
-                                    let vecs:Vec<&str> = tmp.collect();
-                                    if vecs.len() <= 1 { continue; }
-                                    vecs[1].trim()
-                                } else {
-                                    let tmp = splitxvec[0].split("=");
-                                    let vecs:Vec<&str> = tmp.collect();
-                                    if vecs.len() <= 1 { continue; }
-                                    vecs[1].trim()
-                                };
 
                             let split2 = splitxvec[i].split("=");
                             let vec2: Vec<&str> = split2.collect();
-                            if vec2.len() <= 1 { continue; }
-	                    let r1 = str::replace(vec2[1], "%22", "\"");
+                            if vec2.len() <= 1 {
+                                self.print_error(msgvec.clone(),
+                                         "vec2.len <= 1",
+                                         -5);
+                                continue;
+                            }
+                            let r1 = str::replace(vec2[1], "%22", "\"");
                             let r2 = str::replace(&r1, "%7B", "{");
                             let r3 = str::replace(&r2, "%7D", "}");
                             let r4 = str::replace(&r3, "%3A", ":");
                             let r5 = str::replace(&r4, "%2C", ",");
-                            let v = serde_json::from_str(&r5);
-                            let v: Value = if !v.is_ok() {
-                                continue;
-                            } else {
-                                v.unwrap()
-                            };
-                            let salt = v.get("salt");
-                            let salt = if salt.is_some() {
-                                str::replace(&salt.unwrap().to_string(), "\"", "")
-                            } else {
-                                continue;
-                            };
- 
-                            let nonce = v.get("nonce");
-                            let nonce = if nonce.is_some() {
-                                str::replace(&nonce.unwrap().to_string(), "\"", "")
-                            } else {
-                                continue;
+                            let r5 = r5.trim().to_string();
+
+                            let (mut slate, mut tx_proof) = match TxProof::from_response(
+                                        from.clone(),
+                                        r5.clone(),
+                                        "".to_string(),
+                                        signature.clone(),
+                                        &secret_key,
+                                        Some(&config.get_grinbox_address().unwrap()),
+                            ) {
+                                Ok(x) => x,
+                                Err(TxProofErrorKind::ParseAddress) => {
+                                    cli_message!("could not parse address!");
+                                    continue;
+                                }
+                                Err(TxProofErrorKind::ParsePublicKey) => {
+                                    cli_message!("could not parse public key!");
+                                    continue;
+                                }
+                                Err(TxProofErrorKind::ParseSignature) => {
+                                    cli_message!("could not parse signature!");
+                                    continue;
+                                }
+                                Err(TxProofErrorKind::VerifySignature) => {
+                                    cli_message!("invalid slate signature!");
+                                    continue;
+                                }
+                                Err(TxProofErrorKind::ParseEncryptedMessage) => {
+                                    cli_message!("could not parse encrypted slate!");
+                                    continue;
+                                }
+                                Err(TxProofErrorKind::VerifyDestination) => {
+                                    cli_message!("could not verify destination!");
+                                    continue;
+                                }
+                                Err(TxProofErrorKind::DecryptionKey) => {
+                                    cli_message!("could not determine decryption key!");
+                                    continue;
+                                }
+                                Err(TxProofErrorKind::DecryptMessage) => {
+                                    cli_message!("could not decrypt slate!");
+                                    continue;
+                                }
+                                Err(TxProofErrorKind::ParseSlate) => {
+                                    cli_message!("could not parse decrypted slate!");
+                                    continue;
+                                }
                             };
 
-                            let encrypted_message = v.get("encrypted_message");
-                            let encrypted_message = if encrypted_message.is_some() {
-                                str::replace(&encrypted_message.unwrap().to_string(), "\"", "")
-                            } else {
-                                continue;
-                            };
-
-                            let encrypted =
-                                from_hex(encrypted_message.clone()).map_err(|_| ErrorKind::Decryption);
-                            let mut encrypted = if !encrypted.is_ok() {
-                                continue;
-                            } else {
-                                encrypted.unwrap()
-                            };
-
-                            let nonce_x = from_hex(nonce).map_err(|_| ErrorKind::Decryption);
-                            let nonce_x = if !nonce_x.is_ok() {
-                                continue;
-                            } else {
-                                nonce_x.unwrap()
-                            };
-
-                            let from = MWCMQSAddress::from_str(from);
+                            let from = MWCMQSAddress::from_str(&from);
                             let from = if !from.is_ok() {
+                                self.print_error(msgvec.clone(),
+                                         "error parsing from",
+                                         -12);
                                 continue;
                             } else {
                                 from.unwrap()
                             };
 
-                            let pubkey = from.public_key();
-                            let pubkey = if !pubkey.is_ok() {
-                                continue;
-                            } else {
-                                pubkey.unwrap()
-                            };
-
-                            let skey = self.key(salt, &pubkey, &secret_key);
-                            let skey = if !skey.is_ok() {
-                                continue;
-                            } else {
-                                skey.unwrap()
-                            };
-
-                            let opening_key = aead::OpeningKey::new(&aead::CHACHA20_POLY1305, &skey)
-                                .map_err(|_| ErrorKind::Decryption);
-                            let opening_key = if !opening_key.is_ok() {
-                                continue;
-                            } else {
-                                 opening_key.unwrap()
-                            };
-
-                            let decrypted_data =
-                                aead::open_in_place(&opening_key, &nonce_x, &[], 0, &mut encrypted)
-                                .map_err(|_| ErrorKind::Decryption);
-                            let decrypted_data = if !decrypted_data.is_ok() {
-                                continue;
-                            } else {
-                                decrypted_data.unwrap()
-                            };
-
-                            let decr = String::from_utf8(decrypted_data.to_vec());
-
-                            let decr = if !decr.is_ok() {
-                                continue;
-                            } else {
-                                decr.unwrap()
-                            };
-
-                            let slate = Slate::deserialize_upgrade(&decr);
-                            let mut slate = if !slate.is_ok() {
-                                continue;
-                            } else {
-                                slate.unwrap()
-                            };
-
                             handler.lock().on_slate(
                                     &from,
                                     &mut slate,
-                                    None,
+                                    Some(&mut tx_proof),
                                     Some(self.config.clone()));
                             break;
                         }
@@ -450,24 +454,6 @@ impl MWCMQSBroker {
         println!("mwcmqs listener [{}] stopped", address.stripped().bright_green());
         let mut guard = cloned_inner.lock();
         *guard = None;
-        Ok(())
-    }
-
-    fn key(&self, salt: String, sender_public_key: &PublicKey, secret_key: &SecretKey) -> Result<[u8; 32]> {
-        let salt = from_hex(salt.clone()).map_err(|_| ErrorKind::Decryption)?;
-
-        let secp = Secp256k1::new();
-        let mut common_secret = sender_public_key.clone();
-        common_secret
-            .mul_assign(&secp, secret_key)
-            .map_err(|_| ErrorKind::Decryption)?;
-        let common_secret_ser = common_secret.serialize_vec(&secp, true);
-        let common_secret_slice = &common_secret_ser[1..33];
-
-        let mut key = [0; 32];
-        pbkdf2::derive(&digest::SHA512, 100, &salt, common_secret_slice, &mut key);
-
-        Ok(key)
     }
 
     fn stop(&self) {
