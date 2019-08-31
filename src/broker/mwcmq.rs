@@ -180,23 +180,23 @@ impl MWCMQSBroker {
                         .send();
 
         if !response.is_ok() {
-            println!("ERROR: could not connect to mwcmqs server");
+            return Err(ErrorKind::InvalidRespose("mwcmqs connection error".to_string()).into());
         } else {
             let mut response = response.unwrap();
             let mut resp_str = "".to_string();
             let read_resp = response.read_to_string(&mut resp_str);
 
             if !read_resp.is_ok() {
-                println!("ERROR: Could not send slate due to i/o error");
+                return Err(ErrorKind::InvalidRespose("mwcmqs i/o error".to_string()).into());
             }
             else {
                 let data: Vec<&str> = resp_str.split(" ").collect();
                 if data.len() <= 1 {
-                    println!("Invalid response from send");
+                    return Err(ErrorKind::InvalidRespose("mwcmqs".to_string()).into());
                 } else {
                     let last_seen = data[1].parse::<i64>();
                     if !last_seen.is_ok() {
-                        println!("Error: could not parse int returned");
+                        return Err(ErrorKind::InvalidRespose("mwcmqs".to_string()).into());
                     } else {
                         let last_seen = last_seen.unwrap();
                         if last_seen > 10000000000 {
@@ -256,7 +256,7 @@ impl MWCMQSBroker {
             let is_stopped = cloned_inner.lock().is_none();
             if is_stopped { break; }
 
-            let secs = if !connected { 1 } else { 120 };
+            let secs = if !connected { 2 } else { 120 };
             let cl = reqwest::Client::builder()
                          .timeout(Duration::from_secs(secs))
                          .build();
@@ -296,7 +296,7 @@ impl MWCMQSBroker {
                     connected = true;
                 } else {
                     if !connected {
-                        println!("\n{}: mwcmqs listener [{}] reestablished connection.",
+                        println!("{}: mwcmqs listener [{}] reestablished connection. [1]",
                              "INFO".bright_blue(),
                              cloned_cloned_address.stripped().bright_green());
                     }
@@ -308,11 +308,12 @@ impl MWCMQSBroker {
                 if count == 1 {
                     println!("\nmwcmqs listener started for: [{}]",
                              cloned_cloned_address.stripped().bright_green());
-                print!("{}", COLORED_PROMPT);
+                    print!("{}", COLORED_PROMPT);
                 } else if !connected && !isnginxerror {
-                    println!("\n{}: listener [{}] reestablished connection.",
+                    println!("{}: listener [{}] reestablished connection. [2]",
                              "INFO".bright_blue(),
                              cloned_cloned_address.stripped().bright_green());
+                    connected = true;
                 } else if !isnginxerror {
                     connected = true;
                 }
@@ -320,7 +321,6 @@ impl MWCMQSBroker {
                 let mut resp = resp_result.unwrap();
                 let mut resp_str = "".to_string();
                 let read_resp = resp.read_to_string(&mut resp_str);
-
                 if !read_resp.is_ok() {
                     // read error occured. Sleep and try again in 5 seconds
                     println!("io error occured while trying to connect to {}. Will sleep for 5 second and will reconnect.",
@@ -385,9 +385,9 @@ impl MWCMQSBroker {
                     } else if isnginxerror {
                         isnginxerror = false;
                         connected = true;
-                        println!("\n{}: mwcmqs listener [{}] reestablished connection.",
-                             "INFO".bright_blue(),
-                             cloned_cloned_address.stripped().bright_green()); 
+                        //println!("{}: mwcmqs listener [{}] reestablished connection. [3]",
+                        //     "INFO".bright_blue(),
+                        //     cloned_cloned_address.stripped().bright_green()); 
                     }
 
                     let mut from = "".to_string();

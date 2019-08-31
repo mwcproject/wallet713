@@ -126,6 +126,11 @@ pub enum ErrorKind {
     )]
     ClosedListener(String),
     #[fail(
+        display = "\x1b[31;1merror:\x1b[0m {} Sender returned invalid response.",
+        0
+    )]
+    InvalidRespose(String),
+    #[fail(
         display = "\x1b[31;1merror:\x1b[0m listener for {} already started!",
         0
     )]
