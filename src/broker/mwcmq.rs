@@ -20,7 +20,7 @@ use common::config::Wallet713Config;
 use common::crypto::SecretKey;
 use common::message::EncryptedMessage;
 use common::{Arc, ErrorKind, Mutex, Result};
-use contacts::{Address, GrinboxAddress, MWCMQSAddress};
+use contacts::{Address, GrinboxAddress, MWCMQSAddress, DEFAULT_MWCMQS_PORT};
 
 use super::types::{Publisher, Subscriber, SubscriptionHandler};
 
@@ -98,10 +98,10 @@ impl Subscriber for MWCMQSubscriber {
         let _response = client.post(&format!("https://{}:{}/sender?address={}",
                                               self.config.mwcmqs_domain(),
                                               self.config.mwcmqs_port(),
-                                              self.address.stripped()))
+                        str::replace(&self.address.stripped(), "@", "%40")))
                         .form(&params)
-                        .send()
-                        .expect("Failed to send request");
+                        .send();
+
     }
 
     fn is_running(&self) -> bool {
@@ -134,11 +134,15 @@ impl MWCMQSBroker {
         if !self.is_running() {
             return Err(ErrorKind::ClosedListener("mwcmqs".to_string()).into());
         }
-
         let pkey = to.public_key()?;
+        let domain = &to.domain;
+        let port = to.port;
         let skey = secret_key.clone();
 
-        let to_str = to.stripped();
+        let to_str = str::replace(&format!("{:?}@{}:{}",
+                     &to.public_key,
+                     domain,
+                     port.unwrap_or(DEFAULT_MWCMQS_PORT)), "\"", "");
         let message = EncryptedMessage::new(
             serde_json::to_string(&slate)?,
             &GrinboxAddress::from_str(&to_str)?,
@@ -148,11 +152,12 @@ impl MWCMQSBroker {
             .map_err(|_| {
                 WsError::new(WsErrorKind::Protocol, "could not encrypt slate!")
             })?;
+
         let message_ser = &serde_json::to_string(&message)?;
         let mut challenge = String::new();
         challenge.push_str(&message_ser);
-        let signature = sign_challenge(&challenge, secret_key).expect("could not sign challenge!");
-        let signature = signature.to_hex();
+        let signature = sign_challenge(&challenge, secret_key);
+        let signature = signature.unwrap().to_hex();
 
         let client = reqwest::Client::builder()
                          .timeout(Duration::from_secs(60))
@@ -165,10 +170,11 @@ impl MWCMQSBroker {
         params.insert("mapmessage", mser);
         params.insert("from", &fromstripped);
         params.insert("signature", &signature);
+
         let response = client.post(&format!("https://{}:{}/sender?address={}",
                                               self.config.mwcmqs_domain(),
                                               self.config.mwcmqs_port(),
-                                              to.stripped()))
+                                              &str::replace(&to.stripped(), "@", "%40")))
                         .form(&params)
                         .send();
 
@@ -289,6 +295,7 @@ impl MWCMQSBroker {
                 let mut resp = resp_result.unwrap();
                 let mut resp_str = "".to_string();
                 let read_resp = resp.read_to_string(&mut resp_str);
+
                 if !read_resp.is_ok() {
                     // read error occured. Sleep and try again in 5 seconds
                     println!("io error occured while trying to connect to {}. Will sleep for 5 second and will reconnect.",
@@ -347,7 +354,7 @@ impl MWCMQSBroker {
                                          -3);
                                 continue;
                             }
-                            from = vec[1].to_string().trim().to_string();
+                            from = str::replace(&vec[1].to_string().trim().to_string(), "%40", "@");
                         }
                     }
                     let mut signature = "".to_string();
