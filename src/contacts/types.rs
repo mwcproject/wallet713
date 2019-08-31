@@ -16,6 +16,8 @@ const KEYBASE_ADDRESS_REGEX: &str = r"^(keybase://)?(?P<username>[0123456789ABCD
 const DEFAULT_GRINBOX_DOMAIN: &str = "mq.mwc.mw";
 const DEFAULT_MWCMQS_DOMAIN: &str = "mqs.mwc.mw";
 
+pub const DEFAULT_MWCMQS_PORT: u16 = 443;
+
 #[cfg(not(windows))]
 pub const DEFAULT_GRINBOX_PORT: u16 = 443;
 #[cfg(windows)]
