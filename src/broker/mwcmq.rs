@@ -241,6 +241,7 @@ impl MWCMQSBroker {
         let cloned_address = address.clone();
         let cloned_inner = self.inner.clone();
         let mut count = 0;
+        let mut connected = false;
         loop {
             count = count + 1;
             let cloned_cloned_address = cloned_address.clone();
@@ -253,7 +254,7 @@ impl MWCMQSBroker {
             let is_stopped = cloned_inner.lock().is_none();
             if is_stopped { break; }
 
-            let secs = if count == 1 { 1 } else { 120 };
+            let secs = if !connected { 1 } else { 120 };
             let cl = reqwest::Client::builder()
                          .timeout(Duration::from_secs(secs))
                          .build();
@@ -274,15 +275,29 @@ impl MWCMQSBroker {
                 let captures = re.captures(&err_message);
                 if captures.is_none() {
                     // This was not a timeout. Sleep first.
-                    println!("io error occured while trying to connect to {}. Will sleep for 5 second and will reconnect.",
-                             &format!("https://{}:{}", config.mwcmqs_domain(), config.mwcmqs_port()));
-                    println!("Error: {}", err_message);
+                    if connected {
+                        println!("{}: mwcmqs listener [{}] lost connection. Will try to restore in the background.",
+                                 "WARNING".bright_yellow(),
+                                 cloned_cloned_address.stripped().bright_green());
+                    }
+
+
                     let second = time::Duration::from_millis(5000);
                     thread::sleep(second);
+
+                    connected = false;
                 }
-                if count == 1 {
+                else if count == 1 {
                     println!("mwcmqs listener started for [{}]",
                              cloned_cloned_address.stripped().bright_green());
+                    connected = true;
+                } else {
+                    if !connected {
+                        println!("{}: mwcmqs listener [{}] reestablished connection.",
+                             "INFO".bright_blue(),
+                             cloned_cloned_address.stripped().bright_green());
+                    }
+                    connected = true;
                 }
             }
             else
@@ -290,8 +305,12 @@ impl MWCMQSBroker {
                 if count == 1 {
                     println!("mwcmqs listener started for: [{}]",
                              cloned_cloned_address.stripped().bright_green());
+                } else if !connected {
+                    println!("{}: listener [{}] reestablished connection.",
+                             "INFO".bright_blue(),
+                             cloned_cloned_address.stripped().bright_green());
                 }
-
+                connected = true;
                 let mut resp = resp_result.unwrap();
                 let mut resp_str = "".to_string();
                 let read_resp = resp.read_to_string(&mut resp_str);
