@@ -215,8 +215,8 @@ where
                                       false,
                                       None,
                                       Some(&parent_key_id),
-                                      pagination_start,
-                                      pagination_length)?,
+                                      0,
+                                      0)?,
         ));
             output_list = if res_outputs.is_ok() {
                 Some(res_outputs.unwrap())
