@@ -1845,7 +1845,7 @@ fn do_command(
             }
         }
         Some("check") => {
-            if keybase_broker.is_some() || grinbox_broker.is_some() {
+            if keybase_broker.is_some() || grinbox_broker.is_some() || mwcmqs_broker.is_some() {
                 return Err(ErrorKind::HasListener.into());
             }
             println!("checking and repairing... please wait as this could take a few minutes to complete.");
