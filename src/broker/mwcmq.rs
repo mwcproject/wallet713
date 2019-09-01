@@ -244,6 +244,8 @@ impl MWCMQSBroker {
         let mut count = 0;
         let mut connected = false;
         let mut isnginxerror = false;
+        let mut delcount = 0;
+        let mut is_in_warning = false;
         loop {
             count = count + 1;
             let cloned_cloned_address = cloned_address.clone();
@@ -266,11 +268,13 @@ impl MWCMQSBroker {
                 self.print_error([].to_vec(), "couldn't instantiate client", -101);
                 continue;
             };
-         
-            let resp_result = client.get(&format!("https://{}:{}/listener?address={}",
+
+            let mut first_response = true;
+            let resp_result = client.get(&format!("https://{}:{}/listener?address={}&delcount={}",
                                         config.mwcmqs_domain(),
                                         config.mwcmqs_port(),
-                                        cloned_cloned_address.stripped())).send();
+                                        cloned_cloned_address.stripped(),
+                                        delcount)).send();
             if !resp_result.is_ok() {
                 let err_message = format!("{:?}", resp_result);
                 let re = Regex::new(TIMEOUT_ERROR_REGEX).unwrap();
@@ -278,6 +282,7 @@ impl MWCMQSBroker {
                 if captures.is_none() {
                     // This was not a timeout. Sleep first.
                     if connected {
+                        is_in_warning = true;
                         println!("\n{}: mwcmqs listener [{}] lost connection. Will try to restore in the background.",
                                  "WARNING".bright_yellow(),
                                  cloned_cloned_address.stripped().bright_green());
@@ -290,15 +295,20 @@ impl MWCMQSBroker {
                     connected = false;
                 }
                 else if count == 1 {
+                    delcount = 0;
                     println!("\nmwcmqs listener started for [{}]",
                              cloned_cloned_address.stripped().bright_green());
                     print!("{}", COLORED_PROMPT);
                     connected = true;
                 } else {
+                    delcount = 0;
                     if !connected {
-                        println!("{}: mwcmqs listener [{}] reestablished connection. [1]",
-                             "INFO".bright_blue(),
-                             cloned_cloned_address.stripped().bright_green());
+                        if is_in_warning {
+                            println!("{}: mwcmqs listener [{}] reestablished connection. [1]",
+                                "INFO".bright_blue(),
+                                cloned_cloned_address.stripped().bright_green());
+                            is_in_warning = false;
+                        }
                     }
                     connected = true;
                 }
@@ -310,9 +320,12 @@ impl MWCMQSBroker {
                              cloned_cloned_address.stripped().bright_green());
                     print!("{}", COLORED_PROMPT);
                 } else if !connected && !isnginxerror {
-                    println!("{}: listener [{}] reestablished connection. [2]",
+                    if is_in_warning {
+                        println!("{}: listener [{}] reestablished connection. [2]",
                              "INFO".bright_blue(),
                              cloned_cloned_address.stripped().bright_green());
+                        is_in_warning = false;
+                    }
                     connected = true;
                 } else if !isnginxerror {
                     connected = true;
@@ -346,6 +359,12 @@ impl MWCMQSBroker {
 
                 for itt in 0..msgvec.len() {
                     if msgvec[itt] == "message: mapmessage=nil\n" || msgvec[itt] == "mapmessage=nil" {
+                        if first_response {
+                            delcount = 1;
+                            first_response = false;
+                        } else {
+                            delcount = delcount + 1;
+                        }
                         // this is our exit message. Just ignore.
                         continue;
                     }
@@ -369,6 +388,7 @@ impl MWCMQSBroker {
                             // so we don't print. We also add a small sleep here.
                             connected = false;
                             if !isnginxerror {
+                                 is_in_warning = true;
                                  println!("\n{}: mwcmqs listener [{}] lost connection. Will try to restore in the background.",
                                  "WARNING".bright_yellow(),
                                  cloned_cloned_address.stripped().bright_green());
@@ -385,9 +405,6 @@ impl MWCMQSBroker {
                     } else if isnginxerror {
                         isnginxerror = false;
                         connected = true;
-                        //println!("{}: mwcmqs listener [{}] reestablished connection. [3]",
-                        //     "INFO".bright_blue(),
-                        //     cloned_cloned_address.stripped().bright_green()); 
                     }
 
                     let mut from = "".to_string();
@@ -434,6 +451,13 @@ impl MWCMQSBroker {
                             let r4 = str::replace(&r3, "%3A", ":");
                             let r5 = str::replace(&r4, "%2C", ",");
                             let r5 = r5.trim().to_string();
+
+                            if first_response {
+                                delcount = 1;
+                                first_response = false;
+                            } else {
+                                delcount = delcount + 1;
+                            }
 
                             let (mut slate, mut tx_proof) = match TxProof::from_response(
                                         from.clone(),

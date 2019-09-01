@@ -1603,7 +1603,15 @@ fn do_command(
                         )?;
                         let mwcmqs_address =
                             contacts::MWCMQSAddress::from_str(&to.to_string())?;
-                        publisher.post_slate(&slate, mwcmqs_address.borrow())?;
+                        let resp = publisher.post_slate(&slate, mwcmqs_address.borrow());
+
+                        // if there were problems sending, we auto cancel
+                        if !resp.is_ok()
+                        {
+                            let ret_id = wallet.lock().get_id(slate.id)?;
+                            wallet.lock().cancel(ret_id)?;
+                            return resp;
+                        }
                         slate
                     } else {
                         return Err(ErrorKind::ClosedListener("mwcmqs".to_string()).into());
