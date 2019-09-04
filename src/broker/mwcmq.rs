@@ -247,6 +247,8 @@ impl MWCMQSBroker {
         let mut delcount = 0;
         let mut is_in_warning = false;
 
+        // get time from server
+
         let start = SystemTime::now();
         let time_now = start.duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis();
         let time_now_signature = sign_challenge(&format!("{}", time_now), &secret_key);
@@ -370,7 +372,7 @@ impl MWCMQSBroker {
                 let mut break_out = false;
                 for itt in 0..msgvec.len() {
                     if msgvec[itt] == "message: closenewlogin\n" || msgvec[itt] == "closenewlogin" {
-                        println!("{}: new login detected. Halting!",
+                        print!("\n{}: new login detected. mwcmqs listener will stop!",
                                  "ERROR".bright_red());
                         break_out = true;
                         break; // stop listener
