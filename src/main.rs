@@ -1741,6 +1741,15 @@ fn do_command(
                         Err(ErrorKind::ClosedListener("keybase".to_string()))?
                     }
                 }
+                AddressType::MWCMQS => {
+                    if let Some((publisher, _)) = mwcmqs_broker {
+                        let slate = wallet.lock().initiate_receive_tx(amount, outputs)?;
+                        publisher.post_slate(&slate, to.borrow())?;
+                        Ok(slate)
+                    } else {
+                        Err(ErrorKind::ClosedListener("mwcmqs".to_string()))?
+                    }
+                }
                 AddressType::Grinbox => {
                     if let Some((publisher, _)) = grinbox_broker {
                         let slate = wallet.lock().initiate_receive_tx(amount, outputs)?;
