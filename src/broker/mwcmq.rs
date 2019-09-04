@@ -6,7 +6,6 @@ use ws::{
 
 
 
-use std::time::{SystemTime, UNIX_EPOCH};
 use colored::Colorize;
 use common::crypto::sign_challenge;
 use common::crypto::Hex;
@@ -238,6 +237,7 @@ impl MWCMQSBroker {
              *guard = Some(());
         }
 
+        let mut resp_str = "".to_string();
         let secret_key = secret_key.clone();
         let cloned_address = address.clone();
         let cloned_inner = self.inner.clone();
@@ -248,18 +248,52 @@ impl MWCMQSBroker {
         let mut is_in_warning = false;
 
         // get time from server
+        let mut time_now = "";
+        let mut is_error = false;
+        let secs = 10;
+        let cl = reqwest::Client::builder()
+                         .timeout(Duration::from_secs(secs))
+                         .build();
+        if cl.is_ok() {
+            let client = cl.unwrap();
+            let resp_result = client.get(&format!(
+            "https://{}:{}/timenow?address={}",
+                                        config.mwcmqs_domain(),
+                                        config.mwcmqs_port(),
+                                        cloned_address.stripped(),
+            )).send();
 
-        let start = SystemTime::now();
-        let time_now = start.duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis();
+            if !resp_result.is_ok() {
+                is_error = true;
+            } else {
+                let mut resp = resp_result.unwrap();
+                let read_resp = resp.read_to_string(&mut resp_str);
+                if !read_resp.is_ok() {
+                    is_error = true;
+                }
+                else
+                {
+                    time_now = &resp_str;
+                }
+            }
+        } else {
+            is_error = true;
+        }
+
         let time_now_signature = sign_challenge(&format!("{}", time_now), &secret_key);
         let time_now_signature = str::replace(&format!("{:?}", &time_now_signature.unwrap()), "Signature(", "");
         let time_now_signature = str::replace(&time_now_signature, ")", "");
 
-        loop {
-            count = count + 1;
-            let cloned_cloned_address = cloned_address.clone();
-            {
-                let mut guard = cloned_inner.lock();
+        if is_error {
+            print!("\r{}: Failed to start mwcmqs subscriber. Error connecting to {}:{}\n",
+                                        "ERROR".bright_red(),
+                                        config.mwcmqs_domain(),
+                                        config.mwcmqs_port());
+        } else { loop {
+	    count = count + 1;
+	    let cloned_cloned_address = cloned_address.clone();
+	    {
+		let mut guard = cloned_inner.lock();
                 if guard.is_none() { break;}
                 *guard = Some(());
             }
@@ -279,6 +313,7 @@ impl MWCMQSBroker {
             };
 
             let mut first_response = true;
+
             let resp_result = client.get(&format!(
             "https://{}:{}/listener?address={}&delcount={}&time_now={}&signature={}",
                                         config.mwcmqs_domain(),
@@ -548,8 +583,11 @@ impl MWCMQSBroker {
                 if break_out { break; }
             }
         }
+        }
 
-        println!("\nmwcmqs listener [{}] stopped", address.stripped().bright_green());
+        if !is_error {
+            println!("\nmwcmqs listener [{}] stopped", address.stripped().bright_green());
+        }
         let mut guard = cloned_inner.lock();
         *guard = None;
     }
