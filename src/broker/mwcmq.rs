@@ -6,8 +6,8 @@ use ws::{
 
 
 
+use std::time::{SystemTime, UNIX_EPOCH};
 use colored::Colorize;
-
 use common::crypto::sign_challenge;
 use common::crypto::Hex;
 use regex::Regex;
@@ -246,6 +246,13 @@ impl MWCMQSBroker {
         let mut isnginxerror = false;
         let mut delcount = 0;
         let mut is_in_warning = false;
+
+        let start = SystemTime::now();
+        let time_now = start.duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis();
+        let time_now_signature = sign_challenge(&format!("{}", time_now), &secret_key);
+        let time_now_signature = str::replace(&format!("{:?}", &time_now_signature.unwrap()), "Signature(", "");
+        let time_now_signature = str::replace(&time_now_signature, ")", "");
+
         loop {
             count = count + 1;
             let cloned_cloned_address = cloned_address.clone();
@@ -270,11 +277,15 @@ impl MWCMQSBroker {
             };
 
             let mut first_response = true;
-            let resp_result = client.get(&format!("https://{}:{}/listener?address={}&delcount={}",
+            let resp_result = client.get(&format!(
+            "https://{}:{}/listener?address={}&delcount={}&time_now={}&signature={}",
                                         config.mwcmqs_domain(),
                                         config.mwcmqs_port(),
                                         cloned_cloned_address.stripped(),
-                                        delcount)).send();
+                                        delcount,
+                                        time_now,
+                                        time_now_signature
+            )).send();
             if !resp_result.is_ok() {
                 let err_message = format!("{:?}", resp_result);
                 let re = Regex::new(TIMEOUT_ERROR_REGEX).unwrap();
@@ -304,7 +315,7 @@ impl MWCMQSBroker {
                     delcount = 0;
                     if !connected {
                         if is_in_warning {
-                            println!("{}: mwcmqs listener [{}] reestablished connection. [1]",
+                            println!("{}: mwcmqs listener [{}] reestablished connection.",
                                 "INFO".bright_blue(),
                                 cloned_cloned_address.stripped().bright_green());
                             is_in_warning = false;
@@ -321,7 +332,7 @@ impl MWCMQSBroker {
                     print!("{}", COLORED_PROMPT);
                 } else if !connected && !isnginxerror {
                     if is_in_warning {
-                        println!("{}: listener [{}] reestablished connection. [2]",
+                        println!("{}: listener [{}] reestablished connection.",
                              "INFO".bright_blue(),
                              cloned_cloned_address.stripped().bright_green());
                         is_in_warning = false;
@@ -356,9 +367,15 @@ impl MWCMQSBroker {
                 } else {
                     vec![&resp_str]
                 };
-
+                let mut break_out = false;
                 for itt in 0..msgvec.len() {
-                    if msgvec[itt] == "message: mapmessage=nil\n" || msgvec[itt] == "mapmessage=nil" {
+                    if msgvec[itt] == "message: closenewlogin\n" || msgvec[itt] == "closenewlogin" {
+                        println!("{}: new login detected. Halting!",
+                                 "ERROR".bright_red());
+                        break_out = true;
+                        break; // stop listener
+                    }
+                    else if msgvec[itt] == "message: mapmessage=nil\n" || msgvec[itt] == "mapmessage=nil" {
                         if first_response {
                             delcount = 1;
                             first_response = false;
@@ -525,6 +542,8 @@ impl MWCMQSBroker {
                         }
                     }
                 }
+
+                if break_out { break; }
             }
         }
 
