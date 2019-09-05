@@ -44,7 +44,7 @@ impl dyn Address {
         let re = Regex::new(ADDRESS_REGEX)?;
         let captures = re.captures(address);
         if captures.is_none() {
-            return Ok(Box::new(GrinboxAddress::from_str(address)?));
+            return Ok(Box::new(MWCMQSAddress::from_str(address)?));
         }
 
         let captures = captures.unwrap();

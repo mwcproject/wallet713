@@ -131,7 +131,7 @@ fn do_config(
     }
 
     if let Some(domain) = args.value_of("domain") {
-        config.mwcmq_domain = domain.to_string();
+        config.mwcmq_domain = Some(domain.to_string());
         any_matches = true;
     }
 
@@ -795,20 +795,20 @@ fn main() {
 
     println!("{}", WELCOME_FOOTER.bright_blue());
 
-    let mut grinbox_listener_handle: Option<std::thread::JoinHandle<()>> = None;
+    let grinbox_listener_handle: Option<std::thread::JoinHandle<()>> = None;
     let mut keybase_listener_handle: Option<std::thread::JoinHandle<()>> = None;
     let mut owner_api_handle: Option<std::thread::JoinHandle<()>> = None;
     let mut foreign_api_handle: Option<std::thread::JoinHandle<()>> = None;
 
     if config.grinbox_listener_auto_start() {
-        let result = start_grinbox_listener(&config, wallet.clone(), address_book.clone());
+        let result = start_mwcmqs_listener(&config, wallet.clone(), address_book.clone());
         match result {
             Err(e) => cli_message!("{}: {}", "ERROR".bright_red(), e),
-            Ok((publisher, subscriber, handle)) => {
-                grinbox_broker = Some((publisher, subscriber));
-                grinbox_listener_handle = Some(handle);
+            Ok((publisher, subscriber)) => {
+                mwcmqs_broker = Some((publisher, subscriber));
             },
         }
+
     }
 
     if config.keybase_listener_auto_start() {
@@ -1212,12 +1212,12 @@ fn do_command(
             let grinbox = matches
                 .subcommand_matches("listen")
                 .unwrap()
-                .is_present("mwcmq");
+                .is_present("grinbox");
             let keybase = matches
                 .subcommand_matches("listen")
                 .unwrap()
                 .is_present("keybase");
-            if grinbox || (!keybase && !mwcmqs) {
+            if grinbox {
                 let is_running = match grinbox_broker {
                     Some((_, subscriber)) => subscriber.is_running(),
                     _ => false,
@@ -1230,7 +1230,7 @@ fn do_command(
                     *grinbox_broker = Some((publisher, subscriber));
                 }
             }
-            if mwcmqs  && !keybase {
+            if mwcmqs || (!keybase && !grinbox) {
                 let is_running = match mwcmqs_broker {
                     Some((_, subscriber)) => subscriber.is_running(),
                     _ => false,
@@ -1265,12 +1265,12 @@ fn do_command(
             let grinbox = matches
                 .subcommand_matches("stop")
                 .unwrap()
-                .is_present("mwcmq");
+                .is_present("grinbox");
             let keybase = matches
                 .subcommand_matches("stop")
                 .unwrap()
                 .is_present("keybase");
-            if grinbox || (!keybase && !mwcmqs) {
+            if grinbox {
                 let is_running = match grinbox_broker {
                     Some((_, subscriber)) => subscriber.is_running(),
                     _ => false,
@@ -1285,7 +1285,7 @@ fn do_command(
                     Err(ErrorKind::ClosedListener("mwcmq".to_string()))?
                 }
             }
-            if mwcmqs && !keybase {
+            if mwcmqs || (!keybase && !grinbox) {
                 let is_running = match mwcmqs_broker {
                     Some((_, subscriber)) => subscriber.is_running(),
                     _ => false,
