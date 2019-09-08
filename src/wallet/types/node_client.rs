@@ -116,9 +116,9 @@ impl NodeClient for HTTPNodeClient {
 		let url;
 		let dest = self.node_url();
 		if fluff {
-			url = format!("{}/v1/pool/push?fluff", dest);
+			url = format!("{}/v1/pool/push_tx?fluff", dest);
 		} else {
-			url = format!("{}/v1/pool/push", dest);
+			url = format!("{}/v1/pool/push_tx", dest);
 		}
 		let res = if global::is_main() {
                         client::post_no_ret(url.as_str(), self.node_api_secret(), tx, global::ChainTypes::Mainnet)
@@ -129,7 +129,7 @@ impl NodeClient for HTTPNodeClient {
                 };
 		if let Err(e) = res {
 			let report = format!("Posting transaction to node: {}", e);
-			error!("Post TX Error: {}", e);
+			println!("Post TX Error: {}", e);
 			return Err(ErrorKind::ClientCallback(report).into());
 		}
 		Ok(())
@@ -275,7 +275,6 @@ impl NodeClient for HTTPNodeClient {
 		let query_param = format!("start_index={}&max={}", start_height, max_outputs);
 
 		let url = format!("{}/v1/txhashset/outputs?{}", addr, query_param,);
-
 		let mut api_outputs: Vec<(Commitment, RangeProof, bool, u64, u64)> =
 			Vec::new();
 
@@ -307,7 +306,7 @@ impl NodeClient for HTTPNodeClient {
 			}
 			Err(e) => {
 				// if we got anything other than 200 back from server, bye
-				error!(
+				println!(
 					"get_outputs_by_pmmr_index: error contacting {}. Error: {}",
 					addr, e
 				);
