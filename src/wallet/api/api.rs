@@ -18,6 +18,7 @@ use super::types::{
     TxWrapper, WalletBackend, WalletInfo,
 };
 use super::updater;
+use grin_keychain::SwitchCommitmentType;
 
 pub struct Wallet713OwnerAPI<W: ?Sized, C, K>
 where
@@ -101,7 +102,7 @@ where
         let amount = amount / 1000000000;
         let mut w = self.wallet.lock();
         let id = keys::next_available_key(&mut *w)?;
-        let sec_key = w.keychain().derive_key(amount, &id)?;
+        let sec_key = w.keychain().derive_key(amount, &id, &SwitchCommitmentType::Regular)?;
         let pubkey = PublicKey::from_secret_key(w.keychain().secp(), &sec_key)?;
         let ret = format!("{:?}, {:?}", id, pubkey);
         Ok(ret)
@@ -456,7 +457,7 @@ where
     }
 
     pub fn post_tx(&self, tx: &Transaction, fluff: bool) -> Result<(), Error> {
-        let tx_hex = grin_util::to_hex(ser::ser_vec(tx).unwrap());
+        let tx_hex = grin_util::to_hex(ser::ser_vec(tx, ser::ProtocolVersion::local()).unwrap());
         let client = {
             let mut w = self.wallet.lock();
             w.w2n_client().clone()

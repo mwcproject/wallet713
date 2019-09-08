@@ -178,7 +178,7 @@ impl GrinboxBroker {
                 ),
             }
         };
-        let secret_key = secret_key.clone();
+        let cloned_secret_key = secret_key.clone();
         let cloned_address = address.clone();
         let cloned_inner = self.inner.clone();
         let cloned_handler = handler.clone();
@@ -189,6 +189,7 @@ impl GrinboxBroker {
             let cloned_cloned_inner = cloned_inner.clone();
             let cloned_connection_meta_data = connection_meta_data.clone();
             let cloned_config = config.clone();
+            let cloned_cloned_secret_key = cloned_secret_key.clone();
 
             let result = connect(url.clone(), move |sender| {
                 {
@@ -201,7 +202,7 @@ impl GrinboxBroker {
                     handler: cloned_handler.clone(),
                     challenge: None,
                     address: cloned_address.clone(),
-                    secret_key,
+                    secret_key: cloned_cloned_secret_key.clone(),
                     connection_meta_data: cloned_connection_meta_data.clone(),
                     config: cloned_config.clone(),
                 };

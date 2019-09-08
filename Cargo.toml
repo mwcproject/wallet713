@@ -1,6 +1,6 @@
 [package]
 name = "mwc713"
-version = "2.1.6-beta.1"
+version = "2.1.6-beta.2"
 authors = ["vault713 devs"]
 description = "A wallet that makes it easy to send, store, and swap Grin."
 keywords = [ "grin", "mimblewimble", "rust", "crypto", "cryptocurrency" ]
@@ -49,9 +49,9 @@ commands = "0.0.5"
 enquote = "1.0"
 reqwest = "0.9.20"
 
-grin_api = { git = "https://github.com/mwcproject/mwc-node"}
-grin_core = { git = "https://github.com/mwcproject/mwc-node" }
-grin_keychain = { git = "https://github.com/mwcproject/mwc-node" }
-grin_util = { git = "https://github.com/mwcproject/mwc-node" }
-grin_store = { git = "https://github.com/mwcproject/mwc-node" }
-grin_p2p = { git = "https://github.com/mwcproject/mwc-node" }
+grin_api = { git = "https://github.com/mwcproject/mwc-node", tag="2.3.3"}
+grin_core = { git = "https://github.com/mwcproject/mwc-node", tag="2.3.3"}
+grin_keychain = { git = "https://github.com/mwcproject/mwc-node", tag="2.3.3"}
+grin_util = { git = "https://github.com/mwcproject/mwc-node", tag="2.3.3"}
+grin_store = { git = "https://github.com/mwcproject/mwc-node", tag="2.3.3"}
+grin_p2p = { git = "https://github.com/mwcproject/mwc-node", tag="2.3.3"}

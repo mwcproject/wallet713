@@ -9,6 +9,8 @@ use grin_core::libtx::reward;
 use grin_core::{global, ser};
 use grin_util::secp::pedersen;
 use grin_util::{from_hex, to_hex};
+use grin_core::libtx::proof::ProofBuilder;
+use grin_keychain::SwitchCommitmentType;
 use std::convert::TryFrom;
 
 use super::types::{
@@ -60,7 +62,7 @@ where
         .map(|out| {
             let commit = match out.commit.clone() {
                 Some(c) => pedersen::Commitment::from_vec(from_hex(c).unwrap()),
-                None => keychain.commit(out.value, &out.key_id).unwrap(),
+                None => keychain.commit(out.value, &out.key_id, &SwitchCommitmentType::Regular).unwrap(),
             };
             (out, commit)
         })
@@ -275,7 +277,7 @@ where
     for out in unspents {
         let commit = match out.commit.clone() {
             Some(c) => pedersen::Commitment::from_vec(from_hex(c).unwrap()),
-            None => keychain.commit(out.value, &out.key_id).unwrap(),
+            None => keychain.commit(out.value, &out.key_id, &SwitchCommitmentType::Regular).unwrap(),
         };
         wallet_outputs.insert(commit, (out.key_id.clone(), out.mmr_index));
     }
@@ -523,12 +525,12 @@ where
 {
     let (out, kern, block_fees) = receive_coinbase(wallet, block_fees).context(ErrorKind::Node)?;
 
-    let out_bin = ser::ser_vec(&out).context(ErrorKind::Node)?;
+    let out_bin = ser::ser_vec(&out, ser::ProtocolVersion::local()).context(ErrorKind::Node)?;
 
-    let kern_bin = ser::ser_vec(&kern).context(ErrorKind::Node)?;
+    let kern_bin = ser::ser_vec(&kern, ser::ProtocolVersion::local()).context(ErrorKind::Node)?;
 
     let key_id_bin = match block_fees.key_id {
-        Some(key_id) => ser::ser_vec(&key_id).context(ErrorKind::Node)?,
+        Some(key_id) => ser::ser_vec(&key_id, ser::ProtocolVersion::local()).context(ErrorKind::Node)?,
         None => vec![],
     };
 
@@ -592,7 +594,13 @@ where
 
     debug!("receive_coinbase: {:?}", block_fees);
 
-    let (out, kern) = reward::output(wallet.keychain(), &key_id, block_fees.fees, false, height).unwrap();
+    let keychain = wallet.keychain();
+    let (out, kern) = reward::output(keychain,
+                                     &ProofBuilder::new(keychain),
+                                     &key_id,
+                                     block_fees.fees,
+                                     false,
+                                     height).unwrap();
     /* .context(ErrorKind::Keychain)?; */
     Ok((out, kern, block_fees))
 }

@@ -12,6 +12,7 @@ use grin_store::Store;
 use grin_util::secp::constants::SECRET_KEY_SIZE;
 use grin_util::ZeroingString;
 use grin_util::{from_hex, to_hex};
+use grin_keychain::SwitchCommitmentType;
 
 use crate::common::config::WalletConfig;
 
@@ -41,7 +42,7 @@ fn private_ctx_xor_keys<K>(
 where
     K: Keychain,
 {
-    let root_key = keychain.derive_key(0, &K::root_key_id())?;
+    let root_key = keychain.derive_key(0, &K::root_key_id(), &SwitchCommitmentType::Regular)?;
 
     // derive XOR values for storing secret values in DB
     // h(root_key|slate_id|"blind")
@@ -232,7 +233,7 @@ where
         let mut content = String::new();
         tx_f.read_to_string(&mut content)?;
         let tx_bin = from_hex(content).unwrap();
-        Ok(ser::deserialize::<Transaction>(&mut &tx_bin[..]).unwrap())
+        Ok(ser::deserialize::<Transaction>(&mut &tx_bin[..], ser::ProtocolVersion::local()).unwrap())
     }
 
     fn has_stored_tx_proof(&self, uuid: &str) -> Result<bool> {
@@ -305,7 +306,9 @@ where
     }
 
     fn check_repair(&mut self) -> Result<()> {
-        restore::check_repair(self).context(ErrorKind::Restore)?;
+        // this boolean is for delete unconfirmed. For now, true.
+        // could allow user to choose later.
+        restore::check_repair(self, true).context(ErrorKind::Restore)?;
         Ok(())
     }
 
@@ -314,7 +317,7 @@ where
             Ok(None)
         } else {
             Ok(Some(grin_util::to_hex(
-                self.keychain().commit(amount, &id)?.0.to_vec(),
+                self.keychain().commit(amount, &id, &SwitchCommitmentType::Regular)?.0.to_vec(),
             )))
         }
     }
@@ -376,7 +379,7 @@ where
             .join(filename);
         let path_buf = Path::new(&path).to_path_buf();
         let mut stored_tx = File::create(path_buf)?;
-        let tx_hex = to_hex(ser::ser_vec(tx).unwrap());;
+        let tx_hex = to_hex(ser::ser_vec(tx, ser::ProtocolVersion::local()).unwrap());;
         stored_tx.write_all(&tx_hex.as_bytes())?;
         stored_tx.sync_all()?;
         Ok(())

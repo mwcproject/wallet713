@@ -20,12 +20,14 @@ use failure::ResultExt;
 use grin_core::core::amount_to_hr_string;
 use grin_core::core::committed::Committed;
 use grin_core::core::transaction::{
-	kernel_features, kernel_sig_msg, Input, Output, Transaction,
+	Input, Output, Transaction,
 	TransactionBody, TxKernel, Weighting,
+        KernelFeatures,
 };
 use grin_core::core::verifier_cache::LruVerifierCache;
 use grin_core::libtx::{aggsig, build, secp_ser, tx_fee};
 use grin_keychain::{BlindSum, BlindingFactor, Keychain};
+use grin_core::libtx::proof::ProofBuild;
 use grin_util::secp;
 use grin_util::secp::key::{PublicKey, SecretKey};
 use grin_util::secp::Signature;
@@ -36,7 +38,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::wallet::error::{Error, ErrorKind};
-use super::versions::{v0::SlateV0, v1::SlateV1, v2::*};
+use super::versions::v2::*;
 use super::versions::{CURRENT_SLATE_VERSION, GRIN_BLOCK_HEADER_VERSION};
 use serde::{Serialize, Serializer};
 
@@ -192,20 +194,14 @@ impl Slate {
 	/// Recieve a slate, upgrade it to the latest version internally
 	pub fn deserialize_upgrade(slate_json: &str) -> Result<Slate, Error> {
 		let version = Slate::parse_slate_version(slate_json)?;
-		let v2 = match version {
+		let v2: SlateV2 = match version {
 			2 => serde_json::from_str(slate_json).context(ErrorKind::SlateDeser)?,
-			1 => {
-				let mut v1: SlateV1 =
-					serde_json::from_str(slate_json).context(ErrorKind::SlateDeser)?;
-				v1.orig_version = 1;
-				SlateV2::from(v1)
-			}
-			0 => {
+			/*0 => {
 				let v0: SlateV0 =
 					serde_json::from_str(slate_json).context(ErrorKind::SlateDeser)?;
 				let v1 = SlateV1::from(v0);
 				SlateV2::from(v1)
-			}
+			}*/
 			_ => return Err(ErrorKind::SlateVersion(version).into()),
 		};
 		Ok(v2.into())
@@ -232,19 +228,21 @@ impl Slate {
 
 	/// Adds selected inputs and outputs to the slate's transaction
 	/// Returns blinding factor
-	pub fn add_transaction_elements<K>(
+	pub fn add_transaction_elements<K, B>(
 		&mut self,
 		keychain: &K,
-		mut elems: Vec<Box<build::Append<K>>>,
+		mut elems: Vec<Box<build::Append<K, B>>>,
+                builder: &B,
 	) -> Result<BlindingFactor, Error>
 	where
 		K: Keychain,
+		B: ProofBuild,
 	{
 		// Append to the exiting transaction
 		if self.tx.kernels().len() != 0 {
 			elems.insert(0, build::initial_tx(self.tx.clone()));
 		}
-		let (tx, blind) = build::partial_transaction(elems, keychain)?;
+		let (tx, blind) = build::partial_transaction(elems, keychain, builder)?;
 		self.tx = tx;
 		Ok(blind)
 	}
@@ -283,8 +281,11 @@ impl Slate {
 	// Currently includes the fee and the lock_height.
 	fn msg_to_sign(&self) -> Result<secp::Message, Error> {
 		// Currently we only support interactively creating a tx with a "default" kernel.
-		let features = kernel_features(self.lock_height);
-		let msg = kernel_sig_msg(self.fee, self.lock_height, features)?;
+                let features = KernelFeatures::HeightLocked {
+                                fee: self.fee,
+                                lock_height: self.lock_height,
+                        };
+                let msg = features.kernel_sig_msg()?;
 		Ok(msg)
 	}
 
@@ -654,6 +655,8 @@ impl Serialize for Slate {
 			2 => {
 				v2.serialize(serializer)
 			},
+                        // left as a reminder
+                        /*
 			1 => {
 				let v1 = SlateV1::from(v2);
 				v1.serialize(serializer)
@@ -662,7 +665,7 @@ impl Serialize for Slate {
 				let v1 = SlateV1::from(v2);
 				let v0 = SlateV0::from(v1);
 				v0.serialize(serializer)
-			},
+			},*/
 			v => Err(S::Error::custom(format!("Unknown slate version {}", v))),
 		}
     }
@@ -841,22 +844,22 @@ impl From<&Output> for OutputV2 {
 }
 
 impl From<&TxKernel> for TxKernelV2 {
-	fn from(kernel: &TxKernel) -> TxKernelV2 {
-		let TxKernel {
-			features,
-			fee,
-			lock_height,
-			excess,
-			excess_sig,
-		} = *kernel;
-		TxKernelV2 {
-			features,
-			fee,
-			lock_height,
-			excess,
-			excess_sig,
-		}
-	}
+        fn from(kernel: &TxKernel) -> TxKernelV2 {
+                let (features, fee, lock_height) = match kernel.features {
+                        KernelFeatures::Plain { fee } => (CompatKernelFeatures::Plain, fee, 0),
+                        KernelFeatures::Coinbase => (CompatKernelFeatures::Coinbase, 0, 0),
+                        KernelFeatures::HeightLocked { fee, lock_height } => {
+                                (CompatKernelFeatures::HeightLocked, fee, lock_height)
+                        }
+                };
+                TxKernelV2 {
+                        features,
+                        fee,
+                        lock_height,
+                        excess: kernel.excess,
+                        excess_sig: kernel.excess_sig,
+                }
+        }
 }
 
 // Versioned to current slate
@@ -985,20 +988,24 @@ impl From<&OutputV2> for Output {
 }
 
 impl From<&TxKernelV2> for TxKernel {
-	fn from(kernel: &TxKernelV2) -> TxKernel {
-		let TxKernelV2 {
-			features,
-			fee,
-			lock_height,
-			excess,
-			excess_sig,
-		} = *kernel;
-		TxKernel {
-			features,
-			fee,
-			lock_height,
-			excess,
-			excess_sig,
-		}
-	}
+        fn from(kernel: &TxKernelV2) -> TxKernel {
+                let (fee, lock_height) = (kernel.fee, kernel.lock_height);
+                let features = match kernel.features {
+                        CompatKernelFeatures::Plain => KernelFeatures::Plain { fee },
+                        CompatKernelFeatures::Coinbase => KernelFeatures::Coinbase,
+                        CompatKernelFeatures::HeightLocked => KernelFeatures::HeightLocked { fee, lock_height },
+                };
+                TxKernel {
+                        features,
+                        excess: kernel.excess,
+                        excess_sig: kernel.excess_sig,
+                }
+        }
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub enum CompatKernelFeatures {
+        Plain,
+        Coinbase,
+        HeightLocked,
 }
