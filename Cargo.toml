@@ -1,8 +1,8 @@
 [package]
 name = "mwc713"
-version = "2.1.6-beta.2"
+version = "2.2.0"
 authors = ["vault713 devs"]
-description = "A wallet that makes it easy to send, store, and swap Grin."
+description = "A wallet that makes it easy to send, store, and swap MWC."
 keywords = [ "grin", "mimblewimble", "rust", "crypto", "cryptocurrency" ]
 license = "Apache-2.0"
 readme = "README.md"

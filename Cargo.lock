@@ -1348,7 +1348,7 @@ dependencies = [
 
 [[package]]
 name = "mwc713"
-version = "2.1.6-beta.2"
+version = "2.2.0"
 dependencies = [
  "ansi_term 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "blake2-rfc 0.2.18 (registry+https://github.com/rust-lang/crates.io-index)",
