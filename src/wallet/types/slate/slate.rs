@@ -16,33 +16,30 @@
 //! around during an interactive wallet exchange
 
 use blake2_rfc::blake2b::blake2b;
-use failure::ResultExt;
+use crate::wallet::ErrorKind;
+use failure::Error;
 use grin_core::core::amount_to_hr_string;
 use grin_core::core::committed::Committed;
 use grin_core::core::transaction::{
-	kernel_sig_msg,
-	Input, Output, Transaction,
-	TransactionBody, TxKernel, Weighting,
-        KernelFeatures,
+	kernel_features, kernel_sig_msg, Input, Output, Transaction, TransactionBody, TxKernel,
+	Weighting,
 };
 use grin_core::core::verifier_cache::LruVerifierCache;
-use grin_core::libtx::{aggsig, build, secp_ser, tx_fee};
+use grin_core::libtx::{aggsig, build, proof::ProofBuild, secp_ser, tx_fee};
+use grin_core::map_vec;
 use grin_keychain::{BlindSum, BlindingFactor, Keychain};
-use grin_core::libtx::proof::ProofBuild;
-use grin_util::secp;
 use grin_util::secp::key::{PublicKey, SecretKey};
 use grin_util::secp::Signature;
-use grin_util::RwLock;
+use grin_util::{self, secp, RwLock};
+use failure::ResultExt;
 use rand::rngs::mock::StepRng;
 use rand::thread_rng;
+use serde::ser::{Serialize, Serializer};
+use serde_json;
+use std::fmt;
 use std::sync::Arc;
 use uuid::Uuid;
-
-use crate::wallet::error::{Error, ErrorKind};
 use super::versions::v2::*;
-use super::versions::{CURRENT_SLATE_VERSION, GRIN_BLOCK_HEADER_VERSION};
-use serde::{Serialize, Serializer};
-
 
 /// Public data for each participant in the slate
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -99,6 +96,48 @@ pub struct ParticipantMessageData {
 	pub message_sig: Option<Signature>,
 }
 
+impl ParticipantMessageData {
+	/// extract relevant message data from participant data
+	#[allow(dead_code)]
+	pub fn from_participant_data(p: &ParticipantData) -> ParticipantMessageData {
+		ParticipantMessageData {
+			id: p.id,
+			public_key: p.public_blind_excess,
+			message: p.message.clone(),
+			message_sig: p.message_sig.clone(),
+		}
+	}
+}
+
+impl fmt::Display for ParticipantMessageData {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		writeln!(f, "")?;
+		write!(f, "Participant ID {} ", self.id)?;
+		if self.id == 0 {
+			writeln!(f, "(Sender)")?;
+		} else {
+			writeln!(f, "(Recipient)")?;
+		}
+		writeln!(f, "---------------------")?;
+		let static_secp = grin_util::static_secp_instance();
+		let static_secp = static_secp.lock();
+		writeln!(
+			f,
+			"Public Key: {}",
+			&grin_util::to_hex(self.public_key.serialize_vec(&static_secp, true).to_vec())
+		)?;
+		let message = match self.message.clone() {
+			None => "None".to_owned(),
+			Some(m) => m,
+		};
+		writeln!(f, "Message: {}", message)?;
+		let message_sig = match self.message_sig.clone() {
+			None => "None".to_owned(),
+			Some(m) => grin_util::to_hex(m.to_raw_data().to_vec()),
+		};
+		writeln!(f, "Message Signature: {}", message_sig)
+	}
+}
 
 /// A 'Slate' is passed around to all parties to build up all of the public
 /// transaction data needed to create a finalized transaction. Callers can pass
@@ -152,30 +191,11 @@ pub struct ParticipantMessages {
 	pub messages: Vec<ParticipantMessageData>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct SlateVersionProbe {
-	#[serde(default)]
-	version: Option<u64>,
-	#[serde(default)]
-	version_info: Option<VersionCompatInfo>,
-}
-
-impl SlateVersionProbe {
-	pub fn version(&self) -> u16 {
-		match &self.version_info {
-			Some(v) => v.version,
-			None => match self.version {
-				Some(_) => 1,
-				None => 0,
-			},
-		}
-	}
-}
-
 impl Slate {
+	/// Attempt to find slate version
 	pub fn parse_slate_version(slate_json: &str) -> Result<u16, Error> {
-		let probe: SlateVersionProbe = serde_json::from_str(slate_json)
-			.map_err(|_| ErrorKind::SlateVersionParse)?;
+		let probe: SlateVersionProbe =
+			serde_json::from_str(slate_json).map_err(|_| ErrorKind::SlateVersionParse)?;
 		Ok(probe.version())
 	}
 
@@ -184,6 +204,7 @@ impl Slate {
 		let version = Slate::parse_slate_version(slate_json)?;
 		let v2: SlateV2 = match version {
 			2 => serde_json::from_str(slate_json).context(ErrorKind::SlateDeser)?,
+			// left as a reminder
 			/*0 => {
 				let v0: SlateV0 =
 					serde_json::from_str(slate_json).context(ErrorKind::SlateDeser)?;
@@ -207,9 +228,9 @@ impl Slate {
 			lock_height: 0,
 			participant_data: vec![],
 			version_info: VersionCompatInfo {
-				version: CURRENT_SLATE_VERSION,
-				orig_version: CURRENT_SLATE_VERSION,
-				block_header_version: GRIN_BLOCK_HEADER_VERSION,
+				version: 2,
+				orig_version: 2,
+				block_header_version: 1,
 			},
 		}
 	}
@@ -219,8 +240,8 @@ impl Slate {
 	pub fn add_transaction_elements<K, B>(
 		&mut self,
 		keychain: &K,
+		builder: &B,
 		mut elems: Vec<Box<build::Append<K, B>>>,
-                builder: &B,
 	) -> Result<BlindingFactor, Error>
 	where
 		K: Keychain,
@@ -269,8 +290,8 @@ impl Slate {
 	// Currently includes the fee and the lock_height.
 	fn msg_to_sign(&self) -> Result<secp::Message, Error> {
 		// Currently we only support interactively creating a tx with a "default" kernel.
-                let features = KernelFeatures::HeightLocked;
-                let msg = kernel_sig_msg(self.fee, self.lock_height, features)?;
+		let features = kernel_features(self.lock_height);
+		let msg = kernel_sig_msg(self.fee, self.lock_height, features)?;
 		Ok(msg)
 	}
 
@@ -296,19 +317,33 @@ impl Slate {
 			Some(&self.pub_blind_sum(keychain.secp())?),
 			&self.msg_to_sign()?,
 		)?;
-		self.participant_data[participant_id].part_sig = Some(sig_part);
+		for i in 0..self.num_participants {
+			if self.participant_data[i].id == participant_id as u64 {
+				self.participant_data[i].part_sig = Some(sig_part);
+				break;
+			}
+		}
 		Ok(())
 	}
 
 	/// Creates the final signature, callable by either the sender or recipient
 	/// (after phase 3: sender confirmation)
-	/// TODO: Only callable by receiver at the moment
 	pub fn finalize<K>(&mut self, keychain: &K) -> Result<(), Error>
 	where
 		K: Keychain,
 	{
 		let final_sig = self.finalize_signature(keychain)?;
 		self.finalize_transaction(keychain, &final_sig)
+	}
+
+	/// Return the participant with the given id
+	pub fn _participant_with_id(&self, id: usize) -> Option<ParticipantData> {
+		for p in self.participant_data.iter() {
+			if p.id as usize == id {
+				return Some(p.clone());
+			}
+		}
+		None
 	}
 
 	/// Return the sum of public nonces
@@ -401,8 +436,7 @@ impl Slate {
 	}
 
 	/// helper to return all participant messages
-        /*
-	pub fn participant_messages(&self) -> ParticipantMessages {
+	pub fn _participant_messages(&self) -> ParticipantMessages {
 		let mut ret = ParticipantMessages { messages: vec![] };
 		for ref m in self.participant_data.iter() {
 			ret.messages
@@ -410,7 +444,6 @@ impl Slate {
 		}
 		ret
 	}
-        */
 
 	/// Somebody involved needs to generate an offset with their private key
 	/// For now, we'll have the transaction initiator be responsible for it
@@ -483,9 +516,11 @@ impl Slate {
 		// collect public nonces
 		for p in self.participant_data.iter() {
 			if p.is_complete() {
+let part_sig_tmp = p.part_sig.as_ref().unwrap();
+println!("part_sig={:?}", part_sig_tmp);
 				aggsig::verify_partial_sig(
 					secp,
-					p.part_sig.as_ref().unwrap(),
+					part_sig_tmp,
 					&self.pub_nonce_sum(secp)?,
 					&p.public_blind_excess,
 					Some(&self.pub_blind_sum(secp)?),
@@ -590,7 +625,7 @@ impl Slate {
 	where
 		K: Keychain,
 	{
-		// let kernel_offset = &self.tx.offset;
+		let kernel_offset = &self.tx.offset;
 
 		self.check_fees()?;
 
@@ -605,7 +640,7 @@ impl Slate {
 			// subtract the kernel_excess (built from kernel_offset)
 			let offset_excess = keychain
 				.secp()
-				.commit(0, final_tx.offset.secret_key(&keychain.secp())?)?;
+				.commit(0, kernel_offset.secret_key(&keychain.secp())?)?;
 			keychain
 				.secp()
 				.commit_sum(vec![tx_excess], vec![offset_excess])?
@@ -632,28 +667,43 @@ impl Slate {
 
 impl Serialize for Slate {
 	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where S: Serializer {
+	where
+		S: Serializer,
+	{
 		use serde::ser::Error;
 
 		let v2 = SlateV2::from(self);
 		match self.version_info.orig_version {
-			2 => {
-				v2.serialize(serializer)
-			},
-                        // left as a reminder
-                        /*
-			1 => {
-				let v1 = SlateV1::from(v2);
-				v1.serialize(serializer)
-			},
-			0 => {
+			2 => v2.serialize(serializer),
+			// left as a reminder
+			/*0 => {
 				let v1 = SlateV1::from(v2);
 				let v0 = SlateV0::from(v1);
 				v0.serialize(serializer)
-			},*/
+			}*/
 			v => Err(S::Error::custom(format!("Unknown slate version {}", v))),
 		}
-    }
+	}
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SlateVersionProbe {
+	#[serde(default)]
+	version: Option<u64>,
+	#[serde(default)]
+	version_info: Option<VersionCompatInfo>,
+}
+
+impl SlateVersionProbe {
+	pub fn version(&self) -> u16 {
+		match &self.version_info {
+			Some(v) => v.version,
+			None => match self.version {
+				Some(_) => 1,
+				None => 0,
+			},
+		}
+	}
 }
 
 // Current slate version to versioned conversions
@@ -829,22 +879,22 @@ impl From<&Output> for OutputV2 {
 }
 
 impl From<&TxKernel> for TxKernelV2 {
-        fn from(kernel: &TxKernel) -> TxKernelV2 {
-                let TxKernel {
-                        features,
-                        fee,
-                        lock_height,
-                        excess,
-                        excess_sig,
-                } = *kernel;
-                TxKernelV2 {
-                        features,
-                        fee,
-                        lock_height,
-                        excess,
-                        excess_sig,
-                }
-        }
+	fn from(kernel: &TxKernel) -> TxKernelV2 {
+		let TxKernel {
+			features,
+			fee,
+			lock_height,
+			excess,
+			excess_sig,
+		} = *kernel;
+		TxKernelV2 {
+			features,
+			fee,
+			lock_height,
+			excess,
+			excess_sig,
+		}
+	}
 }
 
 // Versioned to current slate
@@ -973,20 +1023,20 @@ impl From<&OutputV2> for Output {
 }
 
 impl From<&TxKernelV2> for TxKernel {
-        fn from(kernel: &TxKernelV2) -> TxKernel {
-                let TxKernelV2 {
-                        features,
-                        fee,
-                        lock_height,
-                        excess,
-                        excess_sig,
-                } = *kernel;
-                TxKernel {
-                        features,
-                        fee,
-                        lock_height,
-                        excess,
-                        excess_sig,
-                }
-        }
+	fn from(kernel: &TxKernelV2) -> TxKernel {
+		let TxKernelV2 {
+			features,
+			fee,
+			lock_height,
+			excess,
+			excess_sig,
+		} = *kernel;
+		TxKernel {
+			features,
+			fee,
+			lock_height,
+			excess,
+			excess_sig,
+		}
+	}
 }

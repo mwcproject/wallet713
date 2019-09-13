@@ -8,6 +8,7 @@ use super::types::{
 use super::updater;
 
 use crate::wallet::types::TxProof;
+use crate::wallet;
 
 pub fn receive_tx<T: ?Sized, C, K>(
     wallet: &mut T,
@@ -138,7 +139,7 @@ where
     // Final transaction can be built by anyone at this stage
     let res = slate.finalize(wallet.keychain());
     if let Err(e) = res {
-        Err(ErrorKind::LibTX(e.kind()))?
+        Err(ErrorKind::LibTX(wallet::error::ErrorKind::WalletComms(e.to_string())))?
     }
     Ok(())
 }
