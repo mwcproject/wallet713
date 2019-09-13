@@ -457,7 +457,7 @@ where
     }
 
     pub fn post_tx(&self, tx: &Transaction, fluff: bool) -> Result<(), Error> {
-        let tx_hex = grin_util::to_hex(ser::ser_vec(tx, ser::ProtocolVersion::local()).unwrap());
+        let tx_hex = grin_util::to_hex(ser::ser_vec(tx).unwrap());
         let client = {
             let mut w = self.wallet.lock();
             w.w2n_client().clone()

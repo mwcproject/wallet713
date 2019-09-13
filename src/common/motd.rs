@@ -21,13 +21,13 @@ pub struct MOTD {
 pub fn get_motd() -> Result<(), Error> {
     let crate_version = Version::parse(crate_version!())?;
 
-    let motd: MOTD = if global::is_main() {
+    let motd: MOTD = if global::is_mainnet() {
         client::get(
             "https://wallet.mwc.mw/motd.json",
             None,
             global::ChainTypes::Mainnet
         )?
-    } else if global::is_floo() {
+    } else if global::is_floonet() {
         client::get(
             "https://wallet.mwc.mw/motd.json",
             None,

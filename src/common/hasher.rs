@@ -15,15 +15,15 @@ type HmacSha512 = Hmac<Sha512>;
 
 #[derive(Clone, Debug)]
 pub struct BIP32GrinboxHasher {
-    is_floo: bool,
+    is_floonet: bool,
     hmac_sha512: HmacSha512,
 }
 
 impl BIP32GrinboxHasher {
     /// New empty hasher
-    pub fn new(is_floo: bool) -> Self {
+    pub fn new(is_floonet: bool) -> Self {
         Self {
-            is_floo,
+            is_floonet,
             hmac_sha512: HmacSha512::new(GenericArray::from_slice(&[0u8; 128])),
         }
     }
@@ -31,13 +31,13 @@ impl BIP32GrinboxHasher {
 
 impl BIP32Hasher for BIP32GrinboxHasher {
     fn network_priv(&self) -> [u8; 4] {
-        match self.is_floo {
+        match self.is_floonet {
             true => [42, 0, 0, 42],
             false => [42, 1, 0, 42],
         }
     }
     fn network_pub(&self) -> [u8; 4] {
-        match self.is_floo {
+        match self.is_floonet {
             true => [42, 0, 1, 42],
             false => [42, 1, 1, 42],
         }

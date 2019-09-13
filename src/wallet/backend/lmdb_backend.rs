@@ -233,7 +233,7 @@ where
         let mut content = String::new();
         tx_f.read_to_string(&mut content)?;
         let tx_bin = from_hex(content).unwrap();
-        Ok(ser::deserialize::<Transaction>(&mut &tx_bin[..], ser::ProtocolVersion::local()).unwrap())
+        Ok(ser::deserialize::<Transaction>(&mut &tx_bin[..]).unwrap())
     }
 
     fn has_stored_tx_proof(&self, uuid: &str) -> Result<bool> {
@@ -379,7 +379,7 @@ where
             .join(filename);
         let path_buf = Path::new(&path).to_path_buf();
         let mut stored_tx = File::create(path_buf)?;
-        let tx_hex = to_hex(ser::ser_vec(tx, ser::ProtocolVersion::local()).unwrap());;
+        let tx_hex = to_hex(ser::ser_vec(tx).unwrap());;
         stored_tx.write_all(&tx_hex.as_bytes())?;
         stored_tx.sync_all()?;
         Ok(())

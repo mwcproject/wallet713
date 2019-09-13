@@ -120,9 +120,9 @@ impl NodeClient for HTTPNodeClient {
 		} else {
 			url = format!("{}/v1/pool/push_tx", dest);
 		}
-		let res = if global::is_main() {
+		let res = if global::is_mainnet() {
                         client::post_no_ret(url.as_str(), self.node_api_secret(), tx, global::ChainTypes::Mainnet)
-                } else if global::is_floo() {
+                } else if global::is_floonet() {
                         client::post_no_ret(url.as_str(), self.node_api_secret(), tx, global::ChainTypes::Floonet)
                 } else {
                         client::post_no_ret(url.as_str(), self.node_api_secret(), tx, global::ChainTypes::UserTesting)
@@ -140,9 +140,9 @@ impl NodeClient for HTTPNodeClient {
                 let addr = self.node_url();
                 let url = format!("{}/v1/peers/connected", addr);
                 
-                let peers = if global::is_main() {
+                let peers = if global::is_mainnet() {
                         client::get::<Vec<PeerInfoDisplay>>(url.as_str(), self.node_api_secret(), global::ChainTypes::Mainnet)
-                } else if global::is_floo() {
+                } else if global::is_floonet() {
                         client::get::<Vec<PeerInfoDisplay>>(url.as_str(), self.node_api_secret(), global::ChainTypes::Floonet)
                 } else {
                         client::get::<Vec<PeerInfoDisplay>>(url.as_str(), self.node_api_secret(), global::ChainTypes::UserTesting)
@@ -156,9 +156,9 @@ impl NodeClient for HTTPNodeClient {
                 let addr = self.node_url();
                 let url = format!("{}/v1/chain", addr);
 
-                let res = if global::is_main() {
+                let res = if global::is_mainnet() {
                         client::get::<Tip>(url.as_str(), self.node_api_secret(), global::ChainTypes::Mainnet)
-                } else if global::is_floo() {
+                } else if global::is_floonet() {
                         client::get::<Tip>(url.as_str(), self.node_api_secret(), global::ChainTypes::Floonet)
                 } else {
                         client::get::<Tip>(url.as_str(), self.node_api_secret(), global::ChainTypes::UserTesting)
@@ -178,9 +178,9 @@ impl NodeClient for HTTPNodeClient {
 	fn get_chain_height(&self) -> Result<u64, Error> {
 		let addr = self.node_url();
 		let url = format!("{}/v1/chain", addr);
-                let res = if global::is_main() {
+                let res = if global::is_mainnet() {
                         client::get::<Tip>(url.as_str(), self.node_api_secret(), global::ChainTypes::Mainnet)
-                } else if global::is_floo() {
+                } else if global::is_floonet() {
                         client::get::<Tip>(url.as_str(), self.node_api_secret(), global::ChainTypes::Floonet)
                 } else {
                         client::get::<Tip>(url.as_str(), self.node_api_secret(), global::ChainTypes::UserTesting)
@@ -215,13 +215,13 @@ impl NodeClient for HTTPNodeClient {
 		for query_chunk in query_params.chunks(120) {
 			let url = format!("{}/v1/chain/outputs/byids?id={}", addr, query_chunk.join(","),);
 
-                        if global::is_main() {
+                        if global::is_mainnet() {
                                 tasks.push(client::get_async::<Vec<Output>>(
                                         url.as_str(),
                                         self.node_api_secret(),
                                         global::ChainTypes::Mainnet
                                 ));
-                        } else if global::is_floo() {
+                        } else if global::is_floonet() {
                                 tasks.push(client::get_async::<Vec<Output>>(
                                         url.as_str(),
                                         self.node_api_secret(),
@@ -278,9 +278,9 @@ impl NodeClient for HTTPNodeClient {
 		let mut api_outputs: Vec<(Commitment, RangeProof, bool, u64, u64)> =
 			Vec::new();
 
-                let res = if global::is_main() {
+                let res = if global::is_mainnet() {
                         client::get::<OutputListing>(url.as_str(), self.node_api_secret(), global::ChainTypes::Mainnet)
-                } else if global::is_floo() {
+                } else if global::is_floonet() {
                         client::get::<OutputListing>(url.as_str(), self.node_api_secret(), global::ChainTypes::Floonet)
                 } else {
                         client::get::<OutputListing>(url.as_str(), self.node_api_secret(), global::ChainTypes::UserTesting)
