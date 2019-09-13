@@ -66,13 +66,13 @@ where
     slate.fee = fee;
     let slate_id = slate.id.clone();
 
-    let keychain = wallet.keychain().clone();
+    let keychain = wallet.keychain();
 
-    let blinding = slate.add_transaction_elements(&keychain, elems,  &ProofBuilder::new(&keychain))?;
+    let blinding = slate.add_transaction_elements(keychain, &ProofBuilder::new(keychain), elems)?;
 
     // Create our own private context
     let mut context = Context::new(
-        wallet.keychain().secp(),
+        keychain.secp(),
         blinding.secret_key(&keychain.secp()).unwrap(),
         ContextType::Tx,
     );
@@ -206,7 +206,7 @@ where
 
     let key_vec_cloned = key_vec.clone();
 
-    let keychain = wallet.keychain().clone();
+    let keychain = wallet.keychain();
     let amount = slate.amount;
     let height = slate.height;
 
@@ -226,12 +226,12 @@ where
         out_vec.push(build::output(amount, key_vec[0].clone()));
     }
 
-    let blinding = slate.add_transaction_elements(&keychain, out_vec, &ProofBuilder::new(&keychain))?;
+    let blinding = slate.add_transaction_elements(keychain, &ProofBuilder::new(keychain), out_vec)?;
     // Add blinding sum to our context
     let mut context = Context::new(
         keychain.secp(),
         blinding
-            .secret_key(wallet.keychain().clone().secp())
+            .secret_key(keychain.secp())
             .unwrap(),
         ContextType::Tx,
     );
@@ -639,13 +639,13 @@ where
         }
     }
 
-    let keychain = wallet.keychain().clone();
-    let blinding = slate.add_transaction_elements(&keychain, elems,  &ProofBuilder::new(&keychain))?;
+    let keychain = wallet.keychain();
+    let blinding = slate.add_transaction_elements(keychain, &ProofBuilder::new(keychain), elems)?;
 
     let mut context = Context::new(
         keychain.secp(),
         blinding
-            .secret_key(wallet.keychain().clone().secp())
+            .secret_key(keychain.secp())
             .unwrap(),
         ContextType::Tx,
     );
@@ -736,12 +736,12 @@ where
     slate.fee = fee;
     let slate_id = slate.id.clone();
 
-    let keychain = wallet.keychain().clone();
+    let keychain = wallet.keychain();
 
-    let blinding = slate.add_transaction_elements(&keychain, elems,  &ProofBuilder::new(&keychain))?;
+    let blinding = slate.add_transaction_elements(keychain, &ProofBuilder::new(keychain), elems)?;
 
     let mut context = Context::new(
-        wallet.keychain().secp(),
+        keychain.secp(),
         blinding.secret_key(&keychain.secp()).unwrap(),
         ContextType::Tx,
     );

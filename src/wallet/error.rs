@@ -230,6 +230,7 @@ impl Display for Error {
 
 impl Error {
 	/// get kind
+	#[allow(dead_code)]
 	pub fn kind(&self) -> ErrorKind {
 		self.inner.get_context().clone()
 	}

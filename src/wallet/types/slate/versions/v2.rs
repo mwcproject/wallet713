@@ -32,15 +32,16 @@
 //! * version field removed
 //! * VersionCompatInfo struct created with fields and added to beginning of struct
 //!    version: u16
-//!    orig_verion: u16,
-//!    block_header_version: u16
+//!    orig_version: u16,
+//!    block_header_version: u16,
 
 use crate::grin_core::core::transaction::{KernelFeatures, OutputFeatures};
-use grin_core::libtx::secp_ser;
-use grin_keychain::BlindingFactor;
-use grin_util::secp::key::PublicKey;
-use grin_util::secp::pedersen::{Commitment, RangeProof};
-use grin_util::secp::Signature;
+use crate::grin_core::libtx::secp_ser;
+use crate::grin_keychain::BlindingFactor;
+use crate::grin_util::secp;
+use crate::grin_util::secp::key::PublicKey;
+use crate::grin_util::secp::pedersen::{Commitment, RangeProof};
+use crate::grin_util::secp::Signature;
 use uuid::Uuid;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -78,7 +79,7 @@ pub struct VersionCompatInfoV2 {
 	pub version: u16,
 	/// Original version this slate was converted from
 	pub orig_version: u16,
-	/// Minimum version this slate is compatible with
+	/// Version of grin block header this slate is compatible with
 	pub block_header_version: u16,
 }
 
@@ -180,6 +181,5 @@ pub struct TxKernelV2 {
 	/// The signature proving the excess is a valid public key, which signs
 	/// the transaction fee.
 	#[serde(with = "secp_ser::sig_serde")]
-	pub excess_sig: Signature,
+	pub excess_sig: secp::Signature,
 }
-
