@@ -516,11 +516,9 @@ impl Slate {
 		// collect public nonces
 		for p in self.participant_data.iter() {
 			if p.is_complete() {
-let part_sig_tmp = p.part_sig.as_ref().unwrap();
-println!("part_sig={:?}", part_sig_tmp);
 				aggsig::verify_partial_sig(
 					secp,
-					part_sig_tmp,
+ 					p.part_sig.as_ref().unwrap(),
 					&self.pub_nonce_sum(secp)?,
 					&p.public_blind_excess,
 					Some(&self.pub_blind_sum(secp)?),
