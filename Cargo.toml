@@ -49,9 +49,9 @@ commands = "0.0.5"
 enquote = "1.0"
 reqwest = "0.9.20"
 
-grin_api = { git = "https://github.com/mwcproject/mwc-node", tag="2.3.5"}
-grin_core = { git = "https://github.com/mwcproject/mwc-node", tag="2.3.5"}
-grin_keychain = { git = "https://github.com/mwcproject/mwc-node", tag="2.3.5"}
-grin_util = { git = "https://github.com/mwcproject/mwc-node", tag="2.3.5"}
-grin_store = { git = "https://github.com/mwcproject/mwc-node", tag="2.3.5"}
-grin_p2p = { git = "https://github.com/mwcproject/mwc-node", tag="2.3.5"}
+grin_api = { git = "https://github.com/mwcproject/mwc-node", tag="2.4.0"}
+grin_core = { git = "https://github.com/mwcproject/mwc-node", tag="2.4.0"}
+grin_keychain = { git = "https://github.com/mwcproject/mwc-node", tag="2.4.0"}
+grin_util = { git = "https://github.com/mwcproject/mwc-node", tag="2.4.0"}
+grin_store = { git = "https://github.com/mwcproject/mwc-node", tag="2.4.0"}
+grin_p2p = { git = "https://github.com/mwcproject/mwc-node", tag="2.4.0"}

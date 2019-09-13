@@ -2,7 +2,7 @@ use regex::Regex;
 use std::fmt::{self, Debug, Display};
 use url::Url;
 
-use grin_core::global::is_main;
+use grin_core::global::is_mainnet;
 
 use common::crypto::{
     Base58, PublicKey, GRINBOX_ADDRESS_VERSION_MAINNET, GRINBOX_ADDRESS_VERSION_TESTNET,
@@ -189,7 +189,7 @@ impl Display for KeybaseAddress {
 }
 
 pub fn version_bytes() -> Vec<u8> {
-    if is_main() {
+    if is_mainnet() {
         GRINBOX_ADDRESS_VERSION_MAINNET.to_vec()
     } else {
         GRINBOX_ADDRESS_VERSION_TESTNET.to_vec()

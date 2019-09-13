@@ -525,12 +525,12 @@ where
 {
     let (out, kern, block_fees) = receive_coinbase(wallet, block_fees).context(ErrorKind::Node)?;
 
-    let out_bin = ser::ser_vec(&out, ser::ProtocolVersion::local()).context(ErrorKind::Node)?;
+    let out_bin = ser::ser_vec(&out).context(ErrorKind::Node)?;
 
-    let kern_bin = ser::ser_vec(&kern, ser::ProtocolVersion::local()).context(ErrorKind::Node)?;
+    let kern_bin = ser::ser_vec(&kern).context(ErrorKind::Node)?;
 
     let key_id_bin = match block_fees.key_id {
-        Some(key_id) => ser::ser_vec(&key_id, ser::ProtocolVersion::local()).context(ErrorKind::Node)?,
+        Some(key_id) => ser::ser_vec(&key_id).context(ErrorKind::Node)?,
         None => vec![],
     };
 

@@ -20,6 +20,7 @@ use failure::ResultExt;
 use grin_core::core::amount_to_hr_string;
 use grin_core::core::committed::Committed;
 use grin_core::core::transaction::{
+	kernel_sig_msg,
 	Input, Output, Transaction,
 	TransactionBody, TxKernel, Weighting,
         KernelFeatures,
@@ -98,19 +99,6 @@ pub struct ParticipantMessageData {
 	pub message_sig: Option<Signature>,
 }
 
-/*
-impl ParticipantMessageData {
-	/// extract relevant message data from participant data
-	pub fn from_participant_data(p: &ParticipantData) -> ParticipantMessageData {
-		ParticipantMessageData {
-			id: p.id,
-			public_key: p.public_blind_excess,
-			message: p.message.clone(),
-			message_sig: p.message_sig.clone(),
-		}
-	}
-}
-*/
 
 /// A 'Slate' is passed around to all parties to build up all of the public
 /// transaction data needed to create a finalized transaction. Callers can pass
@@ -281,11 +269,8 @@ impl Slate {
 	// Currently includes the fee and the lock_height.
 	fn msg_to_sign(&self) -> Result<secp::Message, Error> {
 		// Currently we only support interactively creating a tx with a "default" kernel.
-                let features = KernelFeatures::HeightLocked {
-                                fee: self.fee,
-                                lock_height: self.lock_height,
-                        };
-                let msg = features.kernel_sig_msg()?;
+                let features = KernelFeatures::HeightLocked;
+                let msg = kernel_sig_msg(self.fee, self.lock_height, features)?;
 		Ok(msg)
 	}
 
@@ -845,19 +830,19 @@ impl From<&Output> for OutputV2 {
 
 impl From<&TxKernel> for TxKernelV2 {
         fn from(kernel: &TxKernel) -> TxKernelV2 {
-                let (features, fee, lock_height) = match kernel.features {
-                        KernelFeatures::Plain { fee } => (CompatKernelFeatures::Plain, fee, 0),
-                        KernelFeatures::Coinbase => (CompatKernelFeatures::Coinbase, 0, 0),
-                        KernelFeatures::HeightLocked { fee, lock_height } => {
-                                (CompatKernelFeatures::HeightLocked, fee, lock_height)
-                        }
-                };
+                let TxKernel {
+                        features,
+                        fee,
+                        lock_height,
+                        excess,
+                        excess_sig,
+                } = *kernel;
                 TxKernelV2 {
                         features,
                         fee,
                         lock_height,
-                        excess: kernel.excess,
-                        excess_sig: kernel.excess_sig,
+                        excess,
+                        excess_sig,
                 }
         }
 }
@@ -989,23 +974,19 @@ impl From<&OutputV2> for Output {
 
 impl From<&TxKernelV2> for TxKernel {
         fn from(kernel: &TxKernelV2) -> TxKernel {
-                let (fee, lock_height) = (kernel.fee, kernel.lock_height);
-                let features = match kernel.features {
-                        CompatKernelFeatures::Plain => KernelFeatures::Plain { fee },
-                        CompatKernelFeatures::Coinbase => KernelFeatures::Coinbase,
-                        CompatKernelFeatures::HeightLocked => KernelFeatures::HeightLocked { fee, lock_height },
-                };
+                let TxKernelV2 {
+                        features,
+                        fee,
+                        lock_height,
+                        excess,
+                        excess_sig,
+                } = *kernel;
                 TxKernel {
                         features,
-                        excess: kernel.excess,
-                        excess_sig: kernel.excess_sig,
+                        fee,
+                        lock_height,
+                        excess,
+                        excess_sig,
                 }
         }
-}
-
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub enum CompatKernelFeatures {
-        Plain,
-        Coinbase,
-        HeightLocked,
 }

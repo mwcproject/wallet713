@@ -46,9 +46,9 @@ where
 	IN: Serialize,
 {
 
-        let req = if global::is_main() {
+        let req = if global::is_mainnet() {
                 grin_api::client::create_post_request(url, api_secret, input, global::ChainTypes::Mainnet)?
-        } else if global::is_floo() {
+        } else if global::is_floonet() {
                 grin_api::client::create_post_request(url, api_secret, input, global::ChainTypes::Floonet)?
         } else {
                 grin_api::client::create_post_request(url, api_secret, input, global::ChainTypes::UserTesting)?
