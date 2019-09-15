@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::time::{SystemTime, UNIX_EPOCH};
 use futures::Stream;
 use futures::stream;
 use grin_api::{Output, OutputType, OutputListing, Tip};
@@ -25,6 +26,11 @@ use tokio::runtime::Runtime;
 
 use crate::wallet::{Error, ErrorKind};
 use super::TxWrapper;
+
+use std::sync::atomic::{AtomicU64, Ordering};
+
+static LAST_CALL: AtomicU64 = AtomicU64::new(0);
+static LAST_HEIGHT: AtomicU64 = AtomicU64::new(0);
 
 /// Encapsulate all wallet-node communication functions. No functions within libwallet
 /// should care about communication details
@@ -176,6 +182,16 @@ impl NodeClient for HTTPNodeClient {
 
 	/// Return the chain tip from a given node
 	fn get_chain_height(&self) -> Result<u64, Error> {
+
+                let last_loaded = LAST_CALL.load(Ordering::SeqCst);
+                let start = SystemTime::now();
+                let since_the_epoch = start.duration_since(UNIX_EPOCH).expect("Time went backwards");
+                let time_now = since_the_epoch.as_millis() as u64;
+
+                if time_now - last_loaded < 3000 {
+                    return Ok(LAST_HEIGHT.fetch_add(0, Ordering::SeqCst));
+                }
+
 		let addr = self.node_url();
 		let url = format!("{}/v1/chain", addr);
                 let res = if global::is_mainnet() {
@@ -191,7 +207,12 @@ impl NodeClient for HTTPNodeClient {
 				error!("Get chain height error: {}", e);
 				Err(ErrorKind::ClientCallback(report).into())
 			}
-			Ok(r) => Ok(r.height),
+			Ok(r) => {
+                            let _ = LAST_CALL.compare_exchange(last_loaded, time_now, Ordering::SeqCst,  Ordering::SeqCst);
+                            let last_height = LAST_HEIGHT.load(Ordering::SeqCst);
+                            let _ = LAST_HEIGHT.compare_exchange(last_height, r.height, Ordering::SeqCst,  Ordering::SeqCst);
+                            Ok(r.height)
+                        },
 		}
 	}
 
