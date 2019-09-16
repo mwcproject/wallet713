@@ -58,6 +58,7 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 use colored::*;
 use grin_core::core;
 use grin_core::libtx::tx_fee;
+use grin_core::global;
 use grin_core::global::{set_mining_mode, ChainTypes};
 use rustyline::completion::{Completer, FilenameCompleter, Pair};
 use rustyline::config::OutputStreamType;
@@ -1053,11 +1054,19 @@ fn proof_ok(
     }
 
     println!("\noutputs:");
-    for output in outputs {
-        println!("   {}: https://explorer.mwc.mw/#o{}", output.bright_magenta(), output);
+    if global::is_mainnet() {
+        for output in outputs {
+            println!("   {}: https://explorer.mwc.mw/#o{}", output.bright_magenta(), output);
+        }
+        println!("kernel:");
+        println!("   {}: https://explorer.mwc.mw/#k{}", kernel.bright_magenta(), kernel);
+    } else {
+        for output in outputs {
+            println!("   {}: https://explorer.floonet.mwc.mw/#o{}", output.bright_magenta(), output);
+        }
+        println!("kernel:");
+        println!("   {}: https://explorer.floonet.mwc.mw/#k{}", kernel.bright_magenta(), kernel);
     }
-    println!("kernel:");
-    println!("   {}: https://explorer.mwc.mw/#k{}", kernel.bright_magenta(), kernel);
     println!("\n{}: this proof should only be considered valid if the kernel is actually on-chain with sufficient confirmations", "WARNING".bright_yellow());
     println!("please use a mwc block explorer to verify this is the case.");
 }
