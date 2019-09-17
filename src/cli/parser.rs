@@ -43,6 +43,9 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("[data-path] -d, --data-path=<data path> 'the wallet data directory'")
                     )
                     .arg(
+                        Arg::from_usage("[disable-history] -h, --disable-history 'do not add commands to history file'")
+                    )
+                    .arg(
                         Arg::from_usage("[domain] --domain=<domain> 'the mwc domain'")
                     )
                     .arg(

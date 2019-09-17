@@ -43,6 +43,7 @@ pub struct Wallet713Config {
     pub owner_api_secret: Option<String>,
     pub owner_api_include_foreign: Option<bool>,
     pub foreign_api: Option<bool>,
+    pub disable_history: Option<bool>,
     pub foreign_api_address: Option<String>,
     pub foreign_api_secret: Option<String>,
     pub check_updates: Option<bool>,
@@ -130,6 +131,10 @@ impl Wallet713Config {
             Some(self.mwcmqs_domain()),
             self.mwcmqs_port,
         ))
+    }
+
+    pub fn disable_history(&self) -> bool {
+        self.disable_history.unwrap_or(false)
     }
 
     pub fn get_mwcmqs_secret_key(&self) -> Result<SecretKey> {

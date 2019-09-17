@@ -604,6 +604,7 @@ fn main() {
         .arg(Arg::from_usage("[config-path] -c, --config=<config-path> 'the path to the config file'"))
         .arg(Arg::from_usage("[log-config-path] -l, --log-config-path=<log-config-path> 'the path to the log config file'"))
         .arg(Arg::from_usage("[account] -a, --account=<account> 'the account to use'"))
+        .arg(Arg::from_usage("[disable-history] -z, --disable-history 'disable adding commands to the history'"))
         .arg(Arg::from_usage("[passphrase] -p, --passphrase=<passphrase> 'the passphrase to use'"))
         .arg(Arg::from_usage("[daemon] -d, --daemon 'run daemon'"))
         .arg(Arg::from_usage("[floonet] -f, --floonet 'use floonet'"))
@@ -622,6 +623,8 @@ fn main() {
         false => RuntimeMode::Cli,
     };
 
+    let disable_history = matches.is_present("disable-history");
+
     let mut config: Wallet713Config = welcome(&matches, &runtime_mode).unwrap_or_else(|e| {
         panic!(
             "{}: could not read or create config! {}",
@@ -629,6 +632,10 @@ fn main() {
             e
         );
     });
+
+    if disable_history {
+        config.disable_history = Some(true);
+    }
 
     if runtime_mode == RuntimeMode::Daemon {
         env_logger::init();
@@ -974,7 +981,9 @@ fn main() {
                 }
 
                 if out_is_safe {
-                    rl.add_history_entry(command);
+                    if config.disable_history() != true {
+                        rl.add_history_entry(command);
+                    }
                 }
             }
             Err(_) => {
