@@ -99,7 +99,6 @@ where
     pub fn getnextkey(&self, amount: u64) -> Result<String, Error>
     where
                 K: Keychain {
-        let amount = amount / 1000000000;
         let mut w = self.wallet.lock();
         let id = keys::next_available_key(&mut *w)?;
         let sec_key = w.keychain().derive_key(amount, &id, &SwitchCommitmentType::Regular)?;
