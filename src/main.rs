@@ -1407,7 +1407,7 @@ fn do_command(
             if *first {
                 let args =  matches.subcommand_matches("getnextkey").unwrap();
                 let amount = args.value_of("amount").unwrap_or("0");
-                let amount = core::amount_from_hr_string(amount)?;
+                let amount = amount.parse::<u64>().unwrap();
                 if amount <= 0 {
                     cli_message!("Error: amount greater than 0 must be specified");
                 }
@@ -1415,7 +1415,6 @@ fn do_command(
                 {
                     wallet.lock().getnextkey(amount)?;
                 }
-                //std::process::exit(0);
             }
             else {
                 println!("getnextkey may only be run as the first command. Please exit and retry");
