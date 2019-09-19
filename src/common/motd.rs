@@ -18,7 +18,7 @@ pub struct MOTD {
     pub version: Option<Version>,
 }
 
-pub fn get_motd() -> Result<(), Error> {
+pub fn _get_motd() -> Result<(), Error> {
     let crate_version = Version::parse(crate_version!())?;
 
     let motd: MOTD = if global::is_mainnet() {

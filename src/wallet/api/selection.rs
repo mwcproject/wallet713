@@ -208,6 +208,7 @@ where
 
     let keychain = wallet.keychain();
     let amount = slate.amount;
+println!("slate.amount={}", amount);
     let height = slate.height;
 
     let slate_id = slate.id.clone();

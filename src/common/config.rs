@@ -255,9 +255,6 @@ impl Wallet713Config {
         self.foreign_api.unwrap_or(false)
     }
 
-    pub fn check_updates(&self) -> bool {
-        self.check_updates.unwrap_or(is_cli())
-    }
 }
 
 impl fmt::Display for Wallet713Config {
