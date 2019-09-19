@@ -83,7 +83,6 @@ use common::{ErrorKind, Result, RuntimeMode, COLORED_PROMPT, PROMPT, post};
 use wallet::Wallet;
 
 use crate::wallet::types::{Arc, Mutex, Slate, TxProof};
-use crate::common::motd::get_motd;
 
 use contacts::{Address, AddressBook, AddressType, Backend, Contact, GrinboxAddress};
 
@@ -652,9 +651,9 @@ fn main() {
 
     println!("{}", format!("\nWelcome to wallet713 for MWC v{}\n", crate_version!()).bright_yellow().bold());
 
-    if config.check_updates() {
-        get_motd().unwrap_or(());
-    }
+    //if config.check_updates() {
+    //    get_motd().unwrap_or(());
+    //}
 
     let wallet = Wallet::new(config.max_auto_accept_invoice);
     let wallet = Arc::new(Mutex::new(wallet));
