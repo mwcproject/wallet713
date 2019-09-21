@@ -11,6 +11,7 @@ use crate::wallet::types::Slate;
 use super::types::{CloseReason, Publisher, Subscriber, SubscriptionHandler};
 use common::{Arc, ErrorKind, Mutex, Result};
 use contacts::{Address, KeybaseAddress};
+use std::path::Path;
 
 pub const TOPIC_SLATE_NEW: &str = "grin_slate_new";
 pub const TOPIC_WALLET713_SLATES: &str = "wallet713_grin_slate";
@@ -139,6 +140,16 @@ struct KeybaseBroker {}
 
 impl KeybaseBroker {
     pub fn new(keybase_binary: Option<String>) -> Result<Self> {
+        // where doesn't handle path verification at all. It expect path and pattern.
+        // That is why for this case checking for file existance
+        if cfg!(target_os = "windows") && keybase_binary.is_some() {
+            if Path::new(&keybase_binary.unwrap() ).exists() {
+                return Ok(Self {})
+            } else {
+                return Err(ErrorKind::KeybaseNotFound)?
+            }
+        }
+
         let mut proc = if cfg!(target_os = "windows") {
             Command::new("where")
         } else {
