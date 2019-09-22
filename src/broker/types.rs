@@ -15,7 +15,7 @@ pub trait Publisher {
 
 pub trait Subscriber {
     fn start(&mut self, handler: Box<dyn SubscriptionHandler + Send>) -> Result<(), Error>;
-    fn stop(&self);
+    fn stop(&mut self) -> bool;
     fn is_running(&self) -> bool;
 }
 

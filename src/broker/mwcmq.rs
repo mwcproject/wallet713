@@ -1,4 +1,5 @@
 extern crate reqwest;
+extern crate nanoid;
 
 use ws::{
     Error as WsError, ErrorKind as WsErrorKind,
@@ -83,10 +84,7 @@ impl Subscriber for MWCMQSubscriber {
         Ok(())
     }
 
-    fn stop(&self) {
-        self.broker.stop();
-
-
+    fn stop(&mut self) -> bool {
         let client = reqwest::Client::builder()
                          .timeout(Duration::from_secs(60))
                          .build().unwrap();
@@ -95,12 +93,16 @@ impl Subscriber for MWCMQSubscriber {
 
         let mut params = HashMap::new();
         params.insert("mapmessage", "nil");
-        let _response = client.post(&format!("https://{}:{}/sender?address={}",
+        let response = client.post(&format!("https://{}:{}/sender?address={}",
                                               self.config.mwcmqs_domain(),
                                               self.config.mwcmqs_port(),
                         str::replace(&self.address.stripped(), "@", "%40")))
                         .form(&params)
                         .send();
+
+        let response_status = response.is_ok();
+        self.broker.stop();
+        return response_status;
 
     }
 
@@ -231,6 +233,7 @@ impl MWCMQSBroker {
         handler: Box<dyn SubscriptionHandler + Send>,
         config: Wallet713Config,
     ) -> () {
+        let nanoid = nanoid::simple();
         let handler = Arc::new(Mutex::new(handler));
         {
              let mut guard = self.inner.lock();
@@ -368,8 +371,9 @@ impl MWCMQSBroker {
                     }
                     else if count == 1 {
                         delcount = 0;
-                        println!("\nmwcmqs listener started for [{}]",
-                             cloned_cloned_address.stripped().bright_green());
+                        println!("\nmwcmqs listener started for [{}] tid=[{}]",
+                             cloned_cloned_address.stripped().bright_green(),
+                             nanoid);
                         print!("{}", COLORED_PROMPT);
                         connected = true;
                     } else {
@@ -389,8 +393,9 @@ impl MWCMQSBroker {
                 else
                 {
                     if count == 1 {
-                        println!("\nmwcmqs listener started for: [{}]",
-                             cloned_cloned_address.stripped().bright_green());
+                        println!("\nmwcmqs listener started for: [{}] tid=[{}]",
+                             cloned_cloned_address.stripped().bright_green(),
+                             nanoid);
                         print!("{}", COLORED_PROMPT);
                     } else if !connected && !isnginxerror {
                         if is_in_warning {
@@ -447,8 +452,11 @@ impl MWCMQSBroker {
                                     ));
                                     ret.push(&params[1][index+1..]);
                                 } else if params[1] == "closenewlogin" {
-                                    print!("\n{}: new login detected. mwcmqs listener will stop!",
-                                       "ERROR".bright_red());
+                                    let is_stopped = cloned_inner.lock().is_none();
+                                    if ! is_stopped {
+                                        print!("\n{}: new login detected. mwcmqs listener will stop!",
+                                           "ERROR".bright_red());
+                                    }
                                     break; // stop listener
                                 } else {
                                     self.print_error([].to_vec(), "message id expected", -103);
@@ -500,8 +508,11 @@ impl MWCMQSBroker {
                             }
                             else {
                                 if resp_str == "message: closenewlogin\n" {
-                                    print!("\n{}: new login detected. mwcmqs listener will stop!",
-                                     "ERROR".bright_red());
+                                    let is_stopped = cloned_inner.lock().is_none();
+                                    if !is_stopped {
+                                        print!("\n{}: new login detected. mwcmqs listener will stop!",
+                                               "ERROR".bright_red());
+                                    }
                                     break; // stop listener 
                                 } else if resp_str == "message: mapmessage=nil" {
                                     // our connection message
@@ -518,8 +529,11 @@ impl MWCMQSBroker {
                     for itt in 0..msgvec.len() {
                         if break_out { break; }
                         if msgvec[itt] == "message: closenewlogin\n" || msgvec[itt] == "closenewlogin" {
-                            print!("\n{}: new login detected. mwcmqs listener will stop!",
-                                    "ERROR".bright_red());
+                            let is_stopped = cloned_inner.lock().is_none();
+                            if !is_stopped {
+                                print!("\n{}: new login detected. mwcmqs listener will stop!",
+                                       "ERROR".bright_red());
+                            }
                             break_out = true;
                             break; // stop listener
                         }
@@ -703,7 +717,7 @@ impl MWCMQSBroker {
         }
 
         if !is_error {
-            println!("\nmwcmqs listener [{}] stopped", address.stripped().bright_green());
+            println!("\nmwcmqs listener [{}] stopped. tid=[{}]", address.stripped().bright_green(), nanoid);
         }
         let mut guard = cloned_inner.lock();
         *guard = None;
