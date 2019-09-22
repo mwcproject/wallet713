@@ -949,7 +949,7 @@ fn main() {
 
                 if command == "exit" {
                     if mwcmqs_broker.is_some() {
-                        let mqs = mwcmqs_broker.unwrap();
+                        let mut mqs = mwcmqs_broker.unwrap();
                         if mqs.1.is_running() {
                             mqs.1.stop();
                         }
@@ -1308,10 +1308,15 @@ fn do_command(
                 };
                 if is_running {
                     cli_message!("stopping mwcmqs listener...");
+                    let mut success = false;
                     if let Some((_, subscriber)) = mwcmqs_broker {
-                        subscriber.stop();
+                        success = subscriber.stop();
                     };
-                    *mwcmqs_broker = None;
+                    if success {
+                        *mwcmqs_broker = None;
+                    } else {
+                        println!("{}: Could not contact mwcmqs. Network down?", "WARNING".bright_yellow());
+                    }
                 } else {
                     Err(ErrorKind::ClosedListener("mwcmqs".to_string()))?
                 }

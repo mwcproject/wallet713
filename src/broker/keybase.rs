@@ -125,9 +125,10 @@ impl Subscriber for KeybaseSubscriber {
         Ok(())
     }
 
-    fn stop(&self) {
+    fn stop(&mut self) -> bool {
         let mut guard = self.stop_signal.lock();
         *guard = true;
+        return true;
     }
 
     fn is_running(&self) -> bool {

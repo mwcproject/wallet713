@@ -75,8 +75,9 @@ impl Subscriber for GrinboxSubscriber {
         Ok(())
     }
 
-    fn stop(&self) {
+    fn stop(&mut self) -> bool {
         self.broker.stop();
+        return true;
     }
 
     fn is_running(&self) -> bool {
