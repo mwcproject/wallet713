@@ -358,9 +358,9 @@ impl MWCMQSBroker {
                         // This was not a timeout. Sleep first.
                         if connected {
                             is_in_warning = true;
-                            println!("\n{}: mwcmqs listener [{}] lost connection. Will try to restore in the background.",
+                            println!("\n{}: mwcmqs listener [{}] lost connection. Will try to restore in the background. tid=[{}]",
                                  "WARNING".bright_yellow(),
-                                 cloned_cloned_address.stripped().bright_green());
+                                 cloned_cloned_address.stripped().bright_green(), nanoid );
                         }
 
 
@@ -380,9 +380,10 @@ impl MWCMQSBroker {
                         delcount = 0;
                         if !connected {
                             if is_in_warning {
-                                println!("{}: mwcmqs listener [{}] reestablished connection.",
+                                println!("{}: mwcmqs listener [{}] reestablished connection. tid=[{}]",
                                 "INFO".bright_blue(),
-                                cloned_cloned_address.stripped().bright_green());
+                                cloned_cloned_address.stripped().bright_green(),
+                                nanoid);
                                 is_in_warning = false;
                                 isnginxerror = false;
                             }
@@ -497,9 +498,10 @@ impl MWCMQSBroker {
                                 connected = false;
                                 if !isnginxerror {
                                      is_in_warning = true;
-                                     println!("\n{}: mwcmqs listener [{}] lost connection. Will try to restore in the background.",
+                                     println!("\n{}: mwcmqs listener [{}] lost connection. Will try to restore in the background. tid=[{}]",
                                         "WARNING".bright_yellow(),
-                                         cloned_cloned_address.stripped().bright_green());
+                                         cloned_cloned_address.stripped().bright_green(),
+                                     nanoid);
                                 }
                                 isnginxerror = true;
                                 let second = time::Duration::from_millis(5000);
@@ -571,9 +573,10 @@ impl MWCMQSBroker {
                                 connected = false;
                                 if !isnginxerror {
                                      is_in_warning = true;
-                                     println!("\n{}: mwcmqs listener [{}] lost connection. Will try to restore in the background.",
+                                     println!("\n{}: mwcmqs listener [{}] lost connection. Will try to restore in the background. tid=[{}]",
                                      "WARNING".bright_yellow(),
-                                     cloned_cloned_address.stripped().bright_green());
+                                     cloned_cloned_address.stripped().bright_green(),
+                                     nanoid);
                                 }
                                 isnginxerror = true;
                                 let second = time::Duration::from_millis(5000);
