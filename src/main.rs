@@ -10,6 +10,9 @@ extern crate serde_json;
 extern crate gotham_derive;
 #[macro_use]
 extern crate clap;
+extern crate grin_wallet_libwallet as libwallet;
+extern crate grinswap;
+extern crate bitcoin;
 extern crate env_logger;
 extern crate blake2_rfc;
 extern crate chrono;
@@ -1500,6 +1503,9 @@ fn do_command(
         }
         Some("nodeinfo") => {
             wallet.lock().node_info()?;
+        }
+        Some("swap") => {
+            wallet.lock().swap()?;
         }
         Some("send") => {
             let args = matches.subcommand_matches("send").unwrap();

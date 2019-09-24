@@ -50,6 +50,18 @@ impl Wallet {
         Ok(())
     }
 
+    pub fn swap(
+	&mut self,
+    ) -> Result<()> {
+        let wallet = self.get_wallet_instance()?;
+
+        controller::owner_single_use(wallet.clone(), |api| {
+            api.swap()?;
+            Ok(())
+        })?;
+        Ok(())
+    }
+
     pub fn getnextkey(
         &mut self,
         amount: u64,

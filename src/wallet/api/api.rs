@@ -12,6 +12,7 @@ use crate::contacts::GrinboxAddress;
 
 use super::keys;
 use super::tx;
+use super::swap;
 use super::types::{
     AcctPathMapping, Arc, BlockFees, CbData, ContextType, Error, ErrorKind, Identifier, Keychain,
     Mutex, NodeClient, OutputData, Slate, Transaction, TxLogEntry, TxLogEntryType, TxProof,
@@ -96,6 +97,16 @@ where
         w.close()?;
         res
     }
+
+    pub fn swap(&self) -> Result<(), Error>
+    where
+		K: grinswap::Keychain
+	{
+        let mut w = self.wallet.lock();
+        swap::swap(&mut *w)?;
+        Ok(())
+    }
+
     pub fn getnextkey(&self, amount: u64) -> Result<String, Error>
     where
                 K: Keychain {

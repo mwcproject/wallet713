@@ -203,6 +203,10 @@ impl<'a, 'b> Parser {
                     )
             )
             .subcommand(
+                SubCommand::with_name("swap")
+                    .about("swap mwc for btc")
+            )
+            .subcommand(
                 SubCommand::with_name("stop")
                     .about("stops the slate listener")
                     .arg(
