@@ -204,7 +204,31 @@ impl<'a, 'b> Parser {
             )
             .subcommand(
                 SubCommand::with_name("swap")
-                    .about("swap mwc for btc")
+                    .about("swap mwc for other currency pairs. Currently only BTC supported.")
+                    .arg(
+                        Arg::from_usage("[pair] -p, --pair=<pair> 'The currency pair to trade. Currently only mwcbtc is supported.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[make] -m, --make 'Make the trade. Either --make or --take must be specified.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[take] -t, --take 'Take the trade. Either --make or --take must be specified.'")
+                    )
+                    .arg(               
+                        Arg::from_usage("[buy] -b, --buy 'Buy first part of pair (i.e. mwc) Either --buy or --sell must be specified.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[sell] -s, --sell 'Sell first part of pair (i.e. mwc) Either --buy or --sell must be specified.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[address] -a, --address=<address> 'Address to trade with. Only specified with --take option.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[rate] -r, --rate=<rate> 'Rate to trade at. Specified in first part of pair / second part of pair. (i.e. mwc / btc).'")
+                    )
+                    .arg(
+                        Arg::from_usage("[quantity] -q, --quantity=<quantity> 'Quantity to trade. Your counterparty must specify the same amount.'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("stop")

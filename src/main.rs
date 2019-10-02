@@ -1505,7 +1505,101 @@ fn do_command(
             wallet.lock().node_info()?;
         }
         Some("swap") => {
-            wallet.lock().swap()?;
+            let args = matches.subcommand_matches("swap").unwrap();
+            let make = args.is_present("make");
+            let take = args.is_present("take");
+            let buy = args.is_present("buy");
+            let sell = args.is_present("sell");
+            let rate = args.value_of("rate");
+            let qty = args.value_of("quantity");
+            let address = args.value_of("address");
+
+            let mut is_error = false;
+            let is_make = if make && !take {
+                true
+            } else if take && !make {
+                false
+            } else {
+                is_error = true;
+                cli_message!("{} Either --make or --take must be specified and not both.", "Error:".bright_red());
+                false
+            };
+
+            let is_buy = if buy && !sell {
+                true
+            } else if sell && !buy {
+                false
+            } else {
+                is_error = true;
+                cli_message!("{} Either --buy or --sell must be specified and not both.", "Error:".bright_red());
+                false
+            };
+
+            let pair = args.value_of("pair");
+
+            let pair = if pair.is_some() {
+                pair.unwrap()
+            } else {
+                "mwcbtc"
+            };
+
+
+            if !rate.is_some() {
+                is_error = true;
+                cli_message!("{} --rate must be specified.", "Error:".bright_red());
+            }
+
+            if !qty.is_some() {
+                is_error = true;
+                cli_message!("{} --quantity must be specified.", "Error:".bright_red());
+            }
+
+            if pair != "mwcbtc" {
+                is_error = true;
+                cli_message!("{} Only mwcbtc pair is supported.", "Error:".bright_red());
+            }
+
+            if !is_error && address.is_some() && is_make {
+                is_error = true;
+                cli_message!("{} Address must not be specified with `--make` option.", "Error:".bright_red());
+            }
+
+            if !is_error && address.is_none() && !is_make {
+                is_error = true;
+                cli_message!("{} Address must be specified when `--take` option is specified.", "Error:".bright_red());
+            }
+
+            if !is_error {
+                let rate = rate.unwrap();
+                let qty = qty.unwrap();
+                let rate = rate.parse::<f64>()
+                           .map_err(|_| ErrorKind::InvalidAmount(rate.to_string()))?;
+                let qty = core::amount_from_hr_string(qty)
+                           .map_err(|_| ErrorKind::InvalidAmount(qty.to_string()))?;
+
+                let stripped_address: &str;
+                let mut stripped: String;
+
+                let address = if is_make {
+                     None
+                } else { 
+                     let ret = Address::parse(address.unwrap())?;
+                     if ret.address_type() != AddressType::MWCMQS {
+                         is_error = true;
+                         cli_message!("{} Address must be an mwcmqs address.", "Error:".bright_red());
+                     }
+                     stripped = ret.stripped();
+                     stripped_address = stripped.as_str();
+                     Some(stripped_address)
+                };
+
+
+
+                if !is_error {
+                    wallet.lock().swap(pair, is_make, is_buy, rate, qty, address)?;
+                }
+
+            }
         }
         Some("send") => {
             let args = matches.subcommand_matches("send").unwrap();

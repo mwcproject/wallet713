@@ -52,11 +52,17 @@ impl Wallet {
 
     pub fn swap(
 	&mut self,
+        pair: &str,
+        is_make: bool,
+        is_buy: bool,
+        rate: f64,
+        qty: u64,
+        address: Option<&str>
     ) -> Result<()> {
         let wallet = self.get_wallet_instance()?;
 
         controller::owner_single_use(wallet.clone(), |api| {
-            api.swap()?;
+            api.swap(pair, is_make, is_buy, rate, qty, address)?;
             Ok(())
         })?;
         Ok(())

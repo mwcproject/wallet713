@@ -98,12 +98,19 @@ where
         res
     }
 
-    pub fn swap(&self) -> Result<(), Error>
+    pub fn swap(&self,
+                pair: &str,
+                is_make: bool,
+                is_buy: bool,
+                rate: f64,
+                qty: u64,
+                address: Option<&str>
+    ) -> Result<(), Error>
     where
 		K: grinswap::Keychain
 	{
         let mut w = self.wallet.lock();
-        swap::swap(&mut *w)?;
+        swap::swap(&mut *w, pair, is_make, is_buy, rate, qty, address)?;
         Ok(())
     }
 
