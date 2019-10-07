@@ -758,10 +758,10 @@ impl MWCMQSBroker {
                                         Some(self.config.clone()));
                                 } else if message.is_some() {
                                     println!("got a message: {:?}", serde_json::to_string(&message));
-                                    let mut message = message.unwrap();
+                                    let message = message.unwrap();
                                     handler.lock().on_message(
                                         &from,
-                                        &mut message,
+                                        message,
                                         Some(self.config.clone()));
                                  
                                 }

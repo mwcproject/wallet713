@@ -1039,7 +1039,6 @@ dependencies = [
 [[package]]
 name = "grinswap"
 version = "0.1.0"
-source = "git+https://github.com/mwcproject/mwcswap#7e91fb1cda308d07864a22e5592ba889fbd33798"
 dependencies = [
  "bitcoin 0.19.1 (git+https://github.com/mwcproject/rust-bitcoin?branch=zkp)",
  "bitcoin_hashes 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1500,7 +1499,7 @@ dependencies = [
  "grin_store 2.4.1-beta.1 (git+https://github.com/mwcproject/mwc-node)",
  "grin_util 2.4.1-beta.1 (git+https://github.com/mwcproject/mwc-node)",
  "grin_wallet_libwallet 2.4.3-beta.1 (git+https://github.com/mwcproject/mwc-wallet)",
- "grinswap 0.1.0 (git+https://github.com/mwcproject/mwcswap)",
+ "grinswap 0.1.0",
  "hmac 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "http 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.12.33 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -3222,7 +3221,6 @@ dependencies = [
 "checksum grin_util 2.4.1-beta.1 (git+https://github.com/mwcproject/mwc-node)" = "<none>"
 "checksum grin_wallet_libwallet 2.4.3-beta.1 (git+https://github.com/mwcproject/mwc-wallet)" = "<none>"
 "checksum grin_wallet_util 2.4.3-beta.1 (git+https://github.com/mwcproject/mwc-wallet)" = "<none>"
-"checksum grinswap 0.1.0 (git+https://github.com/mwcproject/mwcswap)" = "<none>"
 "checksum h2 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)" = "ddb2b25a33e231484694267af28fec74ac63b5ccf51ee2065a5e313b834d836e"
 "checksum heck 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "20564e78d53d2bb135c343b3f47714a56af2061f1c928fdb541dc7b9fdd94205"
 "checksum hex 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "805026a5d0141ffc30abb3be3173848ad46a1b1664fe632428479619a3644d77"

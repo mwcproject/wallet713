@@ -120,10 +120,23 @@ where
     api_sell.create_context(Currency::Btc, true, Some(inputVec), keys).unwrap()
 }
 
-	fn context_buy<K>(kc: &K) -> Context
-	where
-		K: Keychain,
-	{
+fn context_buy<T: ?Sized, C, K>(wallet: &mut T,
+                                api_buy: &mut BtcSwapApi::<K, HTTPNodeClient, ElectrumNodeClient>) -> Context
+where
+    T: WalletBackend<C, K>,
+    C: NodeClient,
+    K: grinswap::Keychain,
+{
+    // Generate the appropriate amount of derivation paths
+    let key_count = api_buy.context_key_count(Currency::Btc, false).unwrap();
+    let mut keys = Vec::with_capacity(key_count);
+    for _ in 0..key_count {
+        let id = keys::next_available_key(&mut *wallet).unwrap();
+        keys.push(id);
+    }
+
+    api_buy.create_context(Currency::Btc, false, None, keys).unwrap()
+/*
 		Context {
 			multisig_key: key_id(0, 0),
 			multisig_nonce: key(kc, 1, 0),
@@ -138,7 +151,8 @@ where
 				}),
 			}),
 		}
-	}
+*/
+}
 
 	fn key_id(d1: u32, d2: u32) -> Identifier {
 		ExtKeychain::derive_key_id(2, d1, d2, 0, 0)
@@ -389,7 +403,7 @@ where
 {
     println!("do take sell");
     let keychain = wallet.keychain().clone();
-    let btcNodeClient = ElectrumNodeClient::new("http://localhost:12345".to_string(),
+    let btcNodeClient = ElectrumNodeClient::new("127.0.0.1:7777".to_string(),
                                                 grin_core::global::is_floonet());
 
 
@@ -431,7 +445,7 @@ where
 
 pub fn process_swap_message<T: ?Sized, C, K>(wallet: &mut T,
                              from: &dyn crate::contacts::types::Address,
-                             message: &mut Message,
+                             message: Message,
                              config: Option<Wallet713Config>) -> Result<(), Error>
 where
     T: WalletBackend<C, K>,
@@ -439,6 +453,46 @@ where
     K: grinswap::Keychain,
 {
 println!("process swap in swap.rs");
+    let keychain = wallet.keychain().clone();
+    let btcNodeClient = ElectrumNodeClient::new("127.0.0.1:7777".to_string(),
+                                                grin_core::global::is_floonet());
+println!("node client connected at user:password@127.0.0.1:7777");
+    let client = HTTPNodeClient::new(
+        "https://mwc713.floonet.mwc.mw",
+        Some("11ne3EAUtOXVKwhxm84U".to_string()),
+    );
+println!("1");
+    let mut api_buy = BtcSwapApi::<K, _, _>::new(Some(keychain.clone()), client.clone(), btcNodeClient);
+println!("2");
+    let ctx_buy = context_buy(wallet, &mut api_buy);
+println!("3");
+    let (mut swap_buy, action) = api_buy
+                        .accept_swap_offer(&ctx_buy, None, message)
+                        .unwrap();
+println!("4");
+    assert_eq!(swap_buy.status, Status::Offered);
+    assert_eq!(action, Action::SendMessage(1));
+    let message_2 = api_buy.message(&swap_buy).unwrap();
+println!("5");
+    let action = api_buy.message_sent(&mut swap_buy, &ctx_buy).unwrap();
+println!("6");
+
+    let address = match action {
+
+        Action::DepositSecondary { amount, address } => {
+            //assert_eq!(amount, btc_amount);
+            address
+        }
+        _ => panic!("Invalid action"),
+    };
+
+println!("7");
+
+    assert_eq!(swap_buy.status, Status::Accepted);
+    let address = Address::from_str(&address).unwrap();
+
+    println!("offer accepted!");
+
     Ok(())
 }
 

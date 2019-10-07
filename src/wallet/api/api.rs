@@ -105,7 +105,7 @@ where
         res
     }
 
-    pub fn process_swap_message(&self, from: &dyn Address, message: &mut Message, config: Option<Wallet713Config>
+    pub fn process_swap_message(&self, from: &dyn Address, message: Message, config: Option<Wallet713Config>
     ) -> Result<(), Error> 
     where
             K: grinswap::Keychain

@@ -309,7 +309,7 @@ impl SubscriptionHandler for Controller {
         print!("{}", COLORED_PROMPT);
     }
 
-    fn on_message(&self, from: &dyn Address, message: &mut Message, config: Option<Wallet713Config>) {
+    fn on_message(&self, from: &dyn Address, message: Message, config: Option<Wallet713Config>) {
         println!("received a message");
         self.wallet.lock().process_message(from, message, config);
     }

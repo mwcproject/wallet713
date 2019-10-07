@@ -53,7 +53,7 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn process_message(&mut self, from: &dyn Address, message: &mut Message, config: Option<Wallet713Config>
+    pub fn process_message(&mut self, from: &dyn Address, message: Message, config: Option<Wallet713Config>
     ) -> Result<()> {
             let wallet = self.get_wallet_instance()?;
 
