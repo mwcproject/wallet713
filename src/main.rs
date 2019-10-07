@@ -53,6 +53,11 @@ use std::io::prelude::*;
 use std::io;
 use std::io::{Read, Write, BufReader};
 use std::path::Path;
+use grin_core::core::Transaction;
+use grin_core::ser;
+
+use grin_util::{from_hex};
+
 
 use clap::{App, Arg, ArgMatches, SubCommand};
 use colored::*;
@@ -1497,6 +1502,17 @@ fn do_command(
             let mut slate = Slate::deserialize_upgrade(&slate)?;
             wallet.lock().finalize_slate(&mut slate, None)?;
             cli_message!("{} finalized.", input);
+        }
+        Some("submit") => {
+            let args = matches.subcommand_matches("submit").unwrap();
+            let input = args.value_of("file").unwrap();
+            let mut file = File::open(input.replace("~", &home_dir))?;
+            let mut txn_file = String::new();
+            file.read_to_string(&mut txn_file)?;
+            let tx_bin = from_hex(txn_file)?;
+            let mut txn = ser::deserialize::<Transaction>(&mut &tx_bin[..])?;
+
+            wallet.lock().submit(&mut txn)?;
         }
         Some("nodeinfo") => {
             wallet.lock().node_info()?;
