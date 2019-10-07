@@ -7,6 +7,7 @@ use std::time::Duration;
 use serde::Serialize;
 use serde_json::{json, Value};
 
+use grinswap::Message;
 use crate::wallet::types::Slate;
 use super::types::{CloseReason, Publisher, Subscriber, SubscriptionHandler};
 use common::{Arc, ErrorKind, Mutex, Result};
@@ -64,6 +65,10 @@ impl Publisher for KeybasePublisher {
         KeybaseBroker::send(&slate, &to.stripped(), topic, ttl, self.keybase_binary.clone())?;
 
         Ok(())
+    }
+
+    fn post_take(&self, message: &Message, to: &str) -> Result<()> {
+        unimplemented!()
     }
 }
 

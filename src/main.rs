@@ -24,6 +24,8 @@ extern crate futures;
 extern crate gotham;
 extern crate hmac;
 extern crate hyper;
+extern crate hyper_rustls;
+extern crate http;
 extern crate mime;
 extern crate parking_lot;
 extern crate rand;
@@ -52,6 +54,7 @@ extern crate grin_p2p;
 use std::env;
 use std::borrow::Cow::{self, Borrowed, Owned};
 use std::fs::File;
+use grinswap::Message;
 use std::io::prelude::*;
 use std::io;
 use std::io::{Read, Write, BufReader};
@@ -304,6 +307,11 @@ impl SubscriptionHandler for Controller {
     fn on_open(&self) {
         println!("listener started for [{}]", self.name.bright_green());
         print!("{}", COLORED_PROMPT);
+    }
+
+    fn on_message(&self, from: &dyn Address, message: &mut Message, config: Option<Wallet713Config>) {
+        println!("received a message");
+        self.wallet.lock().process_message(from, message, config);
     }
 
     fn on_slate(&self, from: &dyn Address, slate: &mut Slate, tx_proof: Option<&mut TxProof>, config: Option<Wallet713Config>) {
@@ -1596,7 +1604,15 @@ fn do_command(
 
 
                 if !is_error {
-                    wallet.lock().swap(pair, is_make, is_buy, rate, qty, address)?;
+                    if let Some((publisher, _)) = mwcmqs_broker {
+                        wallet.lock().swap(pair,
+                                           is_make,
+                                           is_buy,
+                                           rate,
+                                           qty,
+                                           address,
+                                           publisher)?;
+                    }
                 }
 
             }

@@ -1,5 +1,8 @@
 use super::api::{Wallet713ForeignAPI, Wallet713OwnerAPI};
-use super::types::{Arc, Error, Keychain, Mutex, NodeClient, WalletBackend};
+use super::types::{Arc, Error, Keychain, Mutex, WalletBackend};
+
+use libwallet::NodeClient;
+
 
 pub fn owner_single_use<F, T: ?Sized, C, K>(wallet: Arc<Mutex<T>>, f: F) -> Result<(), Error>
 where

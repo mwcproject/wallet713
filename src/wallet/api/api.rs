@@ -7,17 +7,24 @@ use grin_util::secp::key::PublicKey;
 use grin_util::secp::pedersen;
 use grin_util::secp::{ContextFlag, Secp256k1};
 use grin_p2p::types::PeerInfoDisplay;
-
+use crate::broker::MWCMQPublisher;
 use crate::contacts::GrinboxAddress;
 
+use common::config::Wallet713Config;
+use contacts::types::Address;
+use grinswap::Message;
 use super::keys;
 use super::tx;
 use super::swap;
 use super::types::{
     AcctPathMapping, Arc, BlockFees, CbData, ContextType, Error, ErrorKind, Identifier, Keychain,
-    Mutex, NodeClient, OutputData, Slate, Transaction, TxLogEntry, TxLogEntryType, TxProof,
-    TxWrapper, WalletBackend, WalletInfo,
+    Mutex, OutputData, Slate, Transaction, TxLogEntry, TxLogEntryType, TxProof,
+    WalletBackend, WalletInfo,
 };
+
+use libwallet::NodeClient;
+use libwallet::TxWrapper;
+
 use super::updater;
 use grin_keychain::SwitchCommitmentType;
 
@@ -98,19 +105,34 @@ where
         res
     }
 
+    pub fn process_swap_message(&self, from: &dyn Address, message: &mut Message, config: Option<Wallet713Config>
+    ) -> Result<(), Error> 
+    where
+            K: grinswap::Keychain
+    {
+        let mut w = self.wallet.lock();
+        w.open_with_credentials()?;
+        swap::process_swap_message(&mut *w, from, message, config)?;
+        w.close()?;
+        Ok(())
+    }
+
     pub fn swap(&self,
                 pair: &str,
                 is_make: bool,
                 is_buy: bool,
                 rate: f64,
                 qty: u64,
-                address: Option<&str>
+                address: Option<&str>,
+                publisher: &mut MWCMQPublisher,
     ) -> Result<(), Error>
     where
 		K: grinswap::Keychain
 	{
         let mut w = self.wallet.lock();
-        swap::swap(&mut *w, pair, is_make, is_buy, rate, qty, address)?;
+        w.open_with_credentials()?;
+        swap::swap(&mut *w, pair, is_make, is_buy, rate, qty, address, publisher)?;
+        w.close()?;
         Ok(())
     }
 
@@ -562,9 +584,10 @@ where
     > {
         let secp = &Secp256k1::with_caps(ContextFlag::Commit);
 
-        let (destination, slate) = tx_proof
+        let (destination, slate, _) = tx_proof
             .verify_extract(None)
             .map_err(|_| ErrorKind::VerifyProof)?;
+        let slate = slate.unwrap();
 
         let inputs_ex = tx_proof.inputs.iter().collect::<HashSet<_>>();
 

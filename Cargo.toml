@@ -37,6 +37,8 @@ prettytable-rs = "0.7"
 gotham = "0.3.0"
 gotham_derive = "0.3.0"
 hyper = "0.12"
+hyper-rustls = "0.14"
+http = "0.1.5"
 mime = "0.3"
 chrono = { version = "0.4.4", features = ["serde"] }
 blake2-rfc = "0.2"
@@ -52,7 +54,7 @@ reqwest = "0.9.20"
 
 grin_wallet_libwallet = { git = "https://github.com/mwcproject/mwc-wallet", branch = "master" }
 bitcoin = { version = "0.19", git = "https://github.com/mwcproject/rust-bitcoin", branch = "zkp", features = ["bitcoinconsensus"] }
-grinswap = { git = "https://github.com/mwcproject/mwcswap", version= "0.1.0"}
+grinswap = { git = "https://github.com/mwcproject/mwcswap", branch = "master"}
 grin_core = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }
 grin_keychain = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }
 grin_chain = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }

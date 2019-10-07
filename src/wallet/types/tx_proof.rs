@@ -7,6 +7,8 @@ use crate::common::crypto::Hex;
 use crate::common::message::EncryptedMessage;
 use crate::contacts::{Address, GrinboxAddress};
 use super::Slate;
+use grinswap::swap::message::Message;
+use failure::ResultExt;
 
 #[derive(Debug)]
 pub enum ErrorKind {
@@ -35,10 +37,17 @@ pub struct TxProof {
 }
 
 impl TxProof {
+    pub fn get_message(&self, decrypted_message: &str) -> Result<Message, serde_json::Error> {
+println!("get message");
+        let message: Message = serde_json::from_str(&decrypted_message)?;
+println!("get message success");
+        Ok(message)
+    }
+
     pub fn verify_extract(
         &self,
         expected_destination: Option<&GrinboxAddress>,
-    ) -> Result<(Option<GrinboxAddress>, Slate), ErrorKind> {
+    ) -> Result<(Option<GrinboxAddress>, Option<Slate>, Option<Message>), ErrorKind> {
         let mut challenge = String::new();
         challenge.push_str(self.message.as_str());
         challenge.push_str(self.challenge.as_str());
@@ -68,10 +77,21 @@ impl TxProof {
             .decrypt_with_key(&self.key)
             .map_err(|_| ErrorKind::DecryptMessage)?;
 
-        let slate = Slate::deserialize_upgrade(&decrypted_message)
-            .map_err(|_| ErrorKind::ParseSlate)?;
-
-        Ok((destination, slate))
+        // first check if it's a swap message
+println!("trying to get message");
+        let message = self.get_message(&decrypted_message);
+        match message {
+            Ok(message) => {
+                Ok((destination, None, Some(message)))
+            }
+            Err(e) => {
+                cli_message!("unable to verify proof: {}",e);
+println!("parsing slate = {}", decrypted_message);
+                let slate = Slate::deserialize_upgrade(&decrypted_message)
+                    .map_err(|_| ErrorKind::ParseSlate)?;
+                Ok((destination, Some(slate), None))
+            }
+        }
     }
 
     pub fn from_response(
@@ -81,7 +101,7 @@ impl TxProof {
         signature: String,
         secret_key: &SecretKey,
         expected_destination: Option<&GrinboxAddress>,
-    ) -> Result<(Slate, TxProof), ErrorKind> {
+    ) -> Result<(Option<Slate>, TxProof, Option<Message>), ErrorKind> {
         let address =
             GrinboxAddress::from_str(from.as_str()).map_err(|_| ErrorKind::ParseAddress)?;
         let signature =
@@ -107,8 +127,8 @@ impl TxProof {
             outputs: vec![],
         };
 
-        let (_, slate) = proof.verify_extract(expected_destination)?;
+        let (_, slate, message) = proof.verify_extract(expected_destination)?;
 
-        Ok((slate, proof))
+        Ok((slate, proof, message))
     }
 }

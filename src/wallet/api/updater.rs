@@ -14,9 +14,11 @@ use grin_keychain::SwitchCommitmentType;
 use std::convert::TryFrom;
 
 use super::types::{
-    BlockFees, CbData, ErrorKind, Identifier, Keychain, NodeClient, OutputData, OutputStatus,
+    BlockFees, CbData, ErrorKind, Identifier, Keychain, OutputData, OutputStatus,
     Result, TxLogEntry, TxLogEntryType, WalletBackend, WalletInfo,
 };
+
+use libwallet::NodeClient;
 
 /// Retrieve all of the outputs (doesn't attempt to update from node)
 pub fn retrieve_outputs<T: ?Sized, C, K>(

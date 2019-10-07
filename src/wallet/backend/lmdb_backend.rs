@@ -19,9 +19,11 @@ use crate::common::config::WalletConfig;
 use super::api::restore;
 use super::types::{
     AcctPathMapping, ChildNumber, Context, ErrorKind, ExtKeychain, Identifier, Keychain,
-    NodeClient, OutputData, Result, Transaction, TxLogEntry, TxProof, WalletBackend,
+    OutputData, Result, Transaction, TxLogEntry, TxProof, WalletBackend,
     WalletBackendBatch, WalletSeed,
 };
+use libwallet::NodeClient;
+
 
 pub const DB_DIR: &'static str = "db";
 pub const TX_SAVE_DIR: &'static str = "saved_txs";

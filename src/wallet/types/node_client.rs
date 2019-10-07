@@ -12,83 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::time::{SystemTime, UNIX_EPOCH};
-use futures::Stream;
-use futures::stream;
-use grin_api::{Output, OutputType, OutputListing, Tip};
-use grin_api::client;
+use common::client;
 use grin_p2p::types::PeerInfoDisplay;
+use grin_core::global;
+use futures::stream;
+use futures::Stream;
+use grin_api::{LocatedTxKernel, Output, OutputListing, OutputType, Tip};
+use grin_core::core::TxKernel;
 use grin_util::secp::pedersen::{Commitment, RangeProof};
 use grin_util::to_hex;
-use grin_core::global;
+use libwallet::{Error, ErrorKind, NodeClient, NodeVersionInfo, TxWrapper};
+use semver::Version;
 use std::collections::HashMap;
 use tokio::runtime::Runtime;
-
-use crate::wallet::{Error, ErrorKind};
-use super::TxWrapper;
-
-use std::sync::atomic::{AtomicU64, Ordering};
-
-static LAST_CALL: AtomicU64 = AtomicU64::new(0);
-static LAST_HEIGHT: AtomicU64 = AtomicU64::new(0);
-
-/// Encapsulate all wallet-node communication functions. No functions within libwallet
-/// should care about communication details
-pub trait NodeClient: Sync + Send + Clone {
-	/// Return the URL of the check node
-	fn node_url(&self) -> &str;
-
-	/// Set the node URL
-	fn set_node_url(&mut self, node_url: &str);
-
-	/// Return the node api secret
-	fn node_api_secret(&self) -> Option<String>;
-
-	/// Change the API secret
-	fn set_node_api_secret(&mut self, node_api_secret: Option<String>);
-
-	/// Posts a transaction to a grin node
-	fn post_tx(&self, tx: &TxWrapper, fluff: bool) -> Result<(), Error>;
-
-	/// retrieves the current tip from the specified grin node
-	fn get_chain_height(&self) -> Result<u64, Error>;
-
-        /// retreives total difficulty
-        fn get_total_difficulty(&self) -> Result<u64, Error>;
-
-        /// retreives the connected peer info of the node
-        fn get_connected_peer_info(&self) -> Result<Vec<PeerInfoDisplay>, grin_api::Error>;
-
-	/// retrieve a list of outputs from the specified grin node
-	/// need "by_height" and "by_id" variants
-	fn get_outputs_from_node(
-		&self,
-		wallet_outputs: Vec<Commitment>,
-	) -> Result<HashMap<Commitment, (String, u64, u64)>, Error>;
-
-	/// Get a list of outputs from the node by traversing the UTXO
-	/// set in PMMR index order.
-	/// Returns
-	/// (last available output index, last insertion index retrieved,
-	/// outputs(commit, proof, is_coinbase, height, mmr_index))
-	fn get_outputs_by_pmmr_index(
-		&self,
-		start_height: u64,
-		max_outputs: u64,
-	) -> Result<
-		(
-			u64,
-			u64,
-			Vec<(Commitment, RangeProof, bool, u64, u64)>,
-		),
-		Error,
-	>;
-}
 
 #[derive(Clone)]
 pub struct HTTPNodeClient {
 	node_url: String,
 	node_api_secret: Option<String>,
+	node_version_info: Option<NodeVersionInfo>,
 }
 
 impl HTTPNodeClient {
@@ -97,6 +39,7 @@ impl HTTPNodeClient {
 		HTTPNodeClient {
 			node_url: node_url.to_owned(),
 			node_api_secret: node_api_secret,
+			node_version_info: None,
 		}
 	}
 }
@@ -117,6 +60,43 @@ impl NodeClient for HTTPNodeClient {
 		self.node_api_secret = node_api_secret;
 	}
 
+	fn get_version_info(&mut self) -> Option<NodeVersionInfo> {
+		if let Some(v) = self.node_version_info.as_ref() {
+			return Some(v.clone());
+		}
+		let url = format!("{}/v1/version", self.node_url());
+
+                let mut retval = match if global::is_mainnet() {
+                        client::get::<NodeVersionInfo>(url.as_str(), self.node_api_secret(), global::ChainTypes::Mainnet)
+                } else if global::is_floonet() {
+                        client::get::<NodeVersionInfo>(url.as_str(), self.node_api_secret(), global::ChainTypes::Floonet)
+                } else {
+                        client::get::<NodeVersionInfo>(url.as_str(), self.node_api_secret(), global::ChainTypes::UserTesting)
+                }
+
+		{
+			Ok(n) => n,
+			Err(e) => {
+				// If node isn't available, allow offline functions
+				// unfortunately have to parse string due to error structure
+				let err_string = format!("{}", e);
+				if err_string.contains("404") {
+					return Some(NodeVersionInfo {
+						node_version: "1.0.0".into(),
+						block_header_version: 1,
+						verified: Some(false),
+					});
+				} else {
+					error!("Unable to contact Node to get version info: {}", e);
+					return None;
+				}
+			}
+		};
+		retval.verified = Some(true);
+		self.node_version_info = Some(retval.clone());
+		Some(retval)
+	}
+
 	/// Posts a transaction to a grin node
 	fn post_tx(&self, tx: &TxWrapper, fluff: bool) -> Result<(), Error> {
 		let url;
@@ -126,74 +106,29 @@ impl NodeClient for HTTPNodeClient {
 		} else {
 			url = format!("{}/v1/pool/push_tx", dest);
 		}
-		let res = if global::is_mainnet() {
+
+                let res = if global::is_mainnet() {
                         client::post_no_ret(url.as_str(), self.node_api_secret(), tx, global::ChainTypes::Mainnet)
                 } else if global::is_floonet() {
                         client::post_no_ret(url.as_str(), self.node_api_secret(), tx, global::ChainTypes::Floonet)
                 } else {
                         client::post_no_ret(url.as_str(), self.node_api_secret(), tx, global::ChainTypes::UserTesting)
                 };
+
+
 		if let Err(e) = res {
 			let report = format!("Posting transaction to node: {}", e);
-			println!("Post TX Error: {}", e);
+			error!("Post TX Error: {}", e);
 			return Err(ErrorKind::ClientCallback(report).into());
 		}
 		Ok(())
 	}
 
-        /// Return Connected peers
-        fn get_connected_peer_info(&self) -> Result<Vec<PeerInfoDisplay>, grin_api::Error> {
-                let addr = self.node_url();
-                let url = format!("{}/v1/peers/connected", addr);
-                
-                let peers = if global::is_mainnet() {
-                        client::get::<Vec<PeerInfoDisplay>>(url.as_str(), self.node_api_secret(), global::ChainTypes::Mainnet)
-                } else if global::is_floonet() {
-                        client::get::<Vec<PeerInfoDisplay>>(url.as_str(), self.node_api_secret(), global::ChainTypes::Floonet)
-                } else {
-                        client::get::<Vec<PeerInfoDisplay>>(url.as_str(), self.node_api_secret(), global::ChainTypes::UserTesting)
-                };
-                
-                peers
-        }
-
-        /// Return total_difficulty of the chain 
-        fn get_total_difficulty(&self) -> Result<u64, Error> {
-                let addr = self.node_url();
-                let url = format!("{}/v1/chain", addr);
-
-                let res = if global::is_mainnet() {
-                        client::get::<Tip>(url.as_str(), self.node_api_secret(), global::ChainTypes::Mainnet)
-                } else if global::is_floonet() {
-                        client::get::<Tip>(url.as_str(), self.node_api_secret(), global::ChainTypes::Floonet)
-                } else {
-                        client::get::<Tip>(url.as_str(), self.node_api_secret(), global::ChainTypes::UserTesting)
-                };
-
-                match res {
-                        Err(e) => {
-                                let report = format!("Getting chain difficulty from node: {}", e);
-                                error!("Get diffulty error: {}", e);
-                                Err(ErrorKind::ClientCallback(report).into())
-                        }
-                        Ok(r) => Ok(r.total_difficulty),
-                }
-        }
-
 	/// Return the chain tip from a given node
 	fn get_chain_height(&self) -> Result<u64, Error> {
-
-                let last_loaded = LAST_CALL.load(Ordering::SeqCst);
-                let start = SystemTime::now();
-                let since_the_epoch = start.duration_since(UNIX_EPOCH).expect("Time went backwards");
-                let time_now = since_the_epoch.as_millis() as u64;
-
-                if time_now - last_loaded < 3000 {
-                    return Ok(LAST_HEIGHT.fetch_add(0, Ordering::SeqCst));
-                }
-
 		let addr = self.node_url();
 		let url = format!("{}/v1/chain", addr);
+
                 let res = if global::is_mainnet() {
                         client::get::<Tip>(url.as_str(), self.node_api_secret(), global::ChainTypes::Mainnet)
                 } else if global::is_floonet() {
@@ -201,18 +136,15 @@ impl NodeClient for HTTPNodeClient {
                 } else {
                         client::get::<Tip>(url.as_str(), self.node_api_secret(), global::ChainTypes::UserTesting)
                 };
+
+
 		match res {
 			Err(e) => {
 				let report = format!("Getting chain height from node: {}", e);
 				error!("Get chain height error: {}", e);
 				Err(ErrorKind::ClientCallback(report).into())
 			}
-			Ok(r) => {
-                            let _ = LAST_CALL.compare_exchange(last_loaded, time_now, Ordering::SeqCst,  Ordering::SeqCst);
-                            let last_height = LAST_HEIGHT.load(Ordering::SeqCst);
-                            let _ = LAST_HEIGHT.compare_exchange(last_height, r.height, Ordering::SeqCst,  Ordering::SeqCst);
-                            Ok(r.height)
-                        },
+			Ok(r) => Ok(r.height),
 		}
 	}
 
@@ -234,9 +166,13 @@ impl NodeClient for HTTPNodeClient {
 		let mut tasks = Vec::new();
 
 		for query_chunk in query_params.chunks(120) {
-			let url = format!("{}/v1/chain/outputs/byids?id={}", addr, query_chunk.join(","),);
+			let url = format!(
+				"{}/v1/chain/outputs/byids?id={}",
+				addr,
+				query_chunk.join(","),
+			);
 
-                        if global::is_mainnet() {
+			if global::is_mainnet() {
                                 tasks.push(client::get_async::<Vec<Output>>(
                                         url.as_str(),
                                         self.node_api_secret(),
@@ -255,6 +191,7 @@ impl NodeClient for HTTPNodeClient {
                                         global::ChainTypes::UserTesting
                                 ));
                         }
+
 		}
 
 		let task = stream::futures_unordered(tasks).collect();
@@ -284,30 +221,22 @@ impl NodeClient for HTTPNodeClient {
 		&self,
 		start_height: u64,
 		max_outputs: u64,
-	) -> Result<
-		(
-			u64,
-			u64,
-			Vec<(Commitment, RangeProof, bool, u64, u64)>,
-		),
-		Error,
-	> {
+	) -> Result<(u64, u64, Vec<(Commitment, RangeProof, bool, u64, u64)>), Error> {
 		let addr = self.node_url();
 		let query_param = format!("start_index={}&max={}", start_height, max_outputs);
 
 		let url = format!("{}/v1/txhashset/outputs?{}", addr, query_param,);
-		let mut api_outputs: Vec<(Commitment, RangeProof, bool, u64, u64)> =
-			Vec::new();
 
-                let res = if global::is_mainnet() {
-                        client::get::<OutputListing>(url.as_str(), self.node_api_secret(), global::ChainTypes::Mainnet)
-                } else if global::is_floonet() {
-                        client::get::<OutputListing>(url.as_str(), self.node_api_secret(), global::ChainTypes::Floonet)
-                } else {
-                        client::get::<OutputListing>(url.as_str(), self.node_api_secret(), global::ChainTypes::UserTesting)
-                };
+		let mut api_outputs: Vec<(Commitment, RangeProof, bool, u64, u64)> = Vec::new();
 
-		match res {
+                match if global::is_mainnet() {
+                        	client::get::<OutputListing>(url.as_str(), self.node_api_secret(), global::ChainTypes::Mainnet)
+                	} else if global::is_floonet() {
+                        	client::get::<OutputListing>(url.as_str(), self.node_api_secret(), global::ChainTypes::Floonet)
+                	} else {
+                       		client::get::<OutputListing>(url.as_str(), self.node_api_secret(), global::ChainTypes::UserTesting)
+                	}
+			{
 			Ok(o) => {
 				for out in o.outputs {
 					let is_coinbase = match out.output_type {
@@ -327,7 +256,7 @@ impl NodeClient for HTTPNodeClient {
 			}
 			Err(e) => {
 				// if we got anything other than 200 back from server, bye
-				println!(
+				error!(
 					"get_outputs_by_pmmr_index: error contacting {}. Error: {}",
 					addr, e
 				);
@@ -336,4 +265,97 @@ impl NodeClient for HTTPNodeClient {
 			}
 		}
 	}
+
+	/// Get a kernel and the height of the block it is included in. Returns
+	/// (tx_kernel, height, mmr_index)
+	fn get_kernel(
+		&mut self,
+		excess: &Commitment,
+		min_height: Option<u64>,
+		max_height: Option<u64>,
+	) -> Result<Option<(TxKernel, u64, u64)>, Error> {
+		let version = self
+			.get_version_info()
+			.ok_or(libwallet::ErrorKind::ClientCallback(
+				"Unable to get version".into(),
+			))?;
+		let version = Version::parse(&version.node_version)
+			.map_err(|_| libwallet::ErrorKind::ClientCallback("Unable to parse version".into()))?;
+		if version <= Version::new(2, 0, 0) {
+			return Err(libwallet::ErrorKind::ClientCallback(
+				"Kernel lookup not supported by node, please upgrade it".into(),
+			)
+			.into());
+		}
+
+		let mut query = String::new();
+		if let Some(h) = min_height {
+			query += &format!("min_height={}", h);
+		}
+		if let Some(h) = max_height {
+			if query.len() > 0 {
+				query += "&";
+			}
+			query += &format!("max_height={}", h);
+		}
+		if query.len() > 0 {
+			query.insert_str(0, "?");
+		}
+
+		let url = format!(
+			"{}/v1/chain/kernels/{}{}",
+			self.node_url(),
+			to_hex(excess.0.to_vec()),
+			query
+		);
+
+                let res: Option<LocatedTxKernel> = if global::is_mainnet() {
+                        client::get(url.as_str(), self.node_api_secret(), global::ChainTypes::Mainnet)
+                } else if global::is_floonet() {
+                        client::get(url.as_str(), self.node_api_secret(), global::ChainTypes::Floonet)
+                } else {
+                        client::get(url.as_str(), self.node_api_secret(), global::ChainTypes::UserTesting)
+                }.map_err(|e| libwallet::ErrorKind::ClientCallback(format!("Kernel lookup: {}", e)))?;
+
+		Ok(res.map(|k| (k.tx_kernel, k.height, k.mmr_index)))
+	}
+
+	/// Return total_difficulty of the chain 
+        fn get_total_difficulty(&self) -> Result<u64, Error> {
+                let addr = self.node_url();
+                let url = format!("{}/v1/chain", addr);
+
+                let res = if global::is_mainnet() {
+                        client::get::<Tip>(url.as_str(), self.node_api_secret(), global::ChainTypes::Mainnet)
+                } else if global::is_floonet() {
+                        client::get::<Tip>(url.as_str(), self.node_api_secret(), global::ChainTypes::Floonet)
+                } else {
+                        client::get::<Tip>(url.as_str(), self.node_api_secret(), global::ChainTypes::UserTesting)
+                };
+
+                match res {
+                        Err(e) => {
+                                let report = format!("Getting chain difficulty from node: {}", e);
+                                error!("Get diffulty error: {}", e);
+                                Err(ErrorKind::ClientCallback(report).into())
+                        }
+                        Ok(r) => Ok(r.total_difficulty),
+                }
+        }
+
+	/// Return Connected peers
+        fn get_connected_peer_info(&self) -> Result<Vec<PeerInfoDisplay>, libwallet::Error> {
+                let addr = self.node_url();
+                let url = format!("{}/v1/peers/connected", addr);
+                
+                let peers = if global::is_mainnet() {
+                        client::get::<Vec<PeerInfoDisplay>>(url.as_str(), self.node_api_secret(), global::ChainTypes::Mainnet)
+                } else if global::is_floonet() {
+                        client::get::<Vec<PeerInfoDisplay>>(url.as_str(), self.node_api_secret(), global::ChainTypes::Floonet)
+                } else {
+                        client::get::<Vec<PeerInfoDisplay>>(url.as_str(), self.node_api_secret(), global::ChainTypes::UserTesting)
+                }.map_err(|e| libwallet::ErrorKind::ClientCallback(format!("get_connected_peer_info: {}", e)))?;
+                
+                Ok(peers)
+        }
 }

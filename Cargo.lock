@@ -999,7 +999,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "2.4.3-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#dcf34a23e5d218a8d280b0dadc3cbce62d489d03"
+source = "git+https://github.com/mwcproject/mwc-wallet#0e3cf069bc6945cc878832d82abd8e7e3c1cf4a2"
 dependencies = [
  "blake2-rfc 0.2.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1020,13 +1020,14 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "2.4.3-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#dcf34a23e5d218a8d280b0dadc3cbce62d489d03"
+source = "git+https://github.com/mwcproject/mwc-wallet#0e3cf069bc6945cc878832d82abd8e7e3c1cf4a2"
 dependencies = [
  "dirs 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "grin_api 2.4.1-beta.1 (git+https://github.com/mwcproject/mwc-node)",
  "grin_chain 2.4.1-beta.1 (git+https://github.com/mwcproject/mwc-node)",
  "grin_core 2.4.1-beta.1 (git+https://github.com/mwcproject/mwc-node)",
  "grin_keychain 2.4.1-beta.1 (git+https://github.com/mwcproject/mwc-node)",
+ "grin_p2p 2.4.1-beta.1 (git+https://github.com/mwcproject/mwc-node)",
  "grin_store 2.4.1-beta.1 (git+https://github.com/mwcproject/mwc-node)",
  "grin_util 2.4.1-beta.1 (git+https://github.com/mwcproject/mwc-node)",
  "rand 0.5.6 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1038,7 +1039,7 @@ dependencies = [
 [[package]]
 name = "grinswap"
 version = "0.1.0"
-source = "git+https://github.com/mwcproject/mwcswap#2e330c9c2d7c53363eb717e9780bc4742506e5be"
+source = "git+https://github.com/mwcproject/mwcswap#7e91fb1cda308d07864a22e5592ba889fbd33798"
 dependencies = [
  "bitcoin 0.19.1 (git+https://github.com/mwcproject/rust-bitcoin?branch=zkp)",
  "bitcoin_hashes 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1501,7 +1502,9 @@ dependencies = [
  "grin_wallet_libwallet 2.4.3-beta.1 (git+https://github.com/mwcproject/mwc-wallet)",
  "grinswap 0.1.0 (git+https://github.com/mwcproject/mwcswap)",
  "hmac 0.6.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "http 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.12.33 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hyper-rustls 0.14.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lmdb-zero 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "mime 0.3.13 (registry+https://github.com/rust-lang/crates.io-index)",

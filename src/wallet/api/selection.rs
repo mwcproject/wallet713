@@ -7,9 +7,11 @@ use std::cmp::min;
 
 use super::keys;
 use super::types::{
-    Context, ContextType, Error, ErrorKind, Identifier, Keychain, NodeClient, OutputData,
+    Context, ContextType, Error, ErrorKind, Identifier, Keychain, OutputData,
     OutputStatus, Slate, Transaction, TxLogEntry, TxLogEntryType, WalletBackend,
 };
+use libwallet::NodeClient;
+
 
 pub fn build_send_tx_slate<T: ?Sized, C, K> (
     wallet: &mut T,

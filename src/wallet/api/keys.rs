@@ -1,7 +1,9 @@
 use super::types::{
-    AcctPathMapping, ChildNumber, ErrorKind, ExtKeychain, Identifier, Keychain, NodeClient, Result,
+    AcctPathMapping, ChildNumber, ErrorKind, ExtKeychain, Identifier, Keychain, Result,
     WalletBackend,
 };
+use libwallet::NodeClient;
+
 
 /// Get next available key in the wallet for a given parent
 pub fn next_available_key<T: ?Sized, C, K>(wallet: &mut T) -> Result<Identifier>

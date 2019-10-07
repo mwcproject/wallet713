@@ -47,6 +47,10 @@ impl Publisher for GrinboxPublisher {
         self.broker.post_slate(slate, &to, &self.address, &self.secret_key)?;
         Ok(())
     }
+
+    fn post_take(&self, message: &grinswap::Message, to: &str) -> Result<()> {
+        unimplemented!()
+    }
 }
 
 #[derive(Clone)]
@@ -335,7 +339,7 @@ impl Handler for GrinboxClient {
                 challenge,
                 signature,
             } => {
-                let (mut slate, mut tx_proof) = match TxProof::from_response(
+                let (mut slate, mut tx_proof, _) = match TxProof::from_response(
                     from,
                     str,
                     challenge,
@@ -382,6 +386,7 @@ impl Handler for GrinboxClient {
                     }
                 };
 
+                let mut slate = slate.unwrap();
                 let address = tx_proof.address.clone();
                 self.handler
                     .lock()

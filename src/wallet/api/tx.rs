@@ -2,9 +2,10 @@ use uuid::Uuid;
 
 use super::selection;
 use super::types::{
-    Context, Error, ErrorKind, Identifier, Keychain, NodeClient, Slate, Transaction,
+    Context, Error, ErrorKind, Identifier, Keychain, Slate, Transaction,
     TxLogEntryType, WalletBackend,
 };
+use libwallet::NodeClient;
 use super::updater;
 
 use crate::wallet::types::TxProof;

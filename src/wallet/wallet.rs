@@ -7,10 +7,13 @@ use common::{ErrorKind, Result};
 use super::api::{controller, display};
 use super::backend::Backend;
 use super::types::{
-    Arc, BlockFees, CbData, ExtKeychain, HTTPNodeClient, Mutex, OutputData, NodeClient, SecretKey,
+    Arc, BlockFees, CbData, ExtKeychain, HTTPNodeClient, Mutex, OutputData, SecretKey,
     Slate, Transaction, TxLogEntry, WalletBackend, WalletInfo, WalletInst, WalletSeed,
 };
-
+use libwallet::NodeClient;
+use contacts::types::Address;
+use grinswap::Message;
+use crate::broker::MWCMQPublisher;
 use crate::common::crypto::Hex;
 use crate::common::hasher::derive_address_key;
 use crate::contacts::AddressBook;
@@ -50,6 +53,17 @@ impl Wallet {
         Ok(())
     }
 
+    pub fn process_message(&mut self, from: &dyn Address, message: &mut Message, config: Option<Wallet713Config>
+    ) -> Result<()> {
+            let wallet = self.get_wallet_instance()?;
+
+        controller::owner_single_use(wallet.clone(), |api| {
+            api.process_swap_message(from, message, config)?;
+            Ok(())
+        })?;
+        Ok(())
+    }
+
     pub fn swap(
 	&mut self,
         pair: &str,
@@ -57,12 +71,13 @@ impl Wallet {
         is_buy: bool,
         rate: f64,
         qty: u64,
-        address: Option<&str>
+        address: Option<&str>,
+        publisher: &mut MWCMQPublisher,
     ) -> Result<()> {
         let wallet = self.get_wallet_instance()?;
 
         controller::owner_single_use(wallet.clone(), |api| {
-            api.swap(pair, is_make, is_buy, rate, qty, address)?;
+            api.swap(pair, is_make, is_buy, rate, qty, address, publisher)?;
             Ok(())
         })?;
         Ok(())

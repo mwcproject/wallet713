@@ -1,5 +1,5 @@
 mod backend;
-mod types;
+pub mod types;
 pub use self::backend::Backend;
 pub use self::types::{
     Address, AddressBook, AddressBookBackend, AddressType, Contact, GrinboxAddress, KeybaseAddress, MWCMQSAddress,
