@@ -465,6 +465,17 @@ impl Wallet {
         Ok(())
     }
 
+    pub fn submit(&self, txn: &mut Transaction) -> Result<()> {
+        let wallet = self.get_wallet_instance()?;
+        controller::owner_single_use(wallet.clone(), |api| {
+            api.post_tx(&txn, false)?;
+            Ok(())
+        })
+        .map_err(|_| ErrorKind::GrinWalletPostError)?;
+
+        Ok(())
+    }
+
     pub fn finalize_slate(&self, slate: &mut Slate, tx_proof: Option<&mut TxProof>) -> Result<()> {
         let wallet = self.get_wallet_instance()?;
         let mut should_post: bool = false;

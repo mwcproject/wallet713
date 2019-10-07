@@ -342,6 +342,13 @@ impl<'a, 'b> Parser {
                     )
             )
             .subcommand(
+                SubCommand::with_name("submit")
+                    .about("posts a transaction that has been finalized. Primarily for use with cold storage.")
+                    .arg(
+                        Arg::from_usage("-f, --file=<file> 'the transaction file'")
+                    )
+            )
+            .subcommand(
                 SubCommand::with_name("check")
                     .about("checks a wallet's outputs against a live node, repairing and restoring missing outputs if required")
             )
