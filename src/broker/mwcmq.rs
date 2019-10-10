@@ -762,8 +762,8 @@ impl MWCMQSBroker {
                                     handler.lock().on_message(
                                         &from,
                                         message,
-                                        Some(self.config.clone()));
-                                 
+                                        Some(self.config.clone()),
+					);
                                 }
                                 break;
                             }

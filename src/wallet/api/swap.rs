@@ -39,6 +39,7 @@ use grin_core::core::transaction::Weighting;
 use grin_core::core::verifier_cache::LruVerifierCache;
 use grin_core::core::{Transaction, TxKernel};
 use grinswap::swap::message::Message;
+use grinswap::swap::message::Update;
 use grin_core::ser::{deserialize};
 use grin_keychain::{ExtKeychain, Keychain, SwitchCommitmentType};
 use crate::grin_keychain::Identifier;
@@ -92,7 +93,154 @@ where
 */
 
 
-fn context_sell<T: ?Sized, C, K>(kc: &K,
+        #[derive(Debug, Clone)]
+        struct TestNodeClientState {
+                pub height: u64,
+                pub pending: Vec<Transaction>,
+                pub outputs: HashMap<Commitment, u64>,
+                pub kernels: HashMap<Commitment, (TxKernel, u64)>,
+        }
+
+        #[derive(Debug, Clone)]
+        struct TestNodeClient {
+                pub state: Arc<Mutex<TestNodeClientState>>,
+        }
+
+impl libwallet::NodeClient for TestNodeClient {
+        /// Return total_difficulty of the chain
+        fn get_total_difficulty(&self) -> Result<u64, libwallet::Error> {
+                        unimplemented!()
+        }
+
+        /// Return Connected peers
+        fn get_connected_peer_info(&self) -> Result<Vec<PeerInfoDisplay>, libwallet::Error> {
+                        unimplemented!()
+        }
+
+                fn node_url(&self) -> &str {
+                        unimplemented!()
+                }
+                fn set_node_url(&mut self, _node_url: &str) {
+                        unimplemented!()
+                }
+                fn node_api_secret(&self) -> Option<String> {
+                        unimplemented!()
+                }
+                fn set_node_api_secret(&mut self, _node_api_secret: Option<String>) {
+                        unimplemented!()
+                }
+                fn post_tx(&self, tx: &libwallet::TxWrapper, _fluff: bool) -> Result<(), libwallet::Error> {
+                        let wrapper = from_hex(tx.tx_hex.clone()).unwrap();
+                        let mut cursor = Cursor::new(wrapper);
+                        let tx: Transaction = deserialize(&mut cursor).unwrap();
+                        tx.validate(
+                                Weighting::AsTransaction,
+                                Arc::new(RwLock::new(LruVerifierCache::new())),
+                        )
+                        .map_err(|_| libwallet::ErrorKind::Node)?;
+
+                        let mut state = self.state.lock();
+                        for input in tx.inputs() {
+                                // Output not unspent
+                                if !state.outputs.contains_key(&input.commit) {
+                                        return Err(libwallet::ErrorKind::Node.into());
+                                }
+
+                                // Double spend attempt
+                                for tx_pending in state.pending.iter() {
+                                        for in_pending in tx_pending.inputs() {
+                                                if in_pending.commit == input.commit {
+                                                        return Err(libwallet::ErrorKind::Node.into());
+                                                }
+                                        }
+                                }
+                        }
+                        // Check for duplicate output
+                        for output in tx.outputs() {
+                                if state.outputs.contains_key(&output.commit) {
+                                        return Err(libwallet::ErrorKind::Node.into());
+                                }
+
+                                for tx_pending in state.pending.iter() {
+                                        for out_pending in tx_pending.outputs() {
+                                                if out_pending.commit == output.commit {
+                                                        return Err(libwallet::ErrorKind::Node.into());
+                                                }
+                                        }
+                                }
+                        }
+                        // Check for duplicate kernel
+                        for kernel in tx.kernels() {
+                                // Duplicate kernel
+                                if state.kernels.contains_key(&kernel.excess) {
+                                        return Err(libwallet::ErrorKind::Node.into());
+                                }
+
+                                for tx_pending in state.pending.iter() {
+                                        for kernel_pending in tx_pending.kernels() {
+                                                if kernel_pending.excess == kernel.excess {
+                                                        return Err(libwallet::ErrorKind::Node.into());
+                                                }
+                                        }
+                                }
+                        }
+                        state.pending.push(tx);
+
+                        Ok(())
+                }
+                fn get_version_info(&mut self) -> Option<libwallet::NodeVersionInfo> {
+                        unimplemented!()
+                }
+                fn get_chain_height(&self) -> Result<u64, libwallet::Error> {
+                        Ok(self.state.lock().height)
+                }
+
+                fn get_outputs_from_node(
+                        &self,
+                        wallet_outputs: Vec<Commitment>,
+                ) -> Result<HashMap<Commitment, (String, u64, u64)>, libwallet::Error> {
+                        let mut map = HashMap::new();
+                        let state = self.state.lock();
+                        for output in wallet_outputs {
+                                if let Some(height) = state.outputs.get(&output) {
+                                        map.insert(output, (to_hex(output.0.to_vec()), *height, 0));
+                                }
+                        }
+                        Ok(map)
+                }
+                fn get_outputs_by_pmmr_index(
+                        &self,
+                        _start_height: u64,
+                        _max_outputs: u64,
+                ) -> Result<(u64, u64, Vec<(Commitment, RangeProof, bool, u64, u64)>), libwallet::Error> {
+                        unimplemented!()
+                }
+                fn get_kernel(
+                        &mut self,
+                        excess: &Commitment,
+                        _min_height: Option<u64>,
+                        _max_height: Option<u64>,
+                ) -> Result<Option<(TxKernel, u64, u64)>, libwallet::Error> {
+                        let state = self.state.lock();
+                        let res = state
+                                .kernels
+                                .get(excess)
+                                .map(|(kernel, height)| (kernel.clone(), *height, 0));
+                        Ok(res)
+                }
+        }
+
+
+
+pub struct swap {
+}
+
+
+impl swap
+{
+
+fn context_sell<T: ?Sized, C, K>(&self,
+				 kc: &K,
                                  primary_amount: u64,
                                  wallet: &mut T,
                                  api_sell: &mut BtcSwapApi::<K, HTTPNodeClient, ElectrumNodeClient>) -> Context
@@ -120,7 +268,34 @@ where
     api_sell.create_context(Currency::Btc, true, Some(inputVec), keys).unwrap()
 }
 
-fn context_buy<T: ?Sized, C, K>(wallet: &mut T,
+        fn key<K>(&self, kc: &K, d1: u32, d2: u32) -> SecretKey
+        where
+                K: Keychain
+        {
+                kc.derive_key(0, &self.key_id(d1, d2), &SwitchCommitmentType::None)
+                        .unwrap()
+        }
+
+        fn key_id(&self, d1: u32, d2: u32) -> Identifier {
+                ExtKeychain::derive_key_id(2, d1, d2, 0, 0)
+        }
+
+        fn btc_address<K>(&self, kc: &K) -> String
+        where
+                K: Keychain
+        {
+                let key = PublicKey::from_secret_key(kc.secp(), &self.key(kc, 2, 0)).unwrap();
+                let address = Address::p2pkh(
+                        &BtcPublicKey {
+                                compressed: true,
+                                key,
+                        },
+                        BtcNetwork::Testnet,
+                );
+                format!("{}", address)
+        }
+
+fn context_buy<T: ?Sized, C, K>(&self, wallet: &mut T,
                                 api_buy: &mut BtcSwapApi::<K, HTTPNodeClient, ElectrumNodeClient>) -> Context
 where
     T: WalletBackend<C, K>,
@@ -154,6 +329,7 @@ where
 */
 }
 
+/*
 	fn key_id(d1: u32, d2: u32) -> Identifier {
 		ExtKeychain::derive_key_id(2, d1, d2, 0, 0)
 	}
@@ -244,131 +420,9 @@ where
 			}
 		}
 	}
+*/
 
-impl libwallet::NodeClient for TestNodeClient {
-        /// Return total_difficulty of the chain
-        fn get_total_difficulty(&self) -> Result<u64, libwallet::Error> {
-                        unimplemented!()
-        }
-
-        /// Return Connected peers
-        fn get_connected_peer_info(&self) -> Result<Vec<PeerInfoDisplay>, libwallet::Error> {
-                        unimplemented!()
-        }
-
-		fn node_url(&self) -> &str {
-			unimplemented!()
-		}
-		fn set_node_url(&mut self, _node_url: &str) {
-			unimplemented!()
-		}
-		fn node_api_secret(&self) -> Option<String> {
-			unimplemented!()
-		}
-		fn set_node_api_secret(&mut self, _node_api_secret: Option<String>) {
-			unimplemented!()
-		}
-		fn post_tx(&self, tx: &libwallet::TxWrapper, _fluff: bool) -> Result<(), libwallet::Error> {
-			let wrapper = from_hex(tx.tx_hex.clone()).unwrap();
-			let mut cursor = Cursor::new(wrapper);
-			let tx: Transaction = deserialize(&mut cursor).unwrap();
-			tx.validate(
-				Weighting::AsTransaction,
-				Arc::new(RwLock::new(LruVerifierCache::new())),
-			)
-			.map_err(|_| libwallet::ErrorKind::Node)?;
-
-			let mut state = self.state.lock();
-			for input in tx.inputs() {
-				// Output not unspent
-				if !state.outputs.contains_key(&input.commit) {
-					return Err(libwallet::ErrorKind::Node.into());
-				}
-
-				// Double spend attempt
-				for tx_pending in state.pending.iter() {
-					for in_pending in tx_pending.inputs() {
-						if in_pending.commit == input.commit {
-							return Err(libwallet::ErrorKind::Node.into());
-						}
-					}
-				}
-			}
-			// Check for duplicate output
-			for output in tx.outputs() {
-				if state.outputs.contains_key(&output.commit) {
-					return Err(libwallet::ErrorKind::Node.into());
-				}
-
-				for tx_pending in state.pending.iter() {
-					for out_pending in tx_pending.outputs() {
-						if out_pending.commit == output.commit {
-							return Err(libwallet::ErrorKind::Node.into());
-						}
-					}
-				}
-			}
-			// Check for duplicate kernel
-			for kernel in tx.kernels() {
-				// Duplicate kernel
-				if state.kernels.contains_key(&kernel.excess) {
-					return Err(libwallet::ErrorKind::Node.into());
-				}
-
-				for tx_pending in state.pending.iter() {
-					for kernel_pending in tx_pending.kernels() {
-						if kernel_pending.excess == kernel.excess {
-							return Err(libwallet::ErrorKind::Node.into());
-						}
-					}
-				}
-			}
-			state.pending.push(tx);
-
-			Ok(())
-		}
-		fn get_version_info(&mut self) -> Option<libwallet::NodeVersionInfo> {
-			unimplemented!()
-		}
-		fn get_chain_height(&self) -> Result<u64, libwallet::Error> {
-			Ok(self.state.lock().height)
-		}
-		fn get_outputs_from_node(
-			&self,
-			wallet_outputs: Vec<Commitment>,
-		) -> Result<HashMap<Commitment, (String, u64, u64)>, libwallet::Error> {
-			let mut map = HashMap::new();
-			let state = self.state.lock();
-			for output in wallet_outputs {
-				if let Some(height) = state.outputs.get(&output) {
-					map.insert(output, (to_hex(output.0.to_vec()), *height, 0));
-				}
-			}
-			Ok(map)
-		}
-		fn get_outputs_by_pmmr_index(
-			&self,
-			_start_height: u64,
-			_max_outputs: u64,
-		) -> Result<(u64, u64, Vec<(Commitment, RangeProof, bool, u64, u64)>), libwallet::Error> {
-			unimplemented!()
-		}
-		fn get_kernel(
-			&mut self,
-			excess: &Commitment,
-			_min_height: Option<u64>,
-			_max_height: Option<u64>,
-		) -> Result<Option<(TxKernel, u64, u64)>, libwallet::Error> {
-			let state = self.state.lock();
-			let res = state
-				.kernels
-				.get(excess)
-				.map(|(kernel, height)| (kernel.clone(), *height, 0));
-			Ok(res)
-		}
-	}
-
-pub fn make_buy_btc<T: ?Sized, C, K>(wallet: &mut T, rate: f64, qty: u64)
+pub fn make_buy_btc<T: ?Sized, C, K>(&self, wallet: &mut T, rate: f64, qty: u64)
 where
     T: WalletBackend<C, K>,
     C: NodeClient,
@@ -377,7 +431,7 @@ where
     println!("do make buy");
 }
 
-pub fn make_sell_btc<T: ?Sized, C, K>(wallet: &mut T, rate: f64, qty: u64)
+pub fn make_sell_btc<T: ?Sized, C, K>(&self, wallet: &mut T, rate: f64, qty: u64)
 where
     T: WalletBackend<C, K>,
     C: NodeClient,
@@ -386,7 +440,7 @@ where
     println!("do make sell");
 }
 
-pub fn take_buy_btc<T: ?Sized, C, K>(wallet: &mut T, rate: f64, qty: u64, address: &str)
+pub fn take_buy_btc<T: ?Sized, C, K>(&self, wallet: &mut T, rate: f64, qty: u64, address: &str)
 where
     T: WalletBackend<C, K>,
     C: NodeClient,
@@ -395,7 +449,7 @@ where
     println!("do take buy");
 }
 
-pub fn take_sell_btc<T: ?Sized, C, K>(wallet: &mut T, rate: f64, qty: u64, address: &str, publisher: &mut MWCMQPublisher)
+pub fn take_sell_btc<T: ?Sized, C, K>(&self, wallet: &mut T, rate: f64, qty: u64, address: &str, publisher: &mut Publisher)
 where
     T: WalletBackend<C, K>,
     C: NodeClient,
@@ -403,7 +457,8 @@ where
 {
     println!("do take sell");
     let keychain = wallet.keychain().clone();
-    let btcNodeClient = ElectrumNodeClient::new("127.0.0.1:7777".to_string(),
+
+    let btcNodeClient = ElectrumNodeClient::new("3.92.132.156:8000".to_string(),
                                                 grin_core::global::is_floonet());
 
 
@@ -418,8 +473,8 @@ where
                                                   client.clone(),
                                                   btcNodeClient);
 
-    let ctx = context_sell(&keychain, qty, wallet, &mut api_sell);
-    let secondary_redeem_address = btc_address(&keychain);
+    let ctx = self.context_sell(&keychain, qty, wallet, &mut api_sell);
+    let secondary_redeem_address = self.btc_address(&keychain);
 
     let (mut swap_sell, action) = api_sell
                        .create_swap_offer(
@@ -442,21 +497,20 @@ where
     println!("btc_amount for trade in satoshis = {}", btc_amount_sats);
 }
 
-
-pub fn process_swap_message<T: ?Sized, C, K>(wallet: &mut T,
+pub fn process_offer<T: ?Sized, C, K>(&self,
+                             wallet: &mut T,
                              from: &dyn crate::contacts::types::Address,
                              message: Message,
-                             config: Option<Wallet713Config>) -> Result<(), Error>
+                             config: Option<Wallet713Config>,
+                             publisher: &mut Publisher) -> Result<(), Error>
 where
     T: WalletBackend<C, K>,
     C: NodeClient,
     K: grinswap::Keychain,
 {
-println!("process swap in swap.rs");
     let keychain = wallet.keychain().clone();
-    let btcNodeClient = ElectrumNodeClient::new("127.0.0.1:7777".to_string(),
+    let btcNodeClient = ElectrumNodeClient::new("3.92.132.156:8000".to_string(),
                                                 grin_core::global::is_floonet());
-println!("node client connected at user:password@127.0.0.1:7777");
     let client = HTTPNodeClient::new(
         "https://mwc713.floonet.mwc.mw",
         Some("11ne3EAUtOXVKwhxm84U".to_string()),
@@ -464,7 +518,7 @@ println!("node client connected at user:password@127.0.0.1:7777");
 println!("1");
     let mut api_buy = BtcSwapApi::<K, _, _>::new(Some(keychain.clone()), client.clone(), btcNodeClient);
 println!("2");
-    let ctx_buy = context_buy(wallet, &mut api_buy);
+    let ctx_buy = self.context_buy(wallet, &mut api_buy);
 println!("3");
     let (mut swap_buy, action) = api_buy
                         .accept_swap_offer(&ctx_buy, None, message)
@@ -472,7 +526,7 @@ println!("3");
 println!("4");
     assert_eq!(swap_buy.status, Status::Offered);
     assert_eq!(action, Action::SendMessage(1));
-    let message_2 = api_buy.message(&swap_buy).unwrap();
+    let accepted_message = api_buy.message(&swap_buy).unwrap();
 println!("5");
     let action = api_buy.message_sent(&mut swap_buy, &ctx_buy).unwrap();
 println!("6");
@@ -491,12 +545,136 @@ println!("7");
     assert_eq!(swap_buy.status, Status::Accepted);
     let address = Address::from_str(&address).unwrap();
 
-    println!("offer accepted!");
+    println!("offer accepted! send btc to {}", address);
+   
+    publisher.post_take(&accepted_message, &from.stripped());
 
     Ok(())
 }
 
-pub fn swap<T: ?Sized, C, K>(wallet: &mut T,
+pub fn process_accept_offer<T: ?Sized, C, K>(&self,
+                             wallet: &mut T,
+                             from: &dyn crate::contacts::types::Address,
+                             message: Message,
+                             config: Option<Wallet713Config>,
+                             publisher: &mut Publisher) -> Result<(), Error>
+where
+    T: WalletBackend<C, K>,
+    C: NodeClient,
+    K: grinswap::Keychain,
+{
+println!("in process_accept_offer");
+
+    let keychain = wallet.keychain().clone();
+    
+    let btcNodeClient = ElectrumNodeClient::new("3.92.132.156:8000".to_string(),
+                                                grin_core::global::is_floonet());
+    
+    let client = HTTPNodeClient::new(
+        "https://mwc713.floonet.mwc.mw",
+        Some("11ne3EAUtOXVKwhxm84U".to_string()),
+    );
+
+let qty = 10;
+let rate = 0.01;
+let btc_amount_sats = ((qty as f64 * rate / (1_000_000_000 as f64)) as f64 * 100_000_000 as f64) as u64;
+
+    
+    let mut api_sell = BtcSwapApi::<K, _, _>::new(Some(keychain.clone()),
+                                                  client.clone(),
+                                                  btcNodeClient);
+    //self.api = Some(api_sell);
+    
+    let ctx_sell = self.context_sell(&keychain, qty, wallet, &mut api_sell);
+    let secondary_redeem_address = self.btc_address(&keychain);
+    
+    let (mut swap_sell, action) = api_sell
+                       .create_swap_offer(
+                                &ctx_sell,
+                                None,
+                                qty,
+                                btc_amount_sats,
+                                Currency::Btc,
+                                secondary_redeem_address,
+                        )
+                        .unwrap();
+
+    let action = api_sell
+                        .receive_message(&mut swap_sell, &ctx_sell, message)
+                        .unwrap();
+                assert_eq!(action, Action::PublishTx);
+                assert_eq!(swap_sell.status, Status::Accepted);
+
+    Ok(())
+}
+
+
+pub fn process_swap_message<T: ?Sized, C, K>(&self,
+                             wallet: &mut T,
+                             from: &dyn crate::contacts::types::Address,
+                             message: Message,
+                             config: Option<Wallet713Config>,
+                             publisher: &mut Publisher) -> Result<(), Error>
+where
+    T: WalletBackend<C, K>,
+    C: NodeClient,
+    K: grinswap::Keychain,
+{
+
+    let res = match &message.inner {
+    	Update::AcceptOffer(u) => self.process_accept_offer(wallet, from, message, config, publisher),
+	Update::Offer(u) => self.process_offer(wallet, from, message, config, publisher),
+	_ => Err(libwallet::ErrorKind::Node.into()),
+    };
+
+/*
+println!("in swap.rs");
+    let keychain = wallet.keychain().clone();
+    let btcNodeClient = ElectrumNodeClient::new("3.92.132.156:8000".to_string(),
+                                                grin_core::global::is_floonet());
+    let client = HTTPNodeClient::new(
+        "https://mwc713.floonet.mwc.mw",
+        Some("11ne3EAUtOXVKwhxm84U".to_string()),
+    );
+println!("1");
+    let mut api_buy = BtcSwapApi::<K, _, _>::new(Some(keychain.clone()), client.clone(), btcNodeClient);
+println!("2");
+    let ctx_buy = context_buy(wallet, &mut api_buy);
+println!("3");
+    let (mut swap_buy, action) = api_buy
+                        .accept_swap_offer(&ctx_buy, None, message)
+                        .unwrap();
+println!("4");
+    assert_eq!(swap_buy.status, Status::Offered);
+    assert_eq!(action, Action::SendMessage(1));
+    let accepted_message = api_buy.message(&swap_buy).unwrap();
+println!("5");
+    let action = api_buy.message_sent(&mut swap_buy, &ctx_buy).unwrap();
+println!("6");
+
+    let address = match action {
+
+        Action::DepositSecondary { amount, address } => {
+            //assert_eq!(amount, btc_amount);
+            address
+        }
+        _ => panic!("Invalid action"),
+    };
+
+println!("7");
+
+    assert_eq!(swap_buy.status, Status::Accepted);
+    let address = Address::from_str(&address).unwrap();
+
+    println!("offer accepted! send btc to {}", address);
+    
+    publisher.post_take(&accepted_message, &from.stripped());
+*/
+    Ok(())
+}
+
+pub fn swap<T: ?Sized, C, K>(&self,
+                             wallet: &mut T,
                              pair: &str,
                              is_make: bool,
                              is_buy: bool,
@@ -519,13 +697,13 @@ where
         	println!("swap swap swap");
 
                 if is_make && is_buy {
-                   make_buy_btc(wallet, rate, qty);
+                   self.make_buy_btc(wallet, rate, qty);
                 } else if is_make && !is_buy {
-                   make_sell_btc(wallet, rate, qty);
+                   self.make_sell_btc(wallet, rate, qty);
                 } else if !is_make && is_buy {
-                   take_buy_btc(wallet, rate, qty, address.unwrap());
+                   self.take_buy_btc(wallet, rate, qty, address.unwrap());
                 } else if !is_make && !is_buy {
-                   take_sell_btc(wallet, rate, qty, address.unwrap(), publisher);
+                   self.take_sell_btc(wallet, rate, qty, address.unwrap(), publisher);
                 }
 
                 /*
@@ -875,4 +1053,6 @@ where
   */
 println!("swap complete");
         Ok(())
+}
+
 }

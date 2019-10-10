@@ -309,9 +309,10 @@ impl SubscriptionHandler for Controller {
         print!("{}", COLORED_PROMPT);
     }
 
-    fn on_message(&self, from: &dyn Address, message: Message, config: Option<Wallet713Config>) {
+    fn on_message(&mut self, from: &dyn Address, message: Message, config: Option<Wallet713Config>) {
         println!("received a message");
-        self.wallet.lock().process_message(from, message, config);
+	let mut publisher = self.publisher.as_mut();
+        self.wallet.lock().process_message(from, message, config, publisher);
     }
 
     fn on_slate(&self, from: &dyn Address, slate: &mut Slate, tx_proof: Option<&mut TxProof>, config: Option<Wallet713Config>) {

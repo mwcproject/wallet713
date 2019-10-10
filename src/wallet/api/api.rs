@@ -7,6 +7,7 @@ use grin_util::secp::key::PublicKey;
 use grin_util::secp::pedersen;
 use grin_util::secp::{ContextFlag, Secp256k1};
 use grin_p2p::types::PeerInfoDisplay;
+use crate::broker::Publisher;
 use crate::broker::MWCMQPublisher;
 use crate::contacts::GrinboxAddress;
 
@@ -15,6 +16,7 @@ use contacts::types::Address;
 use grinswap::Message;
 use super::keys;
 use super::tx;
+use crate::wallet;
 use super::swap;
 use super::types::{
     AcctPathMapping, Arc, BlockFees, CbData, ContextType, Error, ErrorKind, Identifier, Keychain,
@@ -37,6 +39,7 @@ where
     pub wallet: Arc<Mutex<W>>,
     phantom: PhantomData<K>,
     phantom_c: PhantomData<C>,
+    swap: wallet::api::swap::swap,
 }
 
 pub struct Wallet713ForeignAPI<W: ?Sized, C, K>
@@ -69,7 +72,39 @@ where
             wallet: wallet_in,
             phantom: PhantomData,
             phantom_c: PhantomData,
+            swap: wallet::api::swap::swap { },
         }
+    }
+
+    pub fn process_swap_message(&self, from: &dyn Address, message: Message, config: Option<Wallet713Config>, publisher: &mut Publisher,
+    ) -> Result<(), Error>
+    where
+            K: grinswap::Keychain
+    {
+        let mut w = self.wallet.lock();
+        w.open_with_credentials()?;
+        self.swap.process_swap_message(&mut *w, from, message, config, publisher)?;
+        w.close()?;
+        Ok(())
+    }
+
+    pub fn swap(&self,
+                pair: &str,
+                is_make: bool,
+                is_buy: bool,
+                rate: f64,
+                qty: u64,
+                address: Option<&str>,
+                publisher: &mut MWCMQPublisher,
+    ) -> Result<(), Error>
+    where
+                K: grinswap::Keychain
+        {
+        let mut w = self.wallet.lock();
+        w.open_with_credentials()?;
+        self.swap.swap(&mut *w, pair, is_make, is_buy, rate, qty, address, publisher)?;
+        w.close()?;
+        Ok(())
     }
 
     pub fn invoice_tx(
@@ -103,37 +138,6 @@ where
         );
         w.close()?;
         res
-    }
-
-    pub fn process_swap_message(&self, from: &dyn Address, message: Message, config: Option<Wallet713Config>
-    ) -> Result<(), Error> 
-    where
-            K: grinswap::Keychain
-    {
-        let mut w = self.wallet.lock();
-        w.open_with_credentials()?;
-        swap::process_swap_message(&mut *w, from, message, config)?;
-        w.close()?;
-        Ok(())
-    }
-
-    pub fn swap(&self,
-                pair: &str,
-                is_make: bool,
-                is_buy: bool,
-                rate: f64,
-                qty: u64,
-                address: Option<&str>,
-                publisher: &mut MWCMQPublisher,
-    ) -> Result<(), Error>
-    where
-		K: grinswap::Keychain
-	{
-        let mut w = self.wallet.lock();
-        w.open_with_credentials()?;
-        swap::swap(&mut *w, pair, is_make, is_buy, rate, qty, address, publisher)?;
-        w.close()?;
-        Ok(())
     }
 
     pub fn getnextkey(&self, amount: u64) -> Result<String, Error>
