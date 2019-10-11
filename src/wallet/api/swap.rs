@@ -17,6 +17,7 @@ use grinswap::swap::types::{
 	BtcBuyerContext,
 };
 
+use CONTEXT;
 use std::cell::RefCell;
 use super::keys;
 use common::config::Wallet713Config;
@@ -676,7 +677,13 @@ let btc_amount_sats = ((qty as f64 * rate / (1_000_000_000 as f64)) as f64 * 100
                                                   btcNodeClient);
     //self.api = Some(api_sell);
    
-    let ctx_sell = (&mut(*context_holder)).get_context().unwrap();
+    //let ctx_sell = (&mut(*context_holder)).get_context().unwrap();
+    let context_static = &CONTEXT;
+    let mut ctx_unlocked = context_static.lock();
+    let ctx_sell_opt = ctx_unlocked.get_context();
+    let ctx_sell = ctx_sell_opt.unwrap();
+
+//Arc<Mutex<ContextHolderType>>
 
     let secondary_redeem_address = self.btc_address(&keychain);
     

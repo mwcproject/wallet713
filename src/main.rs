@@ -43,6 +43,8 @@ extern crate ws;
 extern crate semver;
 extern crate commands;
 extern crate enquote;
+#[macro_use]
+extern crate lazy_static;
 
 extern crate grin_api;
 extern crate grin_core;
@@ -50,7 +52,9 @@ extern crate grin_keychain;
 extern crate grin_store;
 extern crate grin_util;
 extern crate grin_p2p;
+extern crate blake2_rfc as blake2;
 
+use grin_keychain::Keychain;
 use broker::types::ContextHolderType;
 use grinswap::SwapApi;
 use std::env;
@@ -104,6 +108,35 @@ use contacts::{Address, AddressBook, AddressType, Backend, Contact, GrinboxAddre
 const CLI_HISTORY_PATH: &str = ".history";
 static mut RECV_ACCOUNT: Option<String> = None;
 static mut RECV_PASS: Option<String> = None;
+
+fn keychain(idx: u8) -> ExtKeychain {
+        let seed_sell: String = format!("fixed0rng0for0testing0purposes0{}", idx % 10);
+        let seed_sell = blake2::blake2b::blake2b(32, &[], seed_sell.as_bytes());
+        ExtKeychain::from_seed(seed_sell.as_bytes(), false).unwrap()
+}
+
+lazy_static! {
+      static ref CONTEXT: Arc<Mutex<ContextHolderType>> = {
+          let keychain = keychain(1); 
+          let btcNodeClient = ElectrumNodeClient::new("3.92.132.156:8000".to_string(),
+                                                grin_core::global::is_floonet());
+
+          let client = HTTPNodeClient::new(
+              "https://mwc713.floonet.mwc.mw",
+              Some("11ne3EAUtOXVKwhxm84U".to_string()),
+          );
+
+          let mut api = BtcSwapApi::<ExtKeychain, _, _>::new(Some(keychain.clone()),
+                                                  client.clone(),
+                                                  btcNodeClient); 
+
+          let ctx = api.create_context(Currency::Btc, false, None, Vec::with_capacity(0)).unwrap();
+
+          Arc::new(Mutex::new(
+               ContextHolder { context: ctx, stored: false}
+          ))
+      };
+}
 
 fn get_swap_api<K>(keychain: &mut K) ->  BtcSwapApi::<K, HTTPNodeClient, ElectrumNodeClient>
 where
@@ -488,6 +521,8 @@ fn start_mwcmqs_listener(
       let mut swap_api: BtcSwapApi::<ExtKeychain, HTTPNodeClient, ElectrumNodeClient> = get_swap_api(keychain);
         let ctx = swap_api.create_context(Currency::Btc, false, None, Vec::with_capacity(0)).unwrap();
         let mut mbox: Box<dyn ContextHolderType + Send>  = Box::new(ContextHolder{ context: ctx, stored: false});
+
+        let _mbox2 = (*(CONTEXT).lock()).get_context();
 
         cloned_subscriber
             .start(Box::new(controller), &mut mbox)
