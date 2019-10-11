@@ -17,6 +17,7 @@ use grinswap::swap::types::{
 	BtcBuyerContext,
 };
 
+use std::cell::RefCell;
 use super::keys;
 use common::config::Wallet713Config;
 use wallet::types::wallet_backend::WalletBackend;
@@ -26,6 +27,7 @@ use wallet::types::output_status::OutputStatus;
 use crate::wallet::{ErrorKind};
 use wallet::api::selection;
 use broker::types::Publisher;
+use broker::types::ContextHolderType;
 use crate::broker::MWCMQPublisher;
 use grin_p2p::types::PeerInfoDisplay;
 use std::collections::HashMap;
@@ -57,6 +59,26 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use grinswap::swap::bitcoin::{BtcSwapApi, TestBtcNodeClient, ElectrumNodeClient};
+
+pub struct ContextHolder {
+    pub context: Context,
+    pub stored: bool,
+}
+
+impl ContextHolderType for ContextHolder {
+    fn get_context(&mut self) -> Option<&Context> {
+        if !self.stored {
+            return None;
+        } else {
+            return Some(&mut self.context);
+        }
+    }
+
+    fn set_context(&mut self, ctx: Context) {
+        self.context = ctx;
+        self.stored = true;
+    }
+}
 
 	const GRIN_UNIT: u64 = 1_000_000_000;
 
@@ -422,34 +444,94 @@ where
 	}
 */
 
-pub fn make_buy_btc<T: ?Sized, C, K>(&self, wallet: &mut T, rate: f64, qty: u64)
+pub fn make_buy_btc<T: ?Sized, C, K>(&self, wallet: &mut T, rate: f64, qty: u64, context_holder: &mut Box<dyn ContextHolderType + Send>)
+-> Result<(), Error>
 where
     T: WalletBackend<C, K>,
     C: NodeClient,
     K: grinswap::Keychain,
 {
     println!("do make buy");
+    let keychain = wallet.keychain().clone();
+    
+    let btcNodeClient = ElectrumNodeClient::new("3.92.132.156:8000".to_string(),
+                                                grin_core::global::is_floonet());
+
+    
+    let btc_amount_sats = ((qty as f64 * rate / (1_000_000_000 as f64)) as f64 * 100_000_000 as f64) as u64;
+    
+    let client = HTTPNodeClient::new(
+        "https://mwc713.floonet.mwc.mw",
+        Some("11ne3EAUtOXVKwhxm84U".to_string()),
+    );
+    
+    let mut api_sell = BtcSwapApi::<K, _, _>::new(Some(keychain.clone()),
+                                                  client.clone(),
+                                                  btcNodeClient);
+
+    Ok(())
 }
 
-pub fn make_sell_btc<T: ?Sized, C, K>(&self, wallet: &mut T, rate: f64, qty: u64)
+pub fn make_sell_btc<T: ?Sized, C, K>(&self, wallet: &mut T, rate: f64, qty: u64, context_holder: &mut Box<dyn ContextHolderType + Send>)
+-> Result<(), Error>
 where
     T: WalletBackend<C, K>,
     C: NodeClient,
     K: grinswap::Keychain,
 {
     println!("do make sell");
+    let keychain = wallet.keychain().clone();
+
+    let btcNodeClient = ElectrumNodeClient::new("3.92.132.156:8000".to_string(),
+                                                grin_core::global::is_floonet());
+
+
+    let btc_amount_sats = ((qty as f64 * rate / (1_000_000_000 as f64)) as f64 * 100_000_000 as f64) as u64;
+
+    let client = HTTPNodeClient::new(
+        "https://mwc713.floonet.mwc.mw",
+        Some("11ne3EAUtOXVKwhxm84U".to_string()),
+    );
+
+    let mut api_sell = BtcSwapApi::<K, _, _>::new(Some(keychain.clone()),
+                                                  client.clone(),
+                                                  btcNodeClient);
+    Ok(())
+
 }
 
-pub fn take_buy_btc<T: ?Sized, C, K>(&self, wallet: &mut T, rate: f64, qty: u64, address: &str)
+pub fn take_buy_btc<T: ?Sized, C, K>(&self, wallet: &mut T, rate: f64, qty: u64, address: &str, context_holder: &mut Box<dyn ContextHolderType + Send>)
+-> Result<(), Error>
 where
     T: WalletBackend<C, K>,
     C: NodeClient,
     K: grinswap::Keychain,
 {
+    let keychain = wallet.keychain().clone();
+
+    let btcNodeClient = ElectrumNodeClient::new("3.92.132.156:8000".to_string(),
+                                                grin_core::global::is_floonet());
+
+
+    let btc_amount_sats = ((qty as f64 * rate / (1_000_000_000 as f64)) as f64 * 100_000_000 as f64) as u64;
+
+    let client = HTTPNodeClient::new(
+        "https://mwc713.floonet.mwc.mw",
+        Some("11ne3EAUtOXVKwhxm84U".to_string()),
+    );
+
+    let mut api_sell = BtcSwapApi::<K, _, _>::new(Some(keychain.clone()),
+                                                  client.clone(),
+                                                  btcNodeClient);
+
+
+
     println!("do take buy");
+    Ok(())
 }
 
-pub fn take_sell_btc<T: ?Sized, C, K>(&self, wallet: &mut T, rate: f64, qty: u64, address: &str, publisher: &mut Publisher)
+pub fn take_sell_btc<T: ?Sized, C, K>(&self, wallet: &mut T, rate: f64, qty: u64, address: &str, publisher: &mut Publisher, context_holder: &mut Box<dyn ContextHolderType + Send>)
+-> Result<(), Error>
 where
     T: WalletBackend<C, K>,
     C: NodeClient,
@@ -474,6 +556,7 @@ where
                                                   btcNodeClient);
 
     let ctx = self.context_sell(&keychain, qty, wallet, &mut api_sell);
+
     let secondary_redeem_address = self.btc_address(&keychain);
 
     let (mut swap_sell, action) = api_sell
@@ -487,14 +570,18 @@ where
                         )
                         .unwrap();
 
+
     let message = api_sell.message(&swap_sell).unwrap();
     let action = api_sell.message_sent(&mut swap_sell, &ctx).unwrap();
 
     publisher.post_take(&message, address);
 
+   (&mut(*context_holder)).set_context(ctx);
+
     //println!("action = {:?}, message = {}", action, serde_json::to_string_pretty(&message).unwrap());
     println!("swap sell tx = {:?}", swap_sell.lock_slate.tx);
     println!("btc_amount for trade in satoshis = {}", btc_amount_sats);
+    Ok(())
 }
 
 pub fn process_offer<T: ?Sized, C, K>(&self,
@@ -502,7 +589,9 @@ pub fn process_offer<T: ?Sized, C, K>(&self,
                              from: &dyn crate::contacts::types::Address,
                              message: Message,
                              config: Option<Wallet713Config>,
-                             publisher: &mut Publisher) -> Result<(), Error>
+                             publisher: &mut Publisher,
+                             context_holder: &mut Box<dyn ContextHolderType + Send>
+) -> Result<(), Error>
 where
     T: WalletBackend<C, K>,
     C: NodeClient,
@@ -548,8 +637,8 @@ println!("7");
     println!("offer accepted! send btc to {}", address);
    
     publisher.post_take(&accepted_message, &from.stripped());
-
     Ok(())
+
 }
 
 pub fn process_accept_offer<T: ?Sized, C, K>(&self,
@@ -557,7 +646,9 @@ pub fn process_accept_offer<T: ?Sized, C, K>(&self,
                              from: &dyn crate::contacts::types::Address,
                              message: Message,
                              config: Option<Wallet713Config>,
-                             publisher: &mut Publisher) -> Result<(), Error>
+                             publisher: &mut Publisher,
+                             context_holder: &mut Box<dyn ContextHolderType + Send>
+) -> Result<(), Error>
 where
     T: WalletBackend<C, K>,
     C: NodeClient,
@@ -584,13 +675,14 @@ let btc_amount_sats = ((qty as f64 * rate / (1_000_000_000 as f64)) as f64 * 100
                                                   client.clone(),
                                                   btcNodeClient);
     //self.api = Some(api_sell);
-    
-    let ctx_sell = self.context_sell(&keychain, qty, wallet, &mut api_sell);
+   
+    let ctx_sell = (&mut(*context_holder)).get_context().unwrap();
+
     let secondary_redeem_address = self.btc_address(&keychain);
     
     let (mut swap_sell, action) = api_sell
                        .create_swap_offer(
-                                &ctx_sell,
+                                ctx_sell,
                                 None,
                                 qty,
                                 btc_amount_sats,
@@ -614,7 +706,9 @@ pub fn process_swap_message<T: ?Sized, C, K>(&self,
                              from: &dyn crate::contacts::types::Address,
                              message: Message,
                              config: Option<Wallet713Config>,
-                             publisher: &mut Publisher) -> Result<(), Error>
+                             publisher: &mut Publisher,
+                             context_holder: &mut Box<dyn ContextHolderType + Send>
+) -> Result<(), Error>
 where
     T: WalletBackend<C, K>,
     C: NodeClient,
@@ -622,54 +716,11 @@ where
 {
 
     let res = match &message.inner {
-    	Update::AcceptOffer(u) => self.process_accept_offer(wallet, from, message, config, publisher),
-	Update::Offer(u) => self.process_offer(wallet, from, message, config, publisher),
+    	Update::AcceptOffer(u) => self.process_accept_offer(wallet, from, message, config, publisher, context_holder),
+	Update::Offer(u) => self.process_offer(wallet, from, message, config, publisher, context_holder),
 	_ => Err(libwallet::ErrorKind::Node.into()),
-    };
+    }?;
 
-/*
-println!("in swap.rs");
-    let keychain = wallet.keychain().clone();
-    let btcNodeClient = ElectrumNodeClient::new("3.92.132.156:8000".to_string(),
-                                                grin_core::global::is_floonet());
-    let client = HTTPNodeClient::new(
-        "https://mwc713.floonet.mwc.mw",
-        Some("11ne3EAUtOXVKwhxm84U".to_string()),
-    );
-println!("1");
-    let mut api_buy = BtcSwapApi::<K, _, _>::new(Some(keychain.clone()), client.clone(), btcNodeClient);
-println!("2");
-    let ctx_buy = context_buy(wallet, &mut api_buy);
-println!("3");
-    let (mut swap_buy, action) = api_buy
-                        .accept_swap_offer(&ctx_buy, None, message)
-                        .unwrap();
-println!("4");
-    assert_eq!(swap_buy.status, Status::Offered);
-    assert_eq!(action, Action::SendMessage(1));
-    let accepted_message = api_buy.message(&swap_buy).unwrap();
-println!("5");
-    let action = api_buy.message_sent(&mut swap_buy, &ctx_buy).unwrap();
-println!("6");
-
-    let address = match action {
-
-        Action::DepositSecondary { amount, address } => {
-            //assert_eq!(amount, btc_amount);
-            address
-        }
-        _ => panic!("Invalid action"),
-    };
-
-println!("7");
-
-    assert_eq!(swap_buy.status, Status::Accepted);
-    let address = Address::from_str(&address).unwrap();
-
-    println!("offer accepted! send btc to {}", address);
-    
-    publisher.post_take(&accepted_message, &from.stripped());
-*/
     Ok(())
 }
 
@@ -681,7 +732,9 @@ pub fn swap<T: ?Sized, C, K>(&self,
                              rate: f64,
                              qty: u64,
                              address: Option<&str>,
-                             publisher: &mut MWCMQPublisher) -> Result<(), Error>
+                             publisher: &mut MWCMQPublisher,
+                             context_holder: &mut Box<dyn ContextHolderType + Send>
+) -> Result<(), Error>
 where
     T: WalletBackend<C, K>,
     C: NodeClient,
@@ -696,15 +749,15 @@ where
 
         	println!("swap swap swap");
 
-                if is_make && is_buy {
-                   self.make_buy_btc(wallet, rate, qty);
+                let res = if is_make && is_buy {
+                   self.make_buy_btc(wallet, rate, qty, context_holder)
                 } else if is_make && !is_buy {
-                   self.make_sell_btc(wallet, rate, qty);
+                   self.make_sell_btc(wallet, rate, qty, context_holder)
                 } else if !is_make && is_buy {
-                   self.take_buy_btc(wallet, rate, qty, address.unwrap());
-                } else if !is_make && !is_buy {
-                   self.take_sell_btc(wallet, rate, qty, address.unwrap(), publisher);
-                }
+                   self.take_buy_btc(wallet, rate, qty, address.unwrap(), context_holder)
+                } else {
+                   self.take_sell_btc(wallet, rate, qty, address.unwrap(), publisher, context_holder)
+                }?;
 
                 /*
 		let write_json = false;

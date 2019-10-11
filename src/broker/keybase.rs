@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use serde::Serialize;
 use serde_json::{json, Value};
-
+use broker::types::ContextHolderType;
 use grinswap::Message;
 use crate::wallet::types::Slate;
 use super::types::{CloseReason, Publisher, Subscriber, SubscriptionHandler};
@@ -73,7 +73,10 @@ impl Publisher for KeybasePublisher {
 }
 
 impl Subscriber for KeybaseSubscriber {
-    fn start(&mut self, handler: Box<dyn SubscriptionHandler + Send>) -> Result<()> {
+    fn start(&mut self, handler: Box<dyn SubscriptionHandler + Send>,
+    context_holder: &mut Box<dyn ContextHolderType + Send>,
+
+) -> Result<()> {
         {
             let mut guard = self.stop_signal.lock();
             *guard = false;

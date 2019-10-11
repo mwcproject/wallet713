@@ -1,4 +1,4 @@
-mod api;
+pub mod api;
 mod backend;
 pub mod error;
 mod seed;

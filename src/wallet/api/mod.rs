@@ -2,7 +2,7 @@ mod api;
 mod keys;
 mod selection;
 mod tx;
-mod swap;
+pub mod swap;
 
 pub mod updater;
 pub mod controller;

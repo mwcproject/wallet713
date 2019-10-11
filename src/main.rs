@@ -51,7 +51,12 @@ extern crate grin_store;
 extern crate grin_util;
 extern crate grin_p2p;
 
+use broker::types::ContextHolderType;
+use grinswap::SwapApi;
 use std::env;
+use grinswap::Currency;
+use grin_keychain::ExtKeychain;
+use grinswap::swap::bitcoin::{BtcSwapApi, TestBtcNodeClient, ElectrumNodeClient};
 use std::borrow::Cow::{self, Borrowed, Owned};
 use std::fs::File;
 use grinswap::Message;
@@ -59,6 +64,9 @@ use std::io::prelude::*;
 use std::io;
 use std::io::{Read, Write, BufReader};
 use std::path::Path;
+use libwallet::NodeClient;
+use wallet::types::wallet_backend::WalletBackend;
+use wallet::types::HTTPNodeClient;
 
 use clap::{App, Arg, ArgMatches, SubCommand};
 use colored::*;
@@ -86,6 +94,7 @@ use api::router::{build_foreign_api_router, build_owner_api_router};
 use cli::Parser;
 use common::config::Wallet713Config;
 use common::{ErrorKind, Result, RuntimeMode, COLORED_PROMPT, PROMPT, post};
+use wallet::api::swap::ContextHolder;
 use wallet::Wallet;
 
 use crate::wallet::types::{Arc, Mutex, Slate, TxProof};
@@ -95,6 +104,24 @@ use contacts::{Address, AddressBook, AddressType, Backend, Contact, GrinboxAddre
 const CLI_HISTORY_PATH: &str = ".history";
 static mut RECV_ACCOUNT: Option<String> = None;
 static mut RECV_PASS: Option<String> = None;
+
+fn get_swap_api<K>(keychain: &mut K) ->  BtcSwapApi::<K, HTTPNodeClient, ElectrumNodeClient>
+where
+    K: grinswap::Keychain,
+{
+    let btcNodeClient = ElectrumNodeClient::new("3.92.132.156:8000".to_string(),
+                                                grin_core::global::is_floonet());
+
+    let client = HTTPNodeClient::new(
+        "https://mwc713.floonet.mwc.mw",
+        Some("11ne3EAUtOXVKwhxm84U".to_string()),
+    );
+
+    let mut api = BtcSwapApi::<K, _, _>::new(Some(keychain.clone()),
+                                                  client.clone(),
+                                                  btcNodeClient);
+    api
+}
 
 fn getpassword() -> Result<String> {
     let mwc_password = getenv("MWC_PASSWORD")?;
@@ -309,10 +336,11 @@ impl SubscriptionHandler for Controller {
         print!("{}", COLORED_PROMPT);
     }
 
-    fn on_message(&mut self, from: &dyn Address, message: Message, config: Option<Wallet713Config>) {
+    fn on_message(&mut self, from: &dyn Address, message: Message, config: Option<Wallet713Config>, mut context_holder: &mut Box<dyn ContextHolderType + Send>
+) {
         println!("received a message");
 	let mut publisher = self.publisher.as_mut();
-        self.wallet.lock().process_message(from, message, config, publisher);
+        self.wallet.lock().process_message(from, message, config, publisher, &mut context_holder);
     }
 
     fn on_slate(&self, from: &dyn Address, slate: &mut Slate, tx_proof: Option<&mut TxProof>, config: Option<Wallet713Config>) {
@@ -450,8 +478,19 @@ fn start_mwcmqs_listener(
             Box::new(cloned_publisher),
         )
         .expect("could not start mwcmqs controller!");
+
+
+      let mut wclone = wallet.clone();
+      let mut w = wclone.lock();
+      let mut w_inst = w.get_wallet_instance().unwrap();
+      let mut x = w_inst.lock();
+      let mut keychain = x.keychain();
+      let mut swap_api: BtcSwapApi::<ExtKeychain, HTTPNodeClient, ElectrumNodeClient> = get_swap_api(keychain);
+        let ctx = swap_api.create_context(Currency::Btc, false, None, Vec::with_capacity(0)).unwrap();
+        let mut mbox: Box<dyn ContextHolderType + Send>  = Box::new(ContextHolder{ context: ctx, stored: false});
+
         cloned_subscriber
-            .start(Box::new(controller))
+            .start(Box::new(controller), &mut mbox)
             .expect("something went wrong!");
     });
 
@@ -496,8 +535,19 @@ fn start_grinbox_listener(
             Box::new(cloned_publisher),
         )
         .expect("could not start mwcmq controller!");
+
+      let mut wclone = wallet.clone();
+      let mut w = wclone.lock();
+      let mut w_inst = w.get_wallet_instance().unwrap();
+      let mut x = w_inst.lock();
+      let mut keychain = x.keychain();
+      let mut swap_api: BtcSwapApi::<ExtKeychain, HTTPNodeClient, ElectrumNodeClient> = get_swap_api(keychain);
+        let ctx = swap_api.create_context(Currency::Btc, false, None, Vec::with_capacity(0)).unwrap();
+        let mut mbox: Box<dyn ContextHolderType + Send>  = Box::new(ContextHolder{ context: ctx, stored: false});
+
+
         cloned_subscriber
-            .start(Box::new(controller))
+            .start(Box::new(controller), &mut mbox)
             .expect("something went wrong!");
     });
     Ok((grinbox_publisher, grinbox_subscriber, grinbox_listener_handle))
@@ -531,8 +581,20 @@ fn start_keybase_listener(
             Box::new(cloned_publisher),
         )
         .expect("could not start keybase controller!");
+
+
+      let mut wclone = wallet.clone();
+      let mut w = wclone.lock();
+      let mut w_inst = w.get_wallet_instance().unwrap();
+      let mut x = w_inst.lock();
+      let mut keychain = x.keychain();
+      let mut swap_api: BtcSwapApi::<ExtKeychain, HTTPNodeClient, ElectrumNodeClient> = get_swap_api(keychain);
+        let ctx = swap_api.create_context(Currency::Btc, false, None, Vec::with_capacity(0)).unwrap();
+        let mut mbox: Box<dyn ContextHolderType + Send>  = Box::new(ContextHolder{ context: ctx, stored: false});
+
+
         cloned_subscriber
-            .start(Box::new(controller))
+            .start(Box::new(controller), &mut mbox)
             .expect("something went wrong!");
     });
     Ok((keybase_publisher, keybase_subscriber, keybase_listener_handle))
@@ -817,6 +879,15 @@ fn main() {
     let mut keybase_listener_handle: Option<std::thread::JoinHandle<()>> = None;
     let mut owner_api_handle: Option<std::thread::JoinHandle<()>> = None;
     let mut foreign_api_handle: Option<std::thread::JoinHandle<()>> = None;
+
+
+      let mut wclone = wallet.clone();
+      let mut w = wclone.lock();
+      let mut w_inst = w.get_wallet_instance().unwrap();
+      let mut x = w_inst.lock();
+      let mut keychain = x.keychain();
+      let mut swap_api: BtcSwapApi::<ExtKeychain, HTTPNodeClient, ElectrumNodeClient> = get_swap_api(keychain);
+
 
     if config.grinbox_listener_auto_start() {
         let result = start_mwcmqs_listener(&config, wallet.clone(), address_book.clone());
@@ -1108,6 +1179,13 @@ fn do_command(
     let home_dir = dirs::home_dir()
         .map(|p| p.to_str().unwrap().to_string())
         .unwrap_or("~".to_string());
+
+      let mut wclone = wallet.clone();
+      let mut w = wclone.lock();
+      let mut w_inst = w.get_wallet_instance()?;
+      let mut x = w_inst.lock();
+      let mut keychain = x.keychain();
+
     let matches = Parser::parse(command)?;
     match matches.subcommand_name() {
         Some("config") => {
@@ -1605,6 +1683,17 @@ fn do_command(
 
 
                 if !is_error {
+
+      let mut wclone = wallet.clone();
+      let mut w = wclone.lock();
+      let mut w_inst = w.get_wallet_instance().unwrap();
+      let mut x = w_inst.lock();
+      let mut keychain = x.keychain();
+      let mut swap_api: BtcSwapApi::<ExtKeychain, HTTPNodeClient, ElectrumNodeClient> = get_swap_api(keychain);
+        let ctx = swap_api.create_context(Currency::Btc, false, None, Vec::with_capacity(0)).unwrap();
+        let mut mbox: Box<dyn ContextHolderType + Send>  = Box::new(ContextHolder{ context: ctx, stored: false});
+
+
                     if let Some((publisher, _)) = mwcmqs_broker {
                         wallet.lock().swap(pair,
                                            is_make,
@@ -1612,7 +1701,8 @@ fn do_command(
                                            rate,
                                            qty,
                                            address,
-                                           publisher)?;
+                                           publisher,
+                                           &mut mbox)?;
                     }
                 }
 

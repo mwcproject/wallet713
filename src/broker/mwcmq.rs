@@ -5,6 +5,11 @@ use ws::{
     Error as WsError, ErrorKind as WsErrorKind,
 };
 
+use broker::types::ContextHolderType;
+use grin_keychain::ExtKeychain;
+use wallet::types::wallet_backend::WalletBackend;
+use libwallet::NodeClient;
+use wallet::types::HTTPNodeClient;
 use grinswap::Message;
 use colored::Colorize;
 use common::crypto::sign_challenge;
@@ -86,9 +91,13 @@ impl MWCMQSubscriber {
 }
 
 impl Subscriber for MWCMQSubscriber {
-    fn start(&mut self, handler: Box<dyn SubscriptionHandler + Send>) -> Result<()> {
+    fn start(&mut self,
+             handler: Box<dyn SubscriptionHandler + Send>,
+             mut context_holder: &mut Box<dyn ContextHolderType + Send>,
+             ) -> Result<()>
+{
         self.broker
-            .subscribe(&self.address, &self.secret_key, handler, self.config.clone());
+            .subscribe(&self.address, &self.secret_key, handler, self.config.clone(), &mut context_holder);
         Ok(())
     }
 
@@ -280,7 +289,9 @@ impl MWCMQSBroker {
         secret_key: &SecretKey,
         handler: Box<dyn SubscriptionHandler + Send>,
         config: Wallet713Config,
-    ) -> () {
+        mut context_holder: &mut Box<dyn ContextHolderType + Send>,
+    ) -> () 
+{
         let nanoid = nanoid::simple();
         let handler = Arc::new(Mutex::new(handler));
         {
@@ -763,6 +774,7 @@ impl MWCMQSBroker {
                                         &from,
                                         message,
                                         Some(self.config.clone()),
+                                        &mut context_holder,
 					);
                                 }
                                 break;

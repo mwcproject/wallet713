@@ -4,6 +4,8 @@ use ws::{
     Result as WsResult, Sender,
 };
 
+use broker::types::ContextHolderType;
+use grin_keychain::ExtKeychain;
 use crate::wallet::types::{Slate, TxProof, TxProofErrorKind};
 use common::config::Wallet713Config;
 use common::crypto::{sign_challenge, Hex, SecretKey};
@@ -73,7 +75,10 @@ impl GrinboxSubscriber {
 }
 
 impl Subscriber for GrinboxSubscriber {
-    fn start(&mut self, handler: Box<dyn SubscriptionHandler + Send>) -> Result<()> {
+    fn start(&mut self, handler: Box<dyn SubscriptionHandler + Send>,
+             context_holder: &mut Box<dyn ContextHolderType + Send>,
+
+) -> Result<()> {
         self.broker
             .subscribe(&self.address, &self.secret_key, handler, self.config.clone())?;
         Ok(())

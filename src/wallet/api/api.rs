@@ -2,6 +2,7 @@ use std::collections::HashSet;
 use std::marker::PhantomData;
 use uuid::Uuid;
 
+use broker::types::ContextHolderType;
 use grin_core::ser;
 use grin_util::secp::key::PublicKey;
 use grin_util::secp::pedersen;
@@ -76,14 +77,14 @@ where
         }
     }
 
-    pub fn process_swap_message(&self, from: &dyn Address, message: Message, config: Option<Wallet713Config>, publisher: &mut Publisher,
+    pub fn process_swap_message(&self, from: &dyn Address, message: Message, config: Option<Wallet713Config>, publisher: &mut Publisher, mut context_holder: &mut Box<dyn ContextHolderType + Send>
     ) -> Result<(), Error>
     where
             K: grinswap::Keychain
     {
         let mut w = self.wallet.lock();
         w.open_with_credentials()?;
-        self.swap.process_swap_message(&mut *w, from, message, config, publisher)?;
+        self.swap.process_swap_message(&mut *w, from, message, config, publisher, &mut context_holder)?;
         w.close()?;
         Ok(())
     }
@@ -96,13 +97,14 @@ where
                 qty: u64,
                 address: Option<&str>,
                 publisher: &mut MWCMQPublisher,
+                mut context_holder: &mut Box<dyn ContextHolderType + Send>
     ) -> Result<(), Error>
     where
                 K: grinswap::Keychain
         {
         let mut w = self.wallet.lock();
         w.open_with_credentials()?;
-        self.swap.swap(&mut *w, pair, is_make, is_buy, rate, qty, address, publisher)?;
+        self.swap.swap(&mut *w, pair, is_make, is_buy, rate, qty, address, publisher, &mut context_holder)?;
         w.close()?;
         Ok(())
     }
