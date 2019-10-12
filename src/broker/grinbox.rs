@@ -4,8 +4,6 @@ use ws::{
     Result as WsResult, Sender,
 };
 
-use broker::types::ContextHolderType;
-use grin_keychain::ExtKeychain;
 use crate::wallet::types::{Slate, TxProof, TxProofErrorKind};
 use common::config::Wallet713Config;
 use common::crypto::{sign_challenge, Hex, SecretKey};

@@ -2,7 +2,6 @@ use std::collections::HashSet;
 use std::marker::PhantomData;
 use uuid::Uuid;
 
-use broker::types::ContextHolderType;
 use grin_core::ser;
 use grin_util::secp::key::PublicKey;
 use grin_util::secp::pedersen;
@@ -18,7 +17,6 @@ use grinswap::Message;
 use super::keys;
 use super::tx;
 use crate::wallet;
-use super::swap;
 use super::types::{
     AcctPathMapping, Arc, BlockFees, CbData, ContextType, Error, ErrorKind, Identifier, Keychain,
     Mutex, OutputData, Slate, Transaction, TxLogEntry, TxLogEntryType, TxProof,

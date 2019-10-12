@@ -6,7 +6,6 @@ use std::time::Duration;
 
 use serde::Serialize;
 use serde_json::{json, Value};
-use broker::types::ContextHolderType;
 use grinswap::Message;
 use crate::wallet::types::Slate;
 use super::types::{CloseReason, Publisher, Subscriber, SubscriptionHandler};

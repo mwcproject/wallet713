@@ -54,17 +54,15 @@ extern crate grin_util;
 extern crate grin_p2p;
 extern crate blake2_rfc as blake2;
 
+use grinswap::swap::BtcSellerContext;
 use crate::bitcoin::util::key::PublicKey as BtcPublicKey;
 use bitcoin::network::constants::Network as BtcNetwork;
 use grinswap::swap::types::{
         RoleContext,
-        SecondarySellerContext,
-        SecondaryBuyerContext,
         SellerContext,
-        BuyerContext,
-        BtcSellerContext,
-        BtcBuyerContext,
+        SecondarySellerContext
 };
+
 use grin_keychain::{SwitchCommitmentType};
 use crate::grin_keychain::Identifier;
 use grin_util::secp::key::{SecretKey, PublicKey};
@@ -74,7 +72,7 @@ use grinswap::SwapApi;
 use std::env;
 use grinswap::Currency;
 use grin_keychain::ExtKeychain;
-use grinswap::swap::bitcoin::{BtcSwapApi, TestBtcNodeClient, ElectrumNodeClient};
+use grinswap::swap::bitcoin::{BtcSwapApi, ElectrumNodeClient};
 use std::borrow::Cow::{self, Borrowed, Owned};
 use std::fs::File;
 use grinswap::Message;
@@ -82,7 +80,6 @@ use std::io::prelude::*;
 use std::io;
 use std::io::{Read, Write, BufReader};
 use std::path::Path;
-use libwallet::NodeClient;
 use wallet::types::wallet_backend::WalletBackend;
 use wallet::types::HTTPNodeClient;
 

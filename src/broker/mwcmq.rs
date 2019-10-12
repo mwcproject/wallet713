@@ -5,11 +5,6 @@ use ws::{
     Error as WsError, ErrorKind as WsErrorKind,
 };
 
-use broker::types::ContextHolderType;
-use grin_keychain::ExtKeychain;
-use wallet::types::wallet_backend::WalletBackend;
-use libwallet::NodeClient;
-use wallet::types::HTTPNodeClient;
 use grinswap::Message;
 use colored::Colorize;
 use common::crypto::sign_challenge;

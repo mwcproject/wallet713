@@ -7,19 +7,8 @@ use grinswap::{
         SwapApi,
 };
 
-use grinswap::swap::types::{
-	RoleContext,
-	SecondarySellerContext,
-	SecondaryBuyerContext,
-	SellerContext,
-	BuyerContext,
-	BtcSellerContext,
-	BtcBuyerContext,
-};
-
 use CONTEXT;
 use grinswap::Swap;
-use std::cell::RefCell;
 use super::keys;
 use common::config::Wallet713Config;
 use wallet::types::wallet_backend::WalletBackend;

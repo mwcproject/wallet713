@@ -1,7 +1,5 @@
 use crate::wallet::types::{Slate, TxProof};
 
-use grin_keychain::ExtKeychain;
-use wallet::types::node_client::HTTPNodeClient;
 use common::config::Wallet713Config;
 use common::Error;
 use grinswap::Context;
