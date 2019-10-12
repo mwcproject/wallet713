@@ -73,9 +73,7 @@ impl Publisher for KeybasePublisher {
 }
 
 impl Subscriber for KeybaseSubscriber {
-    fn start(&mut self, handler: Box<dyn SubscriptionHandler + Send>,
-    context_holder: &mut Box<dyn ContextHolderType + Send>,
-
+    fn start(&mut self, handler: Box<dyn SubscriptionHandler + Send>
 ) -> Result<()> {
         {
             let mut guard = self.stop_signal.lock();

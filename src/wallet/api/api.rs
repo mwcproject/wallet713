@@ -77,14 +77,14 @@ where
         }
     }
 
-    pub fn process_swap_message(&self, from: &dyn Address, message: Message, config: Option<Wallet713Config>, publisher: &mut Publisher, mut context_holder: &mut Box<dyn ContextHolderType + Send>
+    pub fn process_swap_message(&self, from: &dyn Address, message: Message, config: Option<Wallet713Config>, publisher: &mut Publisher
     ) -> Result<(), Error>
     where
             K: grinswap::Keychain
     {
         let mut w = self.wallet.lock();
         w.open_with_credentials()?;
-        self.swap.process_swap_message(&mut *w, from, message, config, publisher, &mut context_holder)?;
+        self.swap.process_swap_message(&mut *w, from, message, config, publisher)?;
         w.close()?;
         Ok(())
     }
@@ -97,14 +97,13 @@ where
                 qty: u64,
                 address: Option<&str>,
                 publisher: &mut MWCMQPublisher,
-                mut context_holder: &mut Box<dyn ContextHolderType + Send>
     ) -> Result<(), Error>
     where
                 K: grinswap::Keychain
         {
         let mut w = self.wallet.lock();
         w.open_with_credentials()?;
-        self.swap.swap(&mut *w, pair, is_make, is_buy, rate, qty, address, publisher, &mut context_holder)?;
+        self.swap.swap(&mut *w, pair, is_make, is_buy, rate, qty, address, publisher)?;
         w.close()?;
         Ok(())
     }

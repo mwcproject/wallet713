@@ -58,11 +58,11 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn process_message(&mut self, from: &dyn Address, message: Message, config: Option<Wallet713Config>, publisher: &mut Publisher, mut context_holder: &mut Box<dyn ContextHolderType + Send>
+    pub fn process_message(&mut self, from: &dyn Address, message: Message, config: Option<Wallet713Config>, publisher: &mut Publisher,
     ) -> Result<()> {
         let wallet = self.get_wallet_instance()?;
         controller::owner_single_use(wallet.clone(), |api| {
-            api.process_swap_message(from, message, config, publisher, &mut context_holder)?;
+            api.process_swap_message(from, message, config, publisher)?;
             Ok(())
         })?;
         Ok(())
@@ -77,11 +77,10 @@ impl Wallet {
         qty: u64,
         address: Option<&str>,
         publisher: &mut MWCMQPublisher,
-        mut context_holder: &mut Box<dyn ContextHolderType + Send>
     ) -> Result<()> {
         let wallet = self.get_wallet_instance()?;
         controller::owner_single_use(wallet.clone(), |api| {
-            api.swap(pair, is_make, is_buy, rate, qty, address, publisher, &mut context_holder)?;
+            api.swap(pair, is_make, is_buy, rate, qty, address, publisher)?;
             Ok(())
         })?;
         Ok(())

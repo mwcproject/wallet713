@@ -18,6 +18,7 @@ use grinswap::swap::types::{
 };
 
 use CONTEXT;
+use grinswap::Swap;
 use std::cell::RefCell;
 use super::keys;
 use common::config::Wallet713Config;
@@ -64,10 +65,11 @@ use grinswap::swap::bitcoin::{BtcSwapApi, TestBtcNodeClient, ElectrumNodeClient}
 pub struct ContextHolder {
     pub context: Context,
     pub stored: bool,
+    pub swap: Swap,
 }
 
 impl ContextHolderType for ContextHolder {
-    fn get_context(&mut self) -> Option<&Context> {
+     fn get_context(&mut self) -> Option<&Context> {
         if !self.stored {
             return None;
         } else {
@@ -75,9 +77,29 @@ impl ContextHolderType for ContextHolder {
         }
     }
 
+    fn get_objs(&mut self) -> Option<(&Context,&mut Swap)> {
+        if !self.stored {
+            return None;
+        } else {
+            return Some((&mut self.context, &mut self.swap));
+        }
+    }
+
     fn set_context(&mut self, ctx: Context) {
         self.context = ctx;
         self.stored = true;
+    }
+
+    fn set_swap(&mut self, swap: Swap) {
+        self.swap = swap;
+    }
+
+    fn get_swap(&mut self) -> Option<&mut Swap> {
+        if !self.stored {
+            return None;
+        } else {
+            return Some(&mut self.swap);
+        }
     }
 }
 
@@ -445,7 +467,7 @@ where
 	}
 */
 
-pub fn make_buy_btc<T: ?Sized, C, K>(&self, wallet: &mut T, rate: f64, qty: u64, context_holder: &mut Box<dyn ContextHolderType + Send>)
+pub fn make_buy_btc<T: ?Sized, C, K>(&self, wallet: &mut T, rate: f64, qty: u64)
 -> Result<(), Error>
 where
     T: WalletBackend<C, K>,
@@ -473,7 +495,7 @@ where
     Ok(())
 }
 
-pub fn make_sell_btc<T: ?Sized, C, K>(&self, wallet: &mut T, rate: f64, qty: u64, context_holder: &mut Box<dyn ContextHolderType + Send>)
+pub fn make_sell_btc<T: ?Sized, C, K>(&self, wallet: &mut T, rate: f64, qty: u64)
 -> Result<(), Error>
 where
     T: WalletBackend<C, K>,
@@ -501,7 +523,7 @@ where
 
 }
 
-pub fn take_buy_btc<T: ?Sized, C, K>(&self, wallet: &mut T, rate: f64, qty: u64, address: &str, context_holder: &mut Box<dyn ContextHolderType + Send>)
+pub fn take_buy_btc<T: ?Sized, C, K>(&self, wallet: &mut T, rate: f64, qty: u64, address: &str)
 -> Result<(), Error>
 where
     T: WalletBackend<C, K>,
@@ -531,7 +553,7 @@ where
     Ok(())
 }
 
-pub fn take_sell_btc<T: ?Sized, C, K>(&self, wallet: &mut T, rate: f64, qty: u64, address: &str, publisher: &mut Publisher, context_holder: &mut Box<dyn ContextHolderType + Send>)
+pub fn take_sell_btc<T: ?Sized, C, K>(&self, wallet: &mut T, rate: f64, qty: u64, address: &str, publisher: &mut Publisher)
 -> Result<(), Error>
 where
     T: WalletBackend<C, K>,
@@ -576,12 +598,20 @@ where
     let action = api_sell.message_sent(&mut swap_sell, &ctx).unwrap();
 
     publisher.post_take(&message, address);
-
-   (&mut(*context_holder)).set_context(ctx);
+println!("post pub");
+    let mut context_static = (&CONTEXT).lock();
+println!("saving ctx= {:?}", ctx);
+    context_static.set_context(ctx);
+println!("mmm");
+   //(&mut(*context_holder)).set_context(ctx);
 
     //println!("action = {:?}, message = {}", action, serde_json::to_string_pretty(&message).unwrap());
     println!("swap sell tx = {:?}", swap_sell.lock_slate.tx);
     println!("btc_amount for trade in satoshis = {}", btc_amount_sats);
+
+    context_static.set_swap(swap_sell);
+
+
     Ok(())
 }
 
@@ -591,7 +621,6 @@ pub fn process_offer<T: ?Sized, C, K>(&self,
                              message: Message,
                              config: Option<Wallet713Config>,
                              publisher: &mut Publisher,
-                             context_holder: &mut Box<dyn ContextHolderType + Send>
 ) -> Result<(), Error>
 where
     T: WalletBackend<C, K>,
@@ -648,7 +677,6 @@ pub fn process_accept_offer<T: ?Sized, C, K>(&self,
                              message: Message,
                              config: Option<Wallet713Config>,
                              publisher: &mut Publisher,
-                             context_holder: &mut Box<dyn ContextHolderType + Send>
 ) -> Result<(), Error>
 where
     T: WalletBackend<C, K>,
@@ -676,17 +704,21 @@ let btc_amount_sats = ((qty as f64 * rate / (1_000_000_000 as f64)) as f64 * 100
                                                   client.clone(),
                                                   btcNodeClient);
     //self.api = Some(api_sell);
-   
-    //let ctx_sell = (&mut(*context_holder)).get_context().unwrap();
-    let context_static = &CONTEXT;
-    let mut ctx_unlocked = context_static.lock();
-    let ctx_sell_opt = ctx_unlocked.get_context();
-    let ctx_sell = ctx_sell_opt.unwrap();
+   println!("0000");
+    let mut context_static = (&CONTEXT).lock();
+println!("1111");
 
-//Arc<Mutex<ContextHolderType>>
+    let (ctx_sell, mut swap_sell) = context_static.get_objs().unwrap();
+    //let ctx_sell = context_static.get_context().unwrap();
 
+
+println!("read context as = {:?}", ctx_sell);
+println!("2222");
+
+    //let mut swap_sell = context_static.get_swap().unwrap();
+/*
     let secondary_redeem_address = self.btc_address(&keychain);
-    
+     
     let (mut swap_sell, action) = api_sell
                        .create_swap_offer(
                                 ctx_sell,
@@ -696,13 +728,30 @@ let btc_amount_sats = ((qty as f64 * rate / (1_000_000_000 as f64)) as f64 * 100
                                 Currency::Btc,
                                 secondary_redeem_address,
                         )
-                        .unwrap();
+                        .unwrap(); 
+*/
 
     let action = api_sell
-                        .receive_message(&mut swap_sell, &ctx_sell, message)
+                        .receive_message(swap_sell, &ctx_sell, message)
                         .unwrap();
                 assert_eq!(action, Action::PublishTx);
                 assert_eq!(swap_sell.status, Status::Accepted);
+    println!("receive message complete submitting to the newtork!");
+
+   let action = api_sell
+                .publish_transaction(&mut swap_sell, &ctx_sell)
+                        .unwrap();
+
+
+   match action {
+       Action::Confirmations {
+           required: _,
+           actual,
+       } => assert_eq!(actual, 0),
+       _ => panic!("Invalid action"),
+   }
+
+   println!("successfully submitted");
 
     Ok(())
 }
@@ -714,7 +763,6 @@ pub fn process_swap_message<T: ?Sized, C, K>(&self,
                              message: Message,
                              config: Option<Wallet713Config>,
                              publisher: &mut Publisher,
-                             context_holder: &mut Box<dyn ContextHolderType + Send>
 ) -> Result<(), Error>
 where
     T: WalletBackend<C, K>,
@@ -723,8 +771,8 @@ where
 {
 
     let res = match &message.inner {
-    	Update::AcceptOffer(u) => self.process_accept_offer(wallet, from, message, config, publisher, context_holder),
-	Update::Offer(u) => self.process_offer(wallet, from, message, config, publisher, context_holder),
+    	Update::AcceptOffer(u) => self.process_accept_offer(wallet, from, message, config, publisher),
+	Update::Offer(u) => self.process_offer(wallet, from, message, config, publisher),
 	_ => Err(libwallet::ErrorKind::Node.into()),
     }?;
 
@@ -740,7 +788,6 @@ pub fn swap<T: ?Sized, C, K>(&self,
                              qty: u64,
                              address: Option<&str>,
                              publisher: &mut MWCMQPublisher,
-                             context_holder: &mut Box<dyn ContextHolderType + Send>
 ) -> Result<(), Error>
 where
     T: WalletBackend<C, K>,
@@ -757,13 +804,13 @@ where
         	println!("swap swap swap");
 
                 let res = if is_make && is_buy {
-                   self.make_buy_btc(wallet, rate, qty, context_holder)
+                   self.make_buy_btc(wallet, rate, qty)
                 } else if is_make && !is_buy {
-                   self.make_sell_btc(wallet, rate, qty, context_holder)
+                   self.make_sell_btc(wallet, rate, qty)
                 } else if !is_make && is_buy {
-                   self.take_buy_btc(wallet, rate, qty, address.unwrap(), context_holder)
+                   self.take_buy_btc(wallet, rate, qty, address.unwrap())
                 } else {
-                   self.take_sell_btc(wallet, rate, qty, address.unwrap(), publisher, context_holder)
+                   self.take_sell_btc(wallet, rate, qty, address.unwrap(), publisher)
                 }?;
 
                 /*

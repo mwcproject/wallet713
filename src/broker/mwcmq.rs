@@ -93,11 +93,10 @@ impl MWCMQSubscriber {
 impl Subscriber for MWCMQSubscriber {
     fn start(&mut self,
              handler: Box<dyn SubscriptionHandler + Send>,
-             mut context_holder: &mut Box<dyn ContextHolderType + Send>,
              ) -> Result<()>
 {
         self.broker
-            .subscribe(&self.address, &self.secret_key, handler, self.config.clone(), &mut context_holder);
+            .subscribe(&self.address, &self.secret_key, handler, self.config.clone());
         Ok(())
     }
 
@@ -289,7 +288,6 @@ impl MWCMQSBroker {
         secret_key: &SecretKey,
         handler: Box<dyn SubscriptionHandler + Send>,
         config: Wallet713Config,
-        mut context_holder: &mut Box<dyn ContextHolderType + Send>,
     ) -> () 
 {
         let nanoid = nanoid::simple();
@@ -774,7 +772,6 @@ impl MWCMQSBroker {
                                         &from,
                                         message,
                                         Some(self.config.clone()),
-                                        &mut context_holder,
 					);
                                 }
                                 break;

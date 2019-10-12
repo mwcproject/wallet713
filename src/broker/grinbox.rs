@@ -76,8 +76,6 @@ impl GrinboxSubscriber {
 
 impl Subscriber for GrinboxSubscriber {
     fn start(&mut self, handler: Box<dyn SubscriptionHandler + Send>,
-             context_holder: &mut Box<dyn ContextHolderType + Send>,
-
 ) -> Result<()> {
         self.broker
             .subscribe(&self.address, &self.secret_key, handler, self.config.clone())?;

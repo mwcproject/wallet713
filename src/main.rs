@@ -54,6 +54,20 @@ extern crate grin_util;
 extern crate grin_p2p;
 extern crate blake2_rfc as blake2;
 
+use crate::bitcoin::util::key::PublicKey as BtcPublicKey;
+use bitcoin::network::constants::Network as BtcNetwork;
+use grinswap::swap::types::{
+        RoleContext,
+        SecondarySellerContext,
+        SecondaryBuyerContext,
+        SellerContext,
+        BuyerContext,
+        BtcSellerContext,
+        BtcBuyerContext,
+};
+use grin_keychain::{SwitchCommitmentType};
+use crate::grin_keychain::Identifier;
+use grin_util::secp::key::{SecretKey, PublicKey};
 use grin_keychain::Keychain;
 use broker::types::ContextHolderType;
 use grinswap::SwapApi;
@@ -115,25 +129,104 @@ fn keychain(idx: u8) -> ExtKeychain {
         ExtKeychain::from_seed(seed_sell.as_bytes(), false).unwrap()
 }
 
+fn key<K>(kc: &K, d1: u32, d2: u32) -> SecretKey
+where
+K: Keychain
+{
+	kc.derive_key(0, &key_id(d1, d2), &SwitchCommitmentType::None)
+                        .unwrap()
+}
+
+fn key_id(d1: u32, d2: u32) -> Identifier {
+	ExtKeychain::derive_key_id(2, d1, d2, 0, 0)
+}
+
+        fn btc_address<K>(kc: &K) -> String
+        where
+                K: Keychain
+        {
+                let key = PublicKey::from_secret_key(kc.secp(), &key(kc, 2, 0)).unwrap();
+                let address = crate::bitcoin::Address::p2pkh(
+                        &BtcPublicKey {
+                                compressed: true,
+                                key,
+                        },
+                        BtcNetwork::Testnet,
+                );
+                format!("{}", address)
+        }
+
 lazy_static! {
       static ref CONTEXT: Arc<Mutex<ContextHolderType>> = {
+println!("lazy static init 1");
           let keychain = keychain(1); 
+println!("2");
           let btcNodeClient = ElectrumNodeClient::new("3.92.132.156:8000".to_string(),
                                                 grin_core::global::is_floonet());
-
+println!("3");
           let client = HTTPNodeClient::new(
               "https://mwc713.floonet.mwc.mw",
               Some("11ne3EAUtOXVKwhxm84U".to_string()),
           );
-
+println!("4");
           let mut api = BtcSwapApi::<ExtKeychain, _, _>::new(Some(keychain.clone()),
                                                   client.clone(),
                                                   btcNodeClient); 
+println!("5");
+          //let ctx = api.create_context(Currency::Btc, false, None, Vec::with_capacity(0));
+          let ctx = 
+                grinswap::Context {
+                        multisig_key: key_id(0, 0),
+                        multisig_nonce: key(&keychain, 1, 0),
+                        lock_nonce: key(&keychain, 1, 1),
+                        refund_nonce: key(&keychain, 1, 2),
+                        redeem_nonce: key(&keychain, 1, 3),
+                        role_context: RoleContext::Seller(SellerContext {
+                                inputs: vec![
+                                        (key_id(0, 1), 60 * 1_000_000_000),
+                                        (key_id(0, 2), 60 * 1_000_000_000),
+                                ],
+                                change_output: key_id(0, 3),
+                                refund_output: key_id(0, 4),
+                                secondary_context: SecondarySellerContext::Btc(BtcSellerContext {
+                                        cosign: key_id(0, 5),
+                                }),
+                        }),
+                };
+/*
+grinswap::Context {
+                        multisig_key: key_id(0, 0),
+                        multisig_nonce: key(&keychain, 1, 0),
+                        lock_nonce: key(&keychain, 1, 1),
+                        refund_nonce: key(&keychain, 1, 2),
+                        redeem_nonce: key(&keychain, 1, 3),
+                        role_context: RoleContext::Seller(SellerContext {
+                                //output: key_id(0, 1),
+                                //redeem: key_id(0, 2),
+                                secondary_context: SecondarySellerContext::Btc(BtcSellerContext {
+                                        //refund: key_id(0, 3),
+                                }),
+                        }),
+                }; */
+println!("Err={:?}", ctx);
+println!("6");
 
-          let ctx = api.create_context(Currency::Btc, false, None, Vec::with_capacity(0)).unwrap();
+    let secondary_redeem_address = btc_address(&keychain);
+    let (mut swap_sell, action) = api
+                       .create_swap_offer(
+                                &ctx,
+                                None,
+                                1,
+                                1,
+                                Currency::Btc,
+                                secondary_redeem_address,
+                        )
+                        .unwrap();
+
+
 
           Arc::new(Mutex::new(
-               ContextHolder { context: ctx, stored: false}
+               ContextHolder { context: ctx, swap: swap_sell, stored: false}
           ))
       };
 }
@@ -369,11 +462,11 @@ impl SubscriptionHandler for Controller {
         print!("{}", COLORED_PROMPT);
     }
 
-    fn on_message(&mut self, from: &dyn Address, message: Message, config: Option<Wallet713Config>, mut context_holder: &mut Box<dyn ContextHolderType + Send>
+    fn on_message(&mut self, from: &dyn Address, message: Message, config: Option<Wallet713Config>,
 ) {
         println!("received a message");
 	let mut publisher = self.publisher.as_mut();
-        self.wallet.lock().process_message(from, message, config, publisher, &mut context_holder);
+        self.wallet.lock().process_message(from, message, config, publisher);
     }
 
     fn on_slate(&self, from: &dyn Address, slate: &mut Slate, tx_proof: Option<&mut TxProof>, config: Option<Wallet713Config>) {
@@ -480,7 +573,9 @@ fn start_mwcmqs_listener(
 ) -> Result<(MWCMQPublisher, MWCMQSubscriber)> {
     // make sure wallet is not locked, if it is try to unlock with no passphrase
     {
+println!("0");
         let mut wallet = wallet.lock();
+println!("00");
         if wallet.is_locked() {
             wallet.unlock(config, "default", "")?;
         }
@@ -513,19 +608,8 @@ fn start_mwcmqs_listener(
         .expect("could not start mwcmqs controller!");
 
 
-      let mut wclone = wallet.clone();
-      let mut w = wclone.lock();
-      let mut w_inst = w.get_wallet_instance().unwrap();
-      let mut x = w_inst.lock();
-      let mut keychain = x.keychain();
-      let mut swap_api: BtcSwapApi::<ExtKeychain, HTTPNodeClient, ElectrumNodeClient> = get_swap_api(keychain);
-        let ctx = swap_api.create_context(Currency::Btc, false, None, Vec::with_capacity(0)).unwrap();
-        let mut mbox: Box<dyn ContextHolderType + Send>  = Box::new(ContextHolder{ context: ctx, stored: false});
-
-        let _mbox2 = (*(CONTEXT).lock()).get_context();
-
         cloned_subscriber
-            .start(Box::new(controller), &mut mbox)
+            .start(Box::new(controller))
             .expect("something went wrong!");
     });
 
@@ -571,18 +655,8 @@ fn start_grinbox_listener(
         )
         .expect("could not start mwcmq controller!");
 
-      let mut wclone = wallet.clone();
-      let mut w = wclone.lock();
-      let mut w_inst = w.get_wallet_instance().unwrap();
-      let mut x = w_inst.lock();
-      let mut keychain = x.keychain();
-      let mut swap_api: BtcSwapApi::<ExtKeychain, HTTPNodeClient, ElectrumNodeClient> = get_swap_api(keychain);
-        let ctx = swap_api.create_context(Currency::Btc, false, None, Vec::with_capacity(0)).unwrap();
-        let mut mbox: Box<dyn ContextHolderType + Send>  = Box::new(ContextHolder{ context: ctx, stored: false});
-
-
         cloned_subscriber
-            .start(Box::new(controller), &mut mbox)
+            .start(Box::new(controller))
             .expect("something went wrong!");
     });
     Ok((grinbox_publisher, grinbox_subscriber, grinbox_listener_handle))
@@ -617,19 +691,8 @@ fn start_keybase_listener(
         )
         .expect("could not start keybase controller!");
 
-
-      let mut wclone = wallet.clone();
-      let mut w = wclone.lock();
-      let mut w_inst = w.get_wallet_instance().unwrap();
-      let mut x = w_inst.lock();
-      let mut keychain = x.keychain();
-      let mut swap_api: BtcSwapApi::<ExtKeychain, HTTPNodeClient, ElectrumNodeClient> = get_swap_api(keychain);
-        let ctx = swap_api.create_context(Currency::Btc, false, None, Vec::with_capacity(0)).unwrap();
-        let mut mbox: Box<dyn ContextHolderType + Send>  = Box::new(ContextHolder{ context: ctx, stored: false});
-
-
         cloned_subscriber
-            .start(Box::new(controller), &mut mbox)
+            .start(Box::new(controller))
             .expect("something went wrong!");
     });
     Ok((keybase_publisher, keybase_subscriber, keybase_listener_handle))
@@ -916,13 +979,7 @@ fn main() {
     let mut foreign_api_handle: Option<std::thread::JoinHandle<()>> = None;
 
 
-      let mut wclone = wallet.clone();
-      let mut w = wclone.lock();
-      let mut w_inst = w.get_wallet_instance().unwrap();
-      let mut x = w_inst.lock();
-      let mut keychain = x.keychain();
-      let mut swap_api: BtcSwapApi::<ExtKeychain, HTTPNodeClient, ElectrumNodeClient> = get_swap_api(keychain);
-
+println!("x");
 
     if config.grinbox_listener_auto_start() {
         let result = start_mwcmqs_listener(&config, wallet.clone(), address_book.clone());
@@ -934,7 +991,7 @@ fn main() {
         }
 
     }
-
+println!("y");
     if config.keybase_listener_auto_start() {
         let result = start_keybase_listener(&config, wallet.clone(), address_book.clone());
         match result {
@@ -1215,12 +1272,6 @@ fn do_command(
         .map(|p| p.to_str().unwrap().to_string())
         .unwrap_or("~".to_string());
 
-      let mut wclone = wallet.clone();
-      let mut w = wclone.lock();
-      let mut w_inst = w.get_wallet_instance()?;
-      let mut x = w_inst.lock();
-      let mut keychain = x.keychain();
-
     let matches = Parser::parse(command)?;
     match matches.subcommand_name() {
         Some("config") => {
@@ -1468,8 +1519,9 @@ fn do_command(
             let confirmations = args.value_of("confirmations").unwrap_or("10");
             let confirmations = u64::from_str_radix(confirmations, 10)
                 .map_err(|_| ErrorKind::InvalidMinConfirmations(confirmations.to_string()))?;
-
+println!("pre lock");
             wallet.lock().info(!args.is_present("--no-refresh"), confirmations)?;
+println!("post lock");
         }
         Some("txs_count") => {
             let count = wallet.lock().txs_count()?;
@@ -1719,16 +1771,6 @@ fn do_command(
 
                 if !is_error {
 
-      let mut wclone = wallet.clone();
-      let mut w = wclone.lock();
-      let mut w_inst = w.get_wallet_instance().unwrap();
-      let mut x = w_inst.lock();
-      let mut keychain = x.keychain();
-      let mut swap_api: BtcSwapApi::<ExtKeychain, HTTPNodeClient, ElectrumNodeClient> = get_swap_api(keychain);
-        let ctx = swap_api.create_context(Currency::Btc, false, None, Vec::with_capacity(0)).unwrap();
-        let mut mbox: Box<dyn ContextHolderType + Send>  = Box::new(ContextHolder{ context: ctx, stored: false});
-
-
                     if let Some((publisher, _)) = mwcmqs_broker {
                         wallet.lock().swap(pair,
                                            is_make,
@@ -1737,7 +1779,7 @@ fn do_command(
                                            qty,
                                            address,
                                            publisher,
-                                           &mut mbox)?;
+                                           )?;
                     }
                 }
 
