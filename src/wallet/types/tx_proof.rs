@@ -8,7 +8,6 @@ use crate::common::message::EncryptedMessage;
 use crate::contacts::{Address, GrinboxAddress};
 use super::Slate;
 use grinswap::swap::message::Message;
-use failure::ResultExt;
 
 #[derive(Debug)]
 pub enum ErrorKind {

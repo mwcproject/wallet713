@@ -38,7 +38,7 @@ where
     pub wallet: Arc<Mutex<W>>,
     phantom: PhantomData<K>,
     phantom_c: PhantomData<C>,
-    swap: wallet::api::swap::swap,
+    swap: wallet::api::swap::SwapProcessor,
 }
 
 pub struct Wallet713ForeignAPI<W: ?Sized, C, K>
@@ -71,7 +71,7 @@ where
             wallet: wallet_in,
             phantom: PhantomData,
             phantom_c: PhantomData,
-            swap: wallet::api::swap::swap { },
+            swap: wallet::api::swap::SwapProcessor { },
         }
     }
 

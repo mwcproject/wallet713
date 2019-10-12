@@ -4,20 +4,16 @@ use uuid::Uuid;
 use common::config::{Wallet713Config, WalletConfig};
 use common::{ErrorKind, Result};
 
-use broker::types::ContextHolderType;
 use super::api::{controller, display};
-use std::any::Any;
 use broker::types::Publisher;
 use super::backend::Backend;
 use super::types::{
     Arc, BlockFees, CbData, ExtKeychain, HTTPNodeClient, Mutex, OutputData, SecretKey,
     Slate, Transaction, TxLogEntry, WalletBackend, WalletInfo, WalletInst, WalletSeed,
 };
-use Controller;
 use libwallet::NodeClient;
 use contacts::types::Address;
 use grinswap::Message;
-use broker::types::SubscriptionHandler;
 use crate::broker::MWCMQPublisher;
 use crate::common::crypto::Hex;
 use crate::common::hasher::derive_address_key;

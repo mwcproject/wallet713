@@ -48,7 +48,7 @@ impl Publisher for GrinboxPublisher {
         Ok(())
     }
 
-    fn post_take(&self, message: &grinswap::Message, to: &str) -> Result<()> {
+    fn post_take(&self, _message: &grinswap::Message, _to: &str) -> Result<()> {
         unimplemented!()
     }
 }
@@ -340,7 +340,7 @@ impl Handler for GrinboxClient {
                 challenge,
                 signature,
             } => {
-                let (mut slate, mut tx_proof, _) = match TxProof::from_response(
+                let (slate, mut tx_proof, _) = match TxProof::from_response(
                     from,
                     str,
                     challenge,

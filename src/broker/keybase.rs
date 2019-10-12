@@ -66,7 +66,7 @@ impl Publisher for KeybasePublisher {
         Ok(())
     }
 
-    fn post_take(&self, message: &Message, to: &str) -> Result<()> {
+    fn post_take(&self, _message: &Message, _to: &str) -> Result<()> {
         unimplemented!()
     }
 }

@@ -80,7 +80,6 @@ use std::io::prelude::*;
 use std::io;
 use std::io::{Read, Write, BufReader};
 use std::path::Path;
-use wallet::types::wallet_backend::WalletBackend;
 use wallet::types::HTTPNodeClient;
 
 use clap::{App, Arg, ArgMatches, SubCommand};
@@ -158,7 +157,7 @@ lazy_static! {
 println!("lazy static init 1");
           let keychain = keychain(1); 
 println!("2");
-          let btcNodeClient = ElectrumNodeClient::new("3.92.132.156:8000".to_string(),
+          let btc_node_client = ElectrumNodeClient::new("3.92.132.156:8000".to_string(),
                                                 grin_core::global::is_floonet());
 println!("3");
           let client = HTTPNodeClient::new(
@@ -168,7 +167,7 @@ println!("3");
 println!("4");
           let mut api = BtcSwapApi::<ExtKeychain, _, _>::new(Some(keychain.clone()),
                                                   client.clone(),
-                                                  btcNodeClient); 
+                                                  btc_node_client); 
 println!("5");
           //let ctx = api.create_context(Currency::Btc, false, None, Vec::with_capacity(0));
           let ctx = 
@@ -209,7 +208,7 @@ println!("Err={:?}", ctx);
 println!("6");
 
     let secondary_redeem_address = btc_address(&keychain);
-    let (mut swap_sell, action) = api
+    let (swap_sell, _action) = api
                        .create_swap_offer(
                                 &ctx,
                                 None,
@@ -226,24 +225,6 @@ println!("6");
                ContextHolder { context: ctx, swap: swap_sell, stored: false}
           ))
       };
-}
-
-fn get_swap_api<K>(keychain: &mut K) ->  BtcSwapApi::<K, HTTPNodeClient, ElectrumNodeClient>
-where
-    K: grinswap::Keychain,
-{
-    let btcNodeClient = ElectrumNodeClient::new("3.92.132.156:8000".to_string(),
-                                                grin_core::global::is_floonet());
-
-    let client = HTTPNodeClient::new(
-        "https://mwc713.floonet.mwc.mw",
-        Some("11ne3EAUtOXVKwhxm84U".to_string()),
-    );
-
-    let mut api = BtcSwapApi::<K, _, _>::new(Some(keychain.clone()),
-                                                  client.clone(),
-                                                  btcNodeClient);
-    api
 }
 
 fn getpassword() -> Result<String> {
@@ -462,8 +443,11 @@ impl SubscriptionHandler for Controller {
     fn on_message(&mut self, from: &dyn Address, message: Message, config: Option<Wallet713Config>,
 ) {
         println!("received a message");
-	let mut publisher = self.publisher.as_mut();
-        self.wallet.lock().process_message(from, message, config, publisher);
+	let publisher = self.publisher.as_mut();
+        let res = self.wallet.lock().process_message(from, message, config, publisher);
+        if res.is_err() {
+            println!("Error posting message: {:?}", res);
+        }
     }
 
     fn on_slate(&self, from: &dyn Address, slate: &mut Slate, tx_proof: Option<&mut TxProof>, config: Option<Wallet713Config>) {

@@ -162,7 +162,11 @@ impl MWCMQSBroker {
                 WsError::new(WsErrorKind::Protocol, "could not encrypt slate!")
             })?;
 
-        self.post_generic(message, to, from, secret_key);
+        let res = self.post_generic(message, to, from, secret_key);
+
+        if res.is_err() {
+            println!("Error processing post generic: {:?}", res);
+        }
 
         Ok(())
     }
@@ -195,7 +199,12 @@ impl MWCMQSBroker {
                 WsError::new(WsErrorKind::Protocol, "could not encrypt slate!")
             })?;
 
-        self.post_generic(message, to, from, secret_key);
+        let res = self.post_generic(message, to, from, secret_key);
+
+        if res.is_err() {
+            println!("Error processing post_generic: {:?}", res);
+        }
+
         Ok(())
     }
 
@@ -695,7 +704,7 @@ impl MWCMQSBroker {
                                 } else {
                                     delcount = delcount + 1;
                                 }
-                                let (mut slate, mut tx_proof, mut message) = match TxProof::from_response(
+                                let (slate, mut tx_proof, message) = match TxProof::from_response(
                                         from.clone(),
                                         r5.clone(),
                                         "".to_string(),
