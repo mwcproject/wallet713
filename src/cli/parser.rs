@@ -229,6 +229,9 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("[quantity] -q, --quantity=<quantity> 'Quantity to trade. Your counterparty must specify the same amount.'")
                     )
+                    .arg(
+                        Arg::from_usage("[btcredeem] -x, --btcredeem=<btcredeem> 'BTC address funds will be redeemed to. Required for sell.'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("stop")

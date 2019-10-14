@@ -73,10 +73,11 @@ impl Wallet {
         qty: u64,
         address: Option<&str>,
         publisher: &mut MWCMQPublisher,
+        btc_redeem: Option<&str>,
     ) -> Result<()> {
         let wallet = self.get_wallet_instance()?;
         controller::owner_single_use(wallet.clone(), |api| {
-            api.swap(pair, is_make, is_buy, rate, qty, address, publisher)?;
+            api.swap(pair, is_make, is_buy, rate, qty, address, publisher, btc_redeem)?;
             Ok(())
         })?;
         Ok(())

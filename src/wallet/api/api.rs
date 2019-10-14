@@ -95,13 +95,22 @@ where
                 qty: u64,
                 address: Option<&str>,
                 publisher: &mut MWCMQPublisher,
+                btc_redeem: Option<&str>,
     ) -> Result<(), Error>
     where
                 K: grinswap::Keychain
         {
         let mut w = self.wallet.lock();
         w.open_with_credentials()?;
-        self.swap.swap(&mut *w, pair, is_make, is_buy, rate, qty, address, publisher)?;
+        self.swap.swap(&mut *w,
+                       pair,
+                       is_make,
+                       is_buy,
+                       rate,
+                       qty,
+                       address,
+                       publisher,
+                       btc_redeem)?;
         w.close()?;
         Ok(())
     }

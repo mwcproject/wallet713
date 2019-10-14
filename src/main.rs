@@ -1668,6 +1668,7 @@ println!("post lock");
             let rate = args.value_of("rate");
             let qty = args.value_of("quantity");
             let address = args.value_of("address");
+            let btc_redeem = args.value_of("btcredeem");
 
             let mut is_error = false;
             let is_make = if make && !take {
@@ -1721,7 +1722,17 @@ println!("post lock");
 
             if !is_error && address.is_none() && !is_make {
                 is_error = true;
-                cli_message!("{} Address must be specified when `--take` option is specified.", "Error:".bright_red());
+                cli_message!("{} --address must be specified when `--take` option is specified.", "Error:".bright_red());
+            }
+
+            if btc_redeem.is_none() && !is_buy {
+                is_error = true;
+                cli_message!("{} --btcredeem must be specified when `--sell` option is specified.", "Error:".bright_red());
+            }
+
+            if btc_redeem.is_some() && is_buy {
+                is_error = true; 
+                cli_message!("{} --btcredeem may not be specified when `--buy` option is specified.", "Error:".bright_red());
             }
 
             if !is_error {
@@ -1749,7 +1760,6 @@ println!("post lock");
                 };
 
 
-
                 if !is_error {
 
                     if let Some((publisher, _)) = mwcmqs_broker {
@@ -1760,6 +1770,7 @@ println!("post lock");
                                            qty,
                                            address,
                                            publisher,
+                                           btc_redeem,
                                            )?;
                     }
                 }
