@@ -8,7 +8,7 @@ mod node_client;
 mod output_commit_mapping;
 mod output_data;
 mod output_status;
-mod slate;
+pub mod slate;
 mod tx_log_entry;
 mod tx_log_entry_type;
 mod tx_proof;

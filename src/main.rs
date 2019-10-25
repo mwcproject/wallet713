@@ -21,6 +21,7 @@ extern crate futures;
 extern crate gotham;
 extern crate hmac;
 extern crate hyper;
+extern crate hyper_rustls;
 extern crate mime;
 extern crate parking_lot;
 extern crate rand;
@@ -46,6 +47,7 @@ extern crate grin_store;
 extern crate grin_util;
 extern crate grin_p2p;
 
+use serde_json::Value;
 use std::env;
 use std::borrow::Cow::{self, Borrowed, Owned};
 use std::fs::File;
@@ -55,6 +57,7 @@ use std::io::{Read, Write, BufReader};
 use std::path::Path;
 use grin_core::core::Transaction;
 use grin_core::ser;
+use wallet::types::slate::versions::VersionedSlate;
 
 use grin_util::{from_hex};
 
@@ -1698,7 +1701,7 @@ fn do_command(
                 }
                 AddressType::Https => {
                     let url =
-                        Url::parse(&format!("{}/v1/wallet/foreign/receive_tx", to.to_string()))?;
+                        Url::parse(&format!("{}/v2/foreign", to.to_string()))?;
                     let slate = wallet.lock().initiate_send_tx(
                         Some(to.to_string()),
                         amount,
@@ -1711,10 +1714,43 @@ fn do_command(
                         version,
                         1,
                     )?;
-                    let slate_res = post(url.as_str(), None, &slate)
-                        .map_err(|_| ErrorKind::HttpRequest)?;
-                    Slate::deserialize_upgrade(&slate_res)
-                        .map_err(|_| ErrorKind::HttpRequest)?
+
+                    let req = json!({
+                        "jsonrpc": "2.0",
+                        "method": "receive_tx",
+                        "id": 1,
+                        "params": [
+                                slate,
+                                null,
+                                null
+                        ]
+                    });
+
+                    trace!("Sending receive_tx request: {}", req);
+
+                    let res: String = post(url.as_str(), None, &req).map_err(|e| {
+                        let report = format!("Posting transaction slate (is recipient listening?): {}", e);
+                        error!("{}", report);
+                        ErrorKind::HttpRequest
+                    })?;
+
+                    let res: Value = serde_json::from_str(&res).unwrap();
+                    trace!("Response: {}", res);
+                    if res["error"] != json!(null) {
+                        let report = format!(
+                                "Posting transaction slate: Error: {}, Message: {}",
+                                res["error"]["code"], res["error"]["message"]
+                        );
+                        error!("{}", report);
+                        return Err(ErrorKind::HttpRequest.into());
+                    }
+
+                    let slate_value = res["result"]["Ok"].clone();
+
+                    let slate: VersionedSlate =
+                        serde_json::from_str(&serde_json::to_string(&slate_value).unwrap())?;
+
+                    Slate::from(slate)
                 }
             };
 
