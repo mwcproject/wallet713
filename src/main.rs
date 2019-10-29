@@ -10,6 +10,7 @@ extern crate serde_json;
 extern crate gotham_derive;
 #[macro_use]
 extern crate clap;
+extern crate hyper_tls;
 extern crate env_logger;
 extern crate blake2_rfc;
 extern crate chrono;
@@ -855,6 +856,7 @@ fn main() {
                     keybase_broker.clone(),
                     config.owner_api_secret.clone(),
                     config.owner_api_include_foreign,
+                    config.clone(),
                 );
                 let address = config.owner_api_address();
                 Some(std::thread::spawn(move || {
@@ -881,6 +883,7 @@ fn main() {
                     grinbox_broker.clone(),
                     keybase_broker.clone(),
                     config.foreign_api_secret.clone(),
+                    config.clone(),
                 );
                 let address = config.foreign_api_address();
                 Some(std::thread::spawn(move || {

@@ -559,7 +559,7 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn node_height(&self) -> Result<(u64, bool)> {
+    pub fn _node_height(&self) -> Result<(u64, bool)> {
         let wallet = self.get_wallet_instance()?;
         let mut result = (0, false);
         controller::owner_single_use(wallet.clone(), |api| {

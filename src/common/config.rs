@@ -21,7 +21,7 @@ const DEFAULT_CONFIG: &str = r#"
         keybase_binary = "keybase"
 "#;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, StateData)]
 pub struct Wallet713Config {
     pub chain: Option<ChainTypes>,
     pub wallet713_data_path: String,

@@ -37,6 +37,7 @@ prettytable-rs = "0.7"
 gotham = "0.3.0"
 gotham_derive = "0.3.0"
 hyper = "0.12"
+hyper-tls = "0.3.2"
 hyper-rustls = "0.14"
 mime = "0.3"
 chrono = { version = "0.4.4", features = ["serde"] }

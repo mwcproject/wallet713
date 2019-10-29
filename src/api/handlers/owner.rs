@@ -1,16 +1,22 @@
 use failure::Error;
+use serde_json::Value;
 use futures::future;
 use futures::{Future, Stream};
 use gotham::handler::{HandlerFuture, IntoHandlerError, IntoResponse};
 use gotham::helpers::http::response::create_empty_response;
+use gotham::helpers::http::response::create_response;
 use gotham::state::{FromState, State};
 use hyper::body::Chunk;
-use hyper::{Body, Response, StatusCode};
+use hyper::{Request, Body, Response, StatusCode};
 use std::fs::File;
 use std::io::Write;
 use std::str::FromStr;
 use url::Url;
 use uuid::Uuid;
+use grin_core::global::ChainTypes;
+use grin_core::global;
+use grin_util::to_base64;
+use hyper::header::{AUTHORIZATION};
 
 use crate::api::error::ApiError;
 use crate::api::router::{
@@ -21,6 +27,42 @@ use crate::common::ErrorKind;
 use crate::common::post;
 use crate::contacts::{Address, GrinboxAddress, KeybaseAddress};
 use crate::wallet::types::Slate;
+
+type ResponseContentFuture = Box<dyn Future<Item = Vec<u8>, Error = hyper::Error> + Send>;
+
+fn http_get(url_str: &str, api_secret: Option<String>, chain_type: ChainTypes) -> ResponseContentFuture {
+    let https = hyper_tls::HttpsConnector::new(1).unwrap();
+    let client = hyper::Client::builder().build::<_, hyper::Body>(https);
+    let mut req = Request::builder();
+
+
+    if let Some(api_secret) = api_secret {
+        let basic_auth = if chain_type == global::ChainTypes::Floonet {
+           format!("Basic {}", to_base64(&format!("mwcfloo:{}", api_secret)))
+        } else if chain_type == global::ChainTypes::Mainnet {
+            format!("Basic {}", to_base64(&format!("mwcmain:{}", api_secret)))
+        } else {
+            format!("Basic {}", to_base64(&format!("mwc:{}", api_secret)))
+        };
+        req.header(AUTHORIZATION, basic_auth);
+    };
+
+    let req = req
+        .method("GET")
+        .uri(url_str)
+        .header("X-Custom-Foo", "Bar")
+        .body(Body::empty())
+        .unwrap();
+
+    let f = client.request(req).and_then(|response| {
+        response
+            .into_body()
+            .concat2()
+            .and_then(|full_body| Ok(full_body.to_vec()))
+    });
+
+    Box::new(f)
+}
 
 pub fn retrieve_outputs(state: State) -> (State, Response<Body>) {
     let res = match handle_retrieve_outputs(&state) {
@@ -130,24 +172,28 @@ fn handle_retrieve_stored_tx(state: &State) -> Result<Response<Body>, Error> {
     ))
 }
 
-pub fn node_height(state: State) -> (State, Response<Body>) {
-    let res = match handle_node_height(&state) {
-        Ok(res) => res,
-        Err(e) => ApiError::new(e).into_handler_error().into_response(&state),
-    };
-    (state, res)
-}
+pub fn node_height(state: State) -> Box<HandlerFuture> {
+    let config = WalletContainer::borrow_from(&state).get_config().unwrap();
+    let url = format!("{}/v1/chain", config.mwc_node_uri());
 
-fn handle_node_height(state: &State) -> Result<Response<Body>, Error> {
-    trace_state(state);
-    let wallet = WalletContainer::borrow_from(&state).lock()?;
-    let response = wallet.node_height()?;
-    Ok(trace_create_response(
-        &state,
-        StatusCode::OK,
-        mime::APPLICATION_JSON,
-        serde_json::to_string(&response)?,
-    ))
+    let data_future: ResponseContentFuture = Box::new(
+        http_get(&url, config.mwc_node_secret(), config.chain.clone().unwrap()).and_then(move |body| {
+            let res = String::from_utf8_lossy(&body);
+            let res: Value = serde_json::from_str(&res).unwrap();
+            let ret = format!("{{\"height\": {} }}", res.get("height").unwrap().as_u64().unwrap()).as_bytes().to_vec();
+
+            //Ok(res.get("height").unwrap().as_str().unwrap().as_bytes().to_vec())
+            Ok(ret)
+        })
+    );
+
+    Box::new(data_future.then(move |result| match result {
+        Ok(data) => {
+            let res = create_response(&state, StatusCode::OK, mime::TEXT_PLAIN, data);
+            Ok((state, res))
+        }
+        Err(err) => { println!("Error occured {:?}", err); Err((state, err.into_handler_error()))},
+    }))
 }
 
 pub fn retrieve_summary_info(state: State) -> (State, Response<Body>) {
