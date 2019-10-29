@@ -7,6 +7,7 @@ use gotham::pipeline::single::single_pipeline;
 use gotham::router::builder::*;
 use gotham::router::Router;
 use gotham::state::{FromState, State};
+use common::config::Wallet713Config;
 use hyper::{Body, Chunk, HeaderMap, Method, Response, StatusCode, Uri, Version};
 use mime::Mime;
 use std::panic::RefUnwindSafe;
@@ -21,6 +22,7 @@ use common::ErrorKind;
 #[derive(Clone, StateData)]
 pub struct WalletContainer {
     pub wallet: Arc<Mutex<Wallet>>,
+    pub config: Wallet713Config,
     grinbox_publisher: Option<GrinboxPublisher>,
     keybase_publisher: Option<KeybasePublisher>,
 }
@@ -30,11 +32,13 @@ impl RefUnwindSafe for WalletContainer {}
 impl WalletContainer {
     fn new(
         wallet: Arc<Mutex<Wallet>>,
+        config: Wallet713Config,
         grinbox_publisher: Option<GrinboxPublisher>,
         keybase_publisher: Option<KeybasePublisher>,
     ) -> Self {
         Self {
             wallet,
+            config,
             grinbox_publisher,
             keybase_publisher,
         }
@@ -42,6 +46,10 @@ impl WalletContainer {
 
     pub fn lock(&self) -> Result<MutexGuard<Wallet>, Error> {
         Ok(self.wallet.lock())
+    }
+
+    pub fn get_config(&self) -> Result<&Wallet713Config, Error> {
+        Ok(&self.config)
     }
 
     pub fn grinbox_publisher(&self) -> Result<&GrinboxPublisher, Error> {
@@ -132,6 +140,7 @@ pub fn build_owner_api_router(
     keybase_broker: Option<(KeybasePublisher, KeybaseSubscriber)>,
     owner_api_secret: Option<String>,
     owner_api_include_foreign: Option<bool>,
+    config: Wallet713Config,
 ) -> Router {
     let grinbox_publisher = grinbox_broker.map(|(p, _)| p);
     let keybase_publisher = keybase_broker.map(|(p, _)| p);
@@ -141,6 +150,7 @@ pub fn build_owner_api_router(
             .add(BasicAuthMiddleware::new(owner_api_secret))
             .add(StateMiddleware::new(WalletContainer::new(
                 wallet,
+                config,
                 grinbox_publisher,
                 keybase_publisher,
             )))
@@ -157,6 +167,7 @@ pub fn build_foreign_api_router(
     grinbox_broker: Option<(GrinboxPublisher, GrinboxSubscriber)>,
     keybase_broker: Option<(KeybasePublisher, KeybaseSubscriber)>,
     foreign_api_secret: Option<String>,
+    config: Wallet713Config,
 ) -> Router {
     let grinbox_publisher = grinbox_broker.map(|(p, _)| p);
     let keybase_publisher = keybase_broker.map(|(p, _)| p);
@@ -166,6 +177,7 @@ pub fn build_foreign_api_router(
             .add(BasicAuthMiddleware::new(foreign_api_secret))
             .add(StateMiddleware::new(WalletContainer::new(
                 wallet,
+                config,
                 grinbox_publisher,
                 keybase_publisher,
             )))
