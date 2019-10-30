@@ -6,6 +6,7 @@ use super::types::{
     TxLogEntryType, WalletBackend,
 };
 use super::updater;
+use grin_api::Output;
 
 use crate::wallet::types::TxProof;
 use crate::wallet;
@@ -66,6 +67,8 @@ pub fn create_send_tx<T: ?Sized, C, K>(
     outputs: Option<Vec<&str>>,
     version: Option<u16>,
     routputs: usize,
+    height: Option<u64>,
+    node_outputs: Option<Vec<Output>>,
 ) -> Result<
     (
         Slate,
@@ -80,9 +83,14 @@ where
     K: Keychain,
 {
     // Get lock height
-    let current_height = wallet.w2n_client().get_chain_height()?;
+    let current_height = if height.is_some() {
+        height.unwrap()
+    } else {
+        wallet.w2n_client().get_chain_height()?
+
+    };
     // ensure outputs we're selecting are up to date
-    updater::refresh_outputs(wallet, parent_key_id, false)?;
+    updater::refresh_outputs(wallet, parent_key_id, false, Some(current_height), node_outputs)?;
 
     let lock_height = current_height;
 
@@ -109,7 +117,6 @@ where
         version,
         routputs,
     )?;
-
     // Generate a kernel offset and subtract from our context's secret key. Store
     // the offset in the slate's transaction kernel, and adds our public key
     // information to the slate
@@ -229,7 +236,7 @@ where
     C: NodeClient,
     K: Keychain,
 {
-    updater::refresh_outputs(wallet, &parent_key_id, false)?;
+    updater::refresh_outputs(wallet, &parent_key_id, false, None, None)?;
 
     let (mut context, update_sender_wallet_fn) = selection::build_recipient_input_with_slate(
         wallet,

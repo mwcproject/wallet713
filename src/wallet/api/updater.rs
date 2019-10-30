@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use uuid::Uuid;
 
 use super::keys;
+use grin_util::secp::pedersen::Commitment;
+use grin_api::Output as ApiOutput;
 use grin_core::consensus::reward;
 use grin_core::core::{Output, TxKernel};
 use grin_core::libtx::reward;
@@ -223,14 +225,26 @@ pub fn refresh_outputs<T: ?Sized, C, K>(
     wallet: &mut T,
     parent_key_id: &Identifier,
     update_all: bool,
+    height: Option<u64>,
+    node_outputs: Option<Vec<ApiOutput>>,
 ) -> Result<()>
 where
     T: WalletBackend<C, K>,
     C: NodeClient,
     K: Keychain,
 {
-    let height = wallet.w2n_client().get_chain_height()?;
-    refresh_output_state(wallet, height, parent_key_id, update_all)?;
+
+    // for now if height specified don't refresh. It means we're in the owner api.
+    // cannot make blocking call.
+    // TODO: implement in owner api via futures
+    let cur_height = if height.is_none() {
+        wallet.w2n_client().get_chain_height()?
+    } else {
+        height.unwrap()
+    };
+
+    refresh_output_state(wallet, cur_height, parent_key_id, update_all, node_outputs)?;
+
     Ok(())
 }
 
@@ -405,6 +419,7 @@ fn refresh_output_state<T: ?Sized, C, K>(
     height: u64,
     parent_key_id: &Identifier,
     update_all: bool,
+    node_outputs: Option<Vec<ApiOutput>>,
 ) -> Result<()>
 where
     T: WalletBackend<C, K>,
@@ -419,9 +434,21 @@ where
 
     let wallet_output_keys = wallet_outputs.keys().map(|commit| commit.clone()).collect();
 
-    let api_outputs = wallet
-        .w2n_client()
-        .get_outputs_from_node(wallet_output_keys)?;
+    let api_outputs = if node_outputs.is_some() {
+        let node_outputs = node_outputs.unwrap();
+        let mut api_outputs: HashMap<Commitment, (String, u64, u64)> = HashMap::new();
+        for out in node_outputs {
+            api_outputs.insert(
+                out.commit.commit(),
+                (to_hex(out.commit.to_vec()), out.height, out.mmr_index),
+            );
+        }
+        api_outputs
+    } else {
+        wallet
+            .w2n_client()
+            .get_outputs_from_node(wallet_output_keys)?
+    };
     apply_api_outputs(wallet, &wallet_outputs, &api_outputs, height, parent_key_id)?;
     clean_old_unconfirmed(wallet, height)?;
     Ok(())

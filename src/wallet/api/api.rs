@@ -1,7 +1,9 @@
 use std::collections::HashSet;
+use std::collections::HashMap;
 use std::marker::PhantomData;
 use uuid::Uuid;
 
+use grin_api::Output;
 use grin_core::ser;
 use grin_util::secp::key::PublicKey;
 use grin_util::secp::pedersen;
@@ -62,6 +64,14 @@ where
             phantom: PhantomData,
             phantom_c: PhantomData,
         }
+    }
+
+    pub fn retrieve_map_wallet_outputs(
+        &mut self,) -> Result<HashMap<pedersen::Commitment, (Identifier, Option<u64>)>, Error> {
+        let mut w = self.wallet.lock();
+        w.open_with_credentials()?;
+        let parent_key_id = w.get_parent_key_id();
+        updater::map_wallet_outputs(&mut *w, &parent_key_id, true)
     }
 
     pub fn invoice_tx(
@@ -286,6 +296,8 @@ where
         outputs: Option<Vec<&str>>,
         version: Option<u16>,
         routputs: usize,
+        height: Option<u64>,
+        node_outputs: Option<Vec<Output>>,
     ) -> Result<
         (
             Slate,
@@ -309,6 +321,8 @@ where
             outputs,
             version,
             routputs,
+            height,
+            node_outputs,
         )?;
 
         for input in slate.tx.inputs() {
@@ -508,7 +522,7 @@ where
 
     fn update_outputs(&self, w: &mut W, update_all: bool) -> bool {
         let parent_key_id = w.get_parent_key_id();
-        match updater::refresh_outputs(&mut *w, &parent_key_id, update_all) {
+        match updater::refresh_outputs(&mut *w, &parent_key_id, update_all, None, None) {
             Ok(_) => true,
             Err(_) => false,
         }

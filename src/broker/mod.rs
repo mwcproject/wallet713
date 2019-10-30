@@ -1,6 +1,6 @@
 mod grinbox;
 mod keybase;
-mod mwcmq;
+pub mod mwcmq;
 mod protocol;
 mod types;
 
