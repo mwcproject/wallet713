@@ -1,6 +1,8 @@
 use grin_util::secp::pedersen;
+use grin_api::Output;
 use uuid::Uuid;
-
+use grin_keychain::Identifier;
+use std::collections::HashMap;
 use common::config::{Wallet713Config, WalletConfig};
 use common::{ErrorKind, Result};
 
@@ -318,6 +320,17 @@ impl Wallet {
         Ok(count)
     }
 
+    pub fn get_outputs(&self) -> Result<HashMap<pedersen::Commitment, (Identifier, Option<u64>)>> {
+        let wallet = self.get_wallet_instance()?;
+        let mut outputs = HashMap::new();
+        controller::owner_single_use(wallet.clone(), |api| {
+            outputs = api.retrieve_map_wallet_outputs()?;
+            Ok(())
+        })?;
+
+        Ok(outputs)
+    }
+
     pub fn outputs(&self, show_spent: bool, pagination_start: u32, pagination_length: u32) -> Result<()> {
         let wallet = self.get_wallet_instance()?;
         let result = controller::owner_single_use(wallet.clone(), |api| {
@@ -341,6 +354,8 @@ impl Wallet {
         outputs: Option<Vec<&str>>,
         version: Option<u16>,
         routputs: usize,
+        height: Option<u64>,
+        node_outputs: Option<Vec<Output>>,
     ) -> Result<Slate> {
         let wallet = self.get_wallet_instance()?;
         let mut s: Slate = Slate::blank(0);
@@ -356,6 +371,8 @@ impl Wallet {
                 outputs,
                 version,
                 routputs,
+                height,
+                node_outputs,
             )?;
             api.tx_lock_outputs(&slate.tx, lock_fn)?;
             s = slate;

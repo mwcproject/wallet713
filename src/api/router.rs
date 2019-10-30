@@ -11,6 +11,8 @@ use common::config::Wallet713Config;
 use hyper::{Body, Chunk, HeaderMap, Method, Response, StatusCode, Uri, Version};
 use mime::Mime;
 use std::panic::RefUnwindSafe;
+use broker::mwcmq::MWCMQPublisher;
+use broker::mwcmq::MWCMQSubscriber;
 
 use crate::api::auth::BasicAuthMiddleware;
 use crate::api::handlers::{foreign, owner};
@@ -23,6 +25,7 @@ use common::ErrorKind;
 pub struct WalletContainer {
     pub wallet: Arc<Mutex<Wallet>>,
     pub config: Wallet713Config,
+    mwcmqs_publisher: Option<MWCMQPublisher>,
     grinbox_publisher: Option<GrinboxPublisher>,
     keybase_publisher: Option<KeybasePublisher>,
 }
@@ -33,12 +36,14 @@ impl WalletContainer {
     fn new(
         wallet: Arc<Mutex<Wallet>>,
         config: Wallet713Config,
+        mwcmqs_publisher: Option<MWCMQPublisher>,
         grinbox_publisher: Option<GrinboxPublisher>,
         keybase_publisher: Option<KeybasePublisher>,
     ) -> Self {
         Self {
             wallet,
             config,
+            mwcmqs_publisher,
             grinbox_publisher,
             keybase_publisher,
         }
@@ -50,6 +55,12 @@ impl WalletContainer {
 
     pub fn get_config(&self) -> Result<&Wallet713Config, Error> {
         Ok(&self.config)
+    }
+
+    pub fn mwcmqs_publisher(&self) -> Result<&MWCMQPublisher, Error> {
+        self.mwcmqs_publisher.as_ref().ok_or_else(|| {
+            ErrorKind::GenericError(String::from("missing mwcmqs publisher")).into()
+        })
     }
 
     pub fn grinbox_publisher(&self) -> Result<&GrinboxPublisher, Error> {
@@ -136,6 +147,7 @@ where
 
 pub fn build_owner_api_router(
     wallet: Arc<Mutex<Wallet>>,
+    mwcmqs_broker: Option<(MWCMQPublisher, MWCMQSubscriber)>,
     grinbox_broker: Option<(GrinboxPublisher, GrinboxSubscriber)>,
     keybase_broker: Option<(KeybasePublisher, KeybaseSubscriber)>,
     owner_api_secret: Option<String>,
@@ -144,6 +156,7 @@ pub fn build_owner_api_router(
 ) -> Router {
     let grinbox_publisher = grinbox_broker.map(|(p, _)| p);
     let keybase_publisher = keybase_broker.map(|(p, _)| p);
+    let mwcmqs_publisher  = mwcmqs_broker .map(|(p, _)| p);
 
     let (chain, pipelines) = single_pipeline(
         new_pipeline()
@@ -151,6 +164,7 @@ pub fn build_owner_api_router(
             .add(StateMiddleware::new(WalletContainer::new(
                 wallet,
                 config,
+                mwcmqs_publisher,
                 grinbox_publisher,
                 keybase_publisher,
             )))
@@ -164,6 +178,7 @@ pub fn build_owner_api_router(
 
 pub fn build_foreign_api_router(
     wallet: Arc<Mutex<Wallet>>,
+    mwcmqs_broker: Option<(MWCMQPublisher, MWCMQSubscriber)>,
     grinbox_broker: Option<(GrinboxPublisher, GrinboxSubscriber)>,
     keybase_broker: Option<(KeybasePublisher, KeybaseSubscriber)>,
     foreign_api_secret: Option<String>,
@@ -171,6 +186,8 @@ pub fn build_foreign_api_router(
 ) -> Router {
     let grinbox_publisher = grinbox_broker.map(|(p, _)| p);
     let keybase_publisher = keybase_broker.map(|(p, _)| p);
+    let mwcmqs_publisher  = mwcmqs_broker .map(|(p, _)| p);
+
 
     let (chain, pipelines) = single_pipeline(
         new_pipeline()
@@ -178,6 +195,7 @@ pub fn build_foreign_api_router(
             .add(StateMiddleware::new(WalletContainer::new(
                 wallet,
                 config,
+                mwcmqs_publisher,
                 grinbox_publisher,
                 keybase_publisher,
             )))

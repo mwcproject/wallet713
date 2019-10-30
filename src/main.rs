@@ -852,6 +852,7 @@ fn main() {
                 }
                 let router = build_owner_api_router(
                     wallet.clone(),
+                    mwcmqs_broker.clone(),
                     grinbox_broker.clone(),
                     keybase_broker.clone(),
                     config.owner_api_secret.clone(),
@@ -880,6 +881,7 @@ fn main() {
                 }
                 let router = build_foreign_api_router(
                     wallet.clone(),
+                    mwcmqs_broker.clone(),
                     grinbox_broker.clone(),
                     keybase_broker.clone(),
                     config.foreign_api_secret.clone(),
@@ -1600,6 +1602,8 @@ fn do_command(
                     output_list,
                     version,
                     routputs,
+                    None,
+                    None,
                 )?;
                 file.write_all(serde_json::to_string(&slate)?.as_bytes())?;
                 cli_message!("{} created successfully.", input);
@@ -1642,6 +1646,8 @@ fn do_command(
                             output_list,
                             version,
                             1,
+                            None,
+                            None,
                         )?;
                         let mwcmqs_address =
                             contacts::MWCMQSAddress::from_str(&to.to_string())?;
@@ -1672,6 +1678,8 @@ fn do_command(
                             output_list,
                             version,
                             1,
+                            None,
+                            None,
                         )?;
                         let mut keybase_address =
                             contacts::KeybaseAddress::from_str(&to.to_string())?;
@@ -1695,6 +1703,8 @@ fn do_command(
                             output_list,
                             version,
                             1,
+                            None,
+                            None,
                         )?;
                         publisher.post_slate(&slate, to.borrow())?;
                         slate
@@ -1716,6 +1726,8 @@ fn do_command(
                         output_list,
                         version,
                         1,
+                        None,
+                        None,
                     )?;
 
                     let req = json!({

@@ -53,19 +53,18 @@ where
         outputs,
         None,
     )?;
-
     // Create public slate
     let mut slate = Slate::blank(num_participants);
     if let Some(v) = version {
         slate.version_info.version = v;
         slate.version_info.orig_version = v;
     }
+
     slate.amount = amount;
     slate.height = current_height;
     slate.lock_height = lock_height;
     slate.fee = fee;
     let slate_id = slate.id.clone();
-
     let keychain = wallet.keychain();
 
     let blinding = slate.add_transaction_elements(keychain, &ProofBuilder::new(keychain), elems)?;
@@ -516,7 +515,6 @@ where
 
     // sort eligible outputs by increasing value
     eligible.sort_by_key(|out| out.value);
-
     if outputs.is_some() {
         let mut output_list = outputs.unwrap();
         let mut nvec = Vec::new();
@@ -560,7 +558,6 @@ where
             return (max_available, outputs);
         }
     }
-
     // we failed to find a suitable set of outputs to spend,
     // so return the largest amount we can so we can provide guidance on what is
     // possible

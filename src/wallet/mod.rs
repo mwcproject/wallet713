@@ -1,8 +1,8 @@
-mod api;
+pub mod api;
 mod backend;
 pub mod error;
 mod seed;
-mod wallet;
+pub mod wallet;
 
 pub mod types;
 pub use self::wallet::Wallet;
