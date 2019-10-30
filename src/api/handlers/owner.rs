@@ -204,24 +204,8 @@ pub fn node_height(state: State) -> Box<HandlerFuture> {
     }))
 }
 
-pub fn retrieve_summary_info(state: State) -> (State, Response<Body>) {
-    let res = match handle_retrieve_summary_info(&state) {
-        Ok(res) => res,
-        Err(e) => ApiError::new(e).into_handler_error().into_response(&state),
-    };
-    (state, res)
-}
-
-fn handle_retrieve_summary_info(state: &State) -> Result<Response<Body>, Error> {
-    trace_state(state);
-    let wallet = WalletContainer::borrow_from(&state).lock()?;
-    let response = wallet.retrieve_summary_info(true)?;
-    Ok(trace_create_response(
-        &state,
-        StatusCode::OK,
-        mime::APPLICATION_JSON,
-        serde_json::to_string(&response)?,
-    ))
+pub fn retrieve_summary_info(state: State) -> Box<HandlerFuture> {
+      refresh_processor(state, ProcType::SummaryInfo)
 }
 
 pub fn finalize_tx(mut state: State) -> Box<HandlerFuture> {
@@ -333,7 +317,17 @@ struct IssueSendBody {
     version: Option<u16>,
 }
 
-pub fn issue_send_tx(mut state: State) -> Box<HandlerFuture> {
+#[derive(PartialEq)]
+pub enum ProcType {
+    IssueSend,
+    SummaryInfo,
+}
+
+pub fn issue_send_tx(state: State) -> Box<HandlerFuture> {
+      refresh_processor(state, ProcType::IssueSend)
+}
+
+pub fn refresh_processor(mut state: State, ptype: ProcType) -> Box<HandlerFuture> {
 
     let future = Body::take_from(&mut state)
         .concat2()
@@ -408,23 +402,45 @@ pub fn issue_send_tx(mut state: State) -> Box<HandlerFuture> {
                  let container = WalletContainer::borrow_from(&state).to_owned();
                  let wallet = container.lock().unwrap();
                  let height = Arc::clone(&height);
-                 match process_handle_issue_send_tx(&container, &wallet, &body.unwrap(), *height, &accumulator.unwrap()) {
-                     Ok(res) => {
-                         let res = trace_create_response(
-                            &state,
-                            StatusCode::OK,
-                            mime::APPLICATION_JSON,
-                            res
-                         );
-                         future::ok((state, res))
-                     }, 
-                     Err(e) => future::err((state, ApiError::new(e).into_handler_error())),
+
+                 if ptype == ProcType::IssueSend {
+                     match process_handle_issue_send_tx(&container, &wallet, &body.unwrap(), *height, &accumulator.unwrap()) {
+                         Ok(res) => {
+                             let res = trace_create_response(
+                                 &state,
+                                 StatusCode::OK,
+                                 mime::APPLICATION_JSON,
+                                 res
+                             );
+                             future::ok((state, res))
+                         }, 
+                         Err(e) => future::err((state, ApiError::new(e).into_handler_error())),
+                     }
+                 } else { // ProcType::SummaryInfo
+                     match process_handle_summary_info(&wallet, *height, &accumulator.unwrap()) {
+                         Ok(res) => {
+                             let res = trace_create_response(
+                                 &state,
+                                 StatusCode::OK,
+                                 mime::APPLICATION_JSON,
+                                 res
+                             );
+                             future::ok((state, res))
+                         },
+                         Err(e) => future::err((state, ApiError::new(e).into_handler_error())),
+                     }
                  }
              })
         })
     });
 
     Box::new(future)
+}
+
+pub fn process_handle_summary_info(wallet: &Wallet, height: u64, accumulator: &Vec<Output>) -> Result<String, Error> {
+    let response = wallet.retrieve_summary_info(true, Some(height), Some(accumulator.to_vec()))?;
+    let response = serde_json::to_string(&response)?;
+    Ok(response)
 }
 
 pub fn process_handle_issue_send_tx(container: &WalletContainer, wallet: &Wallet, body: &Chunk, height: u64, accumulator: &Vec<Output>) -> Result<String, Error> {
