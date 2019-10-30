@@ -192,7 +192,7 @@ impl Wallet {
     pub fn info(&self, refresh: bool, confirmations: u64) -> Result<()> {
         let wallet = self.get_wallet_instance()?;
         controller::owner_single_use(wallet.clone(), |api| {
-            let (mut validated, wallet_info) = api.retrieve_summary_info(refresh, confirmations)?;
+            let (mut validated, wallet_info) = api.retrieve_summary_info(refresh, confirmations, None, None)?;
             if !refresh  { validated = true; }
             display::info(&self.active_account, &wallet_info, validated, true);
             Ok(())
@@ -516,11 +516,11 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn retrieve_summary_info(&self, refresh: bool) -> Result<WalletInfo> {
+    pub fn retrieve_summary_info(&self, refresh: bool, height: Option<u64>, accumulator: Option<Vec<Output>>) -> Result<WalletInfo> {
         let wallet = self.get_wallet_instance()?;
         let mut info = None;
         controller::owner_single_use(wallet.clone(), |api| {
-            let (_, i) = api.retrieve_summary_info(refresh, 10)?;
+            let (_, i) = api.retrieve_summary_info(refresh, 10, height, accumulator)?;
             info = Some(i);
             Ok(())
         })?;
