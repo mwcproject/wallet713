@@ -9,6 +9,7 @@ mwc713 supports both an 'Owner API' and a 'Foreign API'. The owner api controls 
 The owner API must be configured on startup. The parameters which go into your mwc713.toml configuration file are as follows:
 
 | parameter | value |
+| --------- | ------ |
 | owner_api | true |
 | owner_api_address | The ip address:port to bind to for example: 0.0.0.0:13415. |
 | owner_api_secret | The Basic Auth secret to connect to the owner API. |
