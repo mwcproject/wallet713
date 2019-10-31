@@ -11,7 +11,7 @@ The owner API must be configured on startup. The parameters which go into your m
 | parameter | value |
 | --------- | ------ |
 | owner_api | true |
-| owner_api_address | The ip address:port to bind to for example: 0.0.0.0:13415. |
+| owner_api_address | The ip address:port to bind to for example: 127.0.0.1:13415. |
 | owner_api_secret | The Basic Auth secret to connect to the owner API. |
 
 A sample, configuration may look like this:
@@ -22,7 +22,7 @@ wallet713_data_path = "wallet713_data"
 keybase_listener_auto_start = true
 default_keybase_ttl = "24h"
 owner_api = true
-owner_api_address = "0.0.0.0:13415"
+owner_api_address = "127.0.0.1:13415"
 owner_api_secret = "password"
 ```
 Optionally, if you would like to send via keybase, you must configure the keybase listener to auto start using the keybase_listener_auto_start parameter (see above).
