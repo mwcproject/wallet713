@@ -8,7 +8,7 @@ mwc713 supports both an 'Owner API' and a 'Foreign API'. The owner api controls 
 <table>
   <tr><td>End Point</td><td>Description</td></tr>
   <tr><td>/v1/wallet/owner/node_height</td><td>Node height returns the number of blocks that is seen by the full node that this mwc713 instance is connected to.</td></tr>
-  <tr><td colspan=2># curl http://localhost:13413/v1/owner/node_height</td></tr>
+  <tr><td colspan=2><code># curl http://localhost:13413/v1/owner/node_height</code></td></tr>
   <tr><td colspan=2>{"height": 173393}</td></tr>
 </table>
     
