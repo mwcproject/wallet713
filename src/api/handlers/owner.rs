@@ -17,10 +17,7 @@ use gotham::helpers::http::response::create_response;
 use gotham::state::{FromState, State};
 use hyper::body::Chunk;
 use hyper::{Request, Body, Response, StatusCode};
-use std::fs::File;
-use std::io::Write;
 use std::str::FromStr;
-use url::Url;
 use uuid::Uuid;
 use grin_core::global::ChainTypes;
 use grin_core::global;
@@ -33,8 +30,7 @@ use crate::api::router::{
 };
 use crate::broker::Publisher;
 use crate::common::ErrorKind;
-use crate::common::post;
-use crate::contacts::{Address, MWCMQSAddress, GrinboxAddress, KeybaseAddress};
+use crate::contacts::{Address, MWCMQSAddress, KeybaseAddress};
 use crate::wallet::types::Slate;
 
 type ResponseContentFuture = Box<dyn Future<Item = Vec<u8>, Error = hyper::Error> + Send>;
@@ -60,7 +56,6 @@ fn http_get(url_str: &str, api_secret: Option<String>, chain_type: ChainTypes) -
     let req = req
         .method("GET")
         .uri(url_str)
-        .header("X-Custom-Foo", "Bar")
         .body(Body::empty())
         .unwrap();
 
@@ -200,12 +195,17 @@ pub fn node_height(state: State) -> Box<HandlerFuture> {
             let res = create_response(&state, StatusCode::OK, mime::TEXT_PLAIN, data);
             Ok((state, res))
         }
-        Err(err) => { println!("Error occured {:?}", err); Err((state, err.into_handler_error()))},
+        Err(err) => {
+            println!("Error occured {:?}", err);
+            let res = create_response(&state, StatusCode::OK, mime::TEXT_PLAIN, "{\"error\": \"could not connect to node\"}");
+            Ok((state, res))
+        },
     }))
 }
 
 pub fn retrieve_summary_info(state: State) -> Box<HandlerFuture> {
-      refresh_processor(state, ProcType::SummaryInfo)
+    let res = refresh_processor(state, ProcType::SummaryInfo).unwrap();
+    res
 }
 
 pub fn finalize_tx(mut state: State) -> Box<HandlerFuture> {
@@ -324,11 +324,11 @@ pub enum ProcType {
 }
 
 pub fn issue_send_tx(state: State) -> Box<HandlerFuture> {
-      refresh_processor(state, ProcType::IssueSend)
+      let res = refresh_processor(state, ProcType::IssueSend).unwrap();
+      res
 }
 
-pub fn refresh_processor(mut state: State, ptype: ProcType) -> Box<HandlerFuture> {
-
+pub fn refresh_processor(mut state: State, ptype: ProcType) -> Result<Box<HandlerFuture>, Error> {
     let future = Body::take_from(&mut state)
         .concat2()
         .then(|body| {
@@ -350,8 +350,19 @@ pub fn refresh_processor(mut state: State, ptype: ProcType) -> Box<HandlerFuture
             let container = WalletContainer::borrow_from(&state).to_owned();
             let wallet = container.lock().unwrap();
             let config = container.get_config().unwrap();
+            let is_error;
 
-            let height = Arc::new(String::from_utf8_lossy(&result.unwrap()).parse::<u64>().unwrap());
+            let height = match result {
+                Ok(res) => {
+                    is_error = false;
+                    Arc::new(String::from_utf8_lossy(&res).parse::<u64>().unwrap())
+                },
+                Err(_e) => {
+                    is_error = true;
+                    Arc::new(0)
+                }
+            };
+
 
             let addr = format!("{}", config.mwc_node_uri());
             let wallet_outputs = wallet.get_outputs().unwrap();
@@ -371,34 +382,50 @@ pub fn refresh_processor(mut state: State, ptype: ProcType) -> Box<HandlerFuture
                 url_vec.push((url,config.mwc_node_secret()));
             }
 
-            let handle_outputs: ResponseOutputFuture = Box::new(
-                stream::iter_ok(url_vec).fold(Vec::new(), move |mut accumulator, url_data| {
-                    let url = url_data.0;
-                    let secret = url_data.1;
-                    let chain_type =
-                        if global::is_mainnet() { global::ChainTypes::Mainnet }
-                        else if global::is_floonet() { global::ChainTypes::Floonet }
-                        else { global::ChainTypes::UserTesting };
-                    http_get(&url, secret, chain_type).and_then(move |body| {
-                        let body_parsed = String::from_utf8_lossy(&body);
-                        let res: Value = serde_json::from_str(&body_parsed).unwrap();
-                        let mut outputs = Vec::new();
-                        for elem in res.as_array().unwrap() {
-                            let id = elem.get("commit").unwrap().as_str().unwrap();
-                            let c_vec = util::from_hex(String::from(id)).unwrap();
-                            let commit = Commitment::from_vec(c_vec);
-                            let output = Output::new(&commit,
+            let handle_outputs: ResponseOutputFuture = if !is_error {
+                Box::new(
+                    stream::iter_ok(url_vec).fold(Vec::new(), move |mut accumulator, url_data| {
+                        let url = url_data.0;
+                        let secret = url_data.1;
+                        let chain_type =
+                            if global::is_mainnet() { global::ChainTypes::Mainnet }
+                            else if global::is_floonet() { global::ChainTypes::Floonet }
+                            else { global::ChainTypes::UserTesting };
+                        http_get(&url, secret, chain_type).and_then(move |body| {
+                            let body_parsed = String::from_utf8_lossy(&body);
+                            let res: Value = serde_json::from_str(&body_parsed).unwrap();
+                            let mut outputs = Vec::new();
+                            for elem in res.as_array().unwrap() {
+                                let id = elem.get("commit").unwrap().as_str().unwrap();
+                                let c_vec = util::from_hex(String::from(id)).unwrap();
+                                let commit = Commitment::from_vec(c_vec);
+                                let output = Output::new(&commit,
                                              elem.get("height").unwrap().as_u64().unwrap(),
                                              elem.get("mmr_index").unwrap().as_u64().unwrap());
-                            outputs.push(output);
-                        }
+                                outputs.push(output);
+                            }
 
-                        accumulator.extend(outputs);
-                        Ok(accumulator)
-                    })
-                }));
+                            accumulator.extend(outputs);
+                            Ok(accumulator)
+                        })
+                     })
+                 )
+             } else {
+                 Box::new(
+                     stream::iter_ok(url_vec).fold(Vec::new(), move |accumulator, _url_data| {
+                         // only way we were able to make rust behave by sending to google here.
+                         // TODO: improve this. Should not actually make the request.
+                         let url = "http://www.google.com".to_string();
+                         let chain_type = global::ChainTypes::Mainnet;
+                         http_get(&url, None, chain_type).and_then(move |_body| {
+                             Ok(accumulator)
+                         })
+                     })
+                 )
+             };
 
-            handle_outputs.then(move |accumulator| {
+             let fut_out = 
+                 handle_outputs.then(move |accumulator| {
                  let container = WalletContainer::borrow_from(&state).to_owned();
                  let wallet = container.lock().unwrap();
                  let height = Arc::clone(&height);
@@ -430,11 +457,12 @@ pub fn refresh_processor(mut state: State, ptype: ProcType) -> Box<HandlerFuture
                          Err(e) => future::err((state, ApiError::new(e).into_handler_error())),
                      }
                  }
-             })
+             });
+            fut_out
         })
     });
 
-    Box::new(future)
+    Ok(Box::new(future))
 }
 
 pub fn process_handle_summary_info(wallet: &Wallet, height: u64, accumulator: &Vec<Output>) -> Result<String, Error> {
@@ -444,154 +472,129 @@ pub fn process_handle_summary_info(wallet: &Wallet, height: u64, accumulator: &V
 }
 
 pub fn process_handle_issue_send_tx(container: &WalletContainer, wallet: &Wallet, body: &Chunk, height: u64, accumulator: &Vec<Output>) -> Result<String, Error> {
-    let body: IssueSendBody = serde_json::from_slice(&body)?;
-    let selection_strategy = match body.selection_strategy_is_use_all {
-        true => "all",
-        false => "",
-    };
+    let body: Result<IssueSendBody, serde_json::Error> = serde_json::from_slice(&body);
+    if body.is_ok() {
+        let body = body.unwrap();
+        let selection_strategy = match body.selection_strategy_is_use_all {
+            true => "all",
+            false => "",
+        };
+        let res = match body.method {
+            IssueSendMethod::MWCMQS => {
+                if height == 0 {
+                    "{\"error\": \"Could not connect to node.\"}".to_string()
+                } else if !body.dest.is_some() {
+                    "{\"error\": \"dest was not specified.\"}".to_string()
+                }
+                else {
+                    let address = MWCMQSAddress::from_str(body.dest.unwrap().as_str());
 
-    let res = match body.method {
-        IssueSendMethod::None => {
-            let slate = wallet.initiate_send_tx(
-                None,
-                body.amount,
-                body.minimum_confirmations,
-                selection_strategy,
-                body.num_change_outputs,
-                body.max_outputs,
-                body.message,
-                None,
-                body.version,
-                1,
-                None,
-                None,
-            )?;
-            serde_json::to_string(&slate)?
-        }
-        IssueSendMethod::MWCMQS => {
-            let address = MWCMQSAddress::from_str(
-                body.dest
-                    .ok_or_else(|| ErrorKind::GrinboxAddressParsingError(String::from("")))?
-                    .as_str(),
-            )?;
+                    if address.is_ok() {
+                        let address = address.unwrap();
 
-            let publisher = container.mwcmqs_publisher()?;
+                        let publisher = container.mwcmqs_publisher();
+                        if publisher.is_ok() {
+                            let publisher = publisher.unwrap();
 
-            let slate = wallet.initiate_send_tx(
-                Some(address.to_string()),
-                body.amount,
-                body.minimum_confirmations,
-                selection_strategy,
-                body.num_change_outputs,
-                body.max_outputs,
-                body.message,
-                None,
-                body.version,
-                1,
-                Some(height),
-                Some(accumulator.to_vec()),
-            )?;
-            publisher.post_slate(&slate, &address)?;
-            serde_json::to_string(&slate)?
-        }
-        IssueSendMethod::Grinbox => {
-            let address = GrinboxAddress::from_str(
-                body.dest
-                    .ok_or_else(|| ErrorKind::GrinboxAddressParsingError(String::from("")))?
-                    .as_str(),
-            )?;
-            let publisher = container.grinbox_publisher()?;
-            let slate = wallet.initiate_send_tx(
-                Some(address.to_string()),
-                body.amount,
-                body.minimum_confirmations,
-                selection_strategy,
-                body.num_change_outputs,
-                body.max_outputs,
-                body.message,
-                None,
-                body.version,
-                1,
-                Some(height),
-                Some(accumulator.to_vec()),
-            )?;
-            publisher.post_slate(&slate, &address)?;
-            serde_json::to_string(&slate)?
-        }
-        IssueSendMethod::Keybase => {
-            let address = KeybaseAddress::from_str(
-                body.dest
-                    .ok_or_else(|| ErrorKind::KeybaseAddressParsingError(String::from("")))?
-                    .as_str(),
-            )?;
-            let publisher = container.keybase_publisher()?;
-            let slate = wallet.initiate_send_tx(
-                Some(address.to_string()),
-                body.amount,
-                body.minimum_confirmations,
-                selection_strategy,
-                body.num_change_outputs,
-                body.max_outputs,
-                body.message,
-                None,
-                body.version,
-                1,
-                Some(height),
-                Some(accumulator.to_vec()),
-            )?;
-            publisher.post_slate(&slate, &address)?;
-            serde_json::to_string(&slate)?
-        }
-        IssueSendMethod::Http => {
-            let destination = body
-                .dest
-                .ok_or_else(|| ErrorKind::GrinboxAddressParsingError(String::from("")))?;
-            let url = Url::parse(&format!("{}/v1/wallet/foreign/receive_tx", destination))?;
-            let slate = wallet.initiate_send_tx(
-                Some(destination),
-                body.amount,
-                body.minimum_confirmations,
-                selection_strategy,
-                body.num_change_outputs,
-                body.max_outputs,
-                body.message,
-                None,
-                body.version,
-                1,
-                Some(height),
-                Some(accumulator.to_vec()),
-            )?;
-            let slate = post(url.as_str(), None, &slate)?;
-            let mut slate = Slate::deserialize_upgrade(&slate)?;
-            wallet.finalize_slate(&mut slate, None)?;
-            serde_json::to_string(&slate)?
-        }
-        IssueSendMethod::File => {
-            let mut file = File::create(
-                body.dest
-                    .ok_or_else(|| {
-                        ErrorKind::GenericError(String::from("filename not specified in `dest`"))
-                    })?
-                    .as_str(),
-            )?;
-            let slate = wallet.initiate_send_tx(
-                None,
-                body.amount,
-                body.minimum_confirmations,
-                selection_strategy,
-                body.num_change_outputs,
-                body.max_outputs,
-                body.message,
-                None,
-                body.version,
-                1,
-                Some(height),
-                Some(accumulator.to_vec()),
-            )?;
-            let json = serde_json::to_string(&slate)?;
-            file.write_all(json.as_bytes())?;
-            json
-        }
-    };
-    Ok(res)
+                            let slate = wallet.initiate_send_tx(
+                                Some(address.to_string()),
+                                body.amount,
+                                body.minimum_confirmations,
+                                selection_strategy,
+                                body.num_change_outputs,
+                                body.max_outputs,
+                                body.message,
+                                None,
+                                body.version,
+                                1,
+                                Some(height),
+                                Some(accumulator.to_vec()),
+                            );
+
+                            if slate.is_ok() {
+                                let slate = slate.unwrap();
+                                let res = publisher.post_slate(&slate, &address);
+                                if res.is_ok() {
+                                    serde_json::to_string(&slate)?
+                                } else {
+                                     println!("Error: {:?}", res);
+                                     "{\"error\": \"An error occurred while posting slate.\"}".to_string()
+                                }
+                            } else {
+                                println!("Error: {:?}", slate);
+                                "{\"error\": \"An error occurred while generating slate.\"}".to_string()
+                            }
+                        } else {
+                            "{\"error\": \"An error occurred sending to a mwcmqs address. Note: mwcmqs must be configured on startup to use with the API.\"}".to_string()
+                        }
+                    }
+                    else {
+                        println!("Error: {:?}", address);
+                        "{\"error\": \"An error occurred while parsing mwcmqs address.\"}".to_string()
+                    }
+                }
+            }
+            IssueSendMethod::Keybase => {
+                if height == 0 {
+                   "{\"error\": \"Could not connect to node.\"}".to_string()
+                } else if !body.dest.is_some() {
+                    "{\"error\": \"dest was not specified.\"}".to_string()
+                }
+                else {
+                    let address = KeybaseAddress::from_str(
+                        body.dest.unwrap().as_str()
+                    );
+                    if address.is_ok() {
+                        let address = address.unwrap();
+                        let publisher = container.keybase_publisher();
+                        if publisher.is_ok() {
+                            let publisher = publisher.unwrap();
+                            let slate = wallet.initiate_send_tx(
+                                Some(address.to_string()),
+                                body.amount,
+                                body.minimum_confirmations,
+                                selection_strategy,
+                                body.num_change_outputs,
+                                body.max_outputs,
+                                body.message,
+                                None,
+                                body.version,
+                                1,
+                                Some(height),
+                                Some(accumulator.to_vec()),
+                            );
+
+                            if slate.is_ok() {
+                                let slate = slate.unwrap();
+                                let res = publisher.post_slate(&slate, &address);
+                                if res.is_ok() {
+                                    serde_json::to_string(&slate)?
+                                } else {
+                                     println!("Error: {:?}", res);
+                                     "{\"error\": \"An error occurred while posting slate.\"}".to_string()
+                                }
+                            }
+                            else {
+                                println!("Error: {:?}", slate);
+                               "{\"error\": \"An error occurred while generating slate.\"}".to_string()
+                            }
+                        } else {
+                            "{\"error\": \"An error occurred sending to a keybase address. Note: keybase must be configured on startup to use with the API.\"}".to_string()
+                        }
+                    } else {
+                        println!("Error: {:?}", address);
+                        "{\"error\": \"An error occurred while parsing keybase address.\"}".to_string()
+                    }
+                }
+            }
+            _ => {
+               "{\"error\": \"This method is not currently supported.\"}".to_string()
+            }
+        };
+        Ok(res)
+    }
+    else {
+        Ok("{\"error\": \"Could not parse send request.\"}".to_string())
+    }
 }
+
