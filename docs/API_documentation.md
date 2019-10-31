@@ -26,6 +26,8 @@ owner_api_secret = "password"
 ```
 Optionally, if you would like to send via keybase, you must configure the keybase listener to auto start using the keybase_listener_auto_start parameter (see above).
 
+Below is the documentation for the individual API end points:
+
 <table>
   <tr><td>End Point</td><td>Description</td></tr>
   <tr><td>/v1/wallet/owner/node_height</td><td>Node height returns the number of blocks that is seen by the full node that this mwc713 instance is connected to.</td></tr>
