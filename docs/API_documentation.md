@@ -16,10 +16,15 @@ The owner API must be configured on startup. The parameters which go into your m
 A sample, configuration may look like this:
 
 ```
+chain = "Floonet"
+wallet713_data_path = "wallet713_data"
+keybase_listener_auto_start = true
+default_keybase_ttl = "24h"
 owner_api = true
 owner_api_address = "0.0.0.0:13415"
 owner_api_secret = "password"
 ```
+Optionally, if you would like to send via keybase, you must configure the keybase listener to auto start using the keybase_listener_auto_start parameter (see above).
 
 <table>
   <tr><td>End Point</td><td>Description</td></tr>
