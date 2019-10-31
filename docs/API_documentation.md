@@ -5,6 +5,22 @@
 mwc713 supports both an 'Owner API' and a 'Foreign API'. The owner api controls functions that the owner of the wallet may only access and the foreign API is for receiving payments and invoices and may be accessed by the public.
 
 ### Owner API Documentation
+
+The owner API must be configured on startup. The parameters which go into your mwc713.toml configuration file are as follows:
+
+| parameter | value |
+| owner_api | true |
+| owner_api_address | The ip address:port to bind to for example: 0.0.0.0:13415. |
+| owner_api_secret | The Basic Auth secret to connect to the owner API. |
+
+A sample, configuration may look like this:
+
+```
+owner_api = true
+owner_api_address = "0.0.0.0:13415"
+owner_api_secret = "password"
+```
+
 <table>
   <tr><td>End Point</td><td>Description</td></tr>
   <tr><td>/v1/wallet/owner/node_height</td><td>Node height returns the number of blocks that is seen by the full node that this mwc713 instance is connected to.</td></tr>
