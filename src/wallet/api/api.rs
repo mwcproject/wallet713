@@ -405,11 +405,13 @@ where
         &mut self,
         tx_id: Option<u32>,
         tx_slate_id: Option<Uuid>,
+        height: Option<u64>,
+        accumulator: Option<Vec<Output>>,
     ) -> Result<(), Error> {
         let mut w = self.wallet.lock();
         w.open_with_credentials()?;
         let parent_key_id = w.get_parent_key_id();
-        if !self.update_outputs(&mut w, false, None, None) {
+        if !self.update_outputs(&mut w, false, height, accumulator) {
             return Err(ErrorKind::TransactionCancellationError(
                 "Can't contact running Grin node. Not Cancelling.",
             ))?;

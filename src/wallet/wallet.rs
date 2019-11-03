@@ -418,9 +418,13 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn cancel(&self, id: u32) -> Result<()> {
+    pub fn cancel(&self,
+                  id: u32,
+                  height: Option<u64>,
+                  accumulator: Option<Vec<Output>>,
+    ) -> Result<()> {
         let wallet = self.get_wallet_instance()?;
-        controller::owner_single_use(wallet.clone(), |api| api.cancel_tx(Some(id), None))?;
+        controller::owner_single_use(wallet.clone(), |api| api.cancel_tx(Some(id), None, height, accumulator))?;
         Ok(())
     }
 
