@@ -233,30 +233,14 @@ pub fn handle_finalize_tx(state: &State, body: &Chunk) -> Result<Response<Body>,
     Ok(create_empty_response(&state, StatusCode::OK))
 }
 
-pub fn cancel_tx(state: State) -> (State, Response<Body>) {
-    let res = match handle_cancel_tx(&state) {
-        Ok(res) => res,
-        Err(e) => ApiError::new(e).into_handler_error().into_response(&state),
-    };
-    (state, res)
+pub fn cancel_tx(state: State) -> Box<HandlerFuture> {
+    let res = refresh_processor(state, ProcType::Cancel).unwrap();
+    res
 }
 
 #[derive(Deserialize, StateData, StaticResponseExtender)]
 pub struct CancelTransactionQueryParams {
     id: u32,
-}
-
-fn handle_cancel_tx(state: &State) -> Result<Response<Body>, Error> {
-    trace_state(state);
-    let &CancelTransactionQueryParams { id } = CancelTransactionQueryParams::borrow_from(&state);
-    let wallet = WalletContainer::borrow_from(&state).lock()?;
-    let response = wallet.cancel(id)?;
-    Ok(trace_create_response(
-        &state,
-        StatusCode::OK,
-        mime::APPLICATION_JSON,
-        serde_json::to_string(&response)?,
-    ))
 }
 
 pub fn post_tx(mut state: State) -> Box<HandlerFuture> {
@@ -321,6 +305,7 @@ struct IssueSendBody {
 pub enum ProcType {
     IssueSend,
     SummaryInfo,
+    Cancel,
 }
 
 pub fn issue_send_tx(state: State) -> Box<HandlerFuture> {
@@ -443,6 +428,20 @@ pub fn refresh_processor(mut state: State, ptype: ProcType) -> Result<Box<Handle
                          }, 
                          Err(e) => future::err((state, ApiError::new(e).into_handler_error())),
                      }
+                 } else if ptype == ProcType::Cancel {
+                     let &CancelTransactionQueryParams { id } = CancelTransactionQueryParams::borrow_from(&state);
+                     match process_handle_cancel(&wallet, id, *height, &accumulator.unwrap()) {
+                         Ok(res) => {
+                             let res = trace_create_response(
+                                 &state,
+                                 StatusCode::OK,
+                                 mime::APPLICATION_JSON,
+                                 res
+                             );
+                             future::ok((state, res))
+                         },
+                         Err(e) => future::err((state, ApiError::new(e).into_handler_error())),
+                     }
                  } else { // ProcType::SummaryInfo
                      match process_handle_summary_info(&wallet, *height, &accumulator.unwrap()) {
                          Ok(res) => {
@@ -463,6 +462,29 @@ pub fn refresh_processor(mut state: State, ptype: ProcType) -> Result<Box<Handle
     });
 
     Ok(Box::new(future))
+}
+
+pub fn process_handle_cancel(wallet: &Wallet, id: u32, height: u64, accumulator: &Vec<Output>) -> Result<String, Error> {
+    let response = wallet.cancel(id, Some(height), Some(accumulator.to_vec()));
+
+
+    let ret = 
+    if response.is_err() {
+        let full = format!("error = {:?}", response);
+        if full.contains("TransactionDoesntExist") {
+            format!("{{\"error\": \"TransactionDoesntExist\"}}")
+        }
+        else if full.contains("TransactionNotCancellable") {
+            format!("{{\"error\": \"TransactionNotCancellable\"}}")
+        } else {
+            println!("Unknown error = {:?}", response);
+            format!("{{\"error\": \"Unknown\"}}")
+        }
+    } else {
+        format!("{{\"success\": true}}")
+    };
+
+    Ok(ret)
 }
 
 pub fn process_handle_summary_info(wallet: &Wallet, height: u64, accumulator: &Vec<Output>) -> Result<String, Error> {

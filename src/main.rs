@@ -1418,7 +1418,7 @@ fn do_command(
             let id = id
                 .parse::<u32>()
                 .map_err(|_| ErrorKind::InvalidTxId(id.to_string()))?;
-            wallet.lock().cancel(id)?;
+            wallet.lock().cancel(id, None, None)?;
         }
         Some("getnextkey") => {
             *was_init_or_getnext_key = true;
@@ -1657,7 +1657,7 @@ fn do_command(
                         if !resp.is_ok()
                         {
                             let ret_id = wallet.lock().get_id(slate.id)?;
-                            wallet.lock().cancel(ret_id)?;
+                            wallet.lock().cancel(ret_id, None, None)?;
                             return resp;
                         }
                         slate
