@@ -571,7 +571,7 @@ impl Wallet {
         Ok(result)
     }
 
-    pub fn post_tx(&self, tx: &Transaction, fluff: bool) -> Result<()> {
+    pub fn _post_tx(&self, tx: &Transaction, fluff: bool) -> Result<()> {
         let wallet = self.get_wallet_instance()?;
         controller::owner_single_use(wallet.clone(), |api| {
             api.post_tx(tx, fluff)?;

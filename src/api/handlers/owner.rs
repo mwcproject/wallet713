@@ -208,11 +208,11 @@ pub fn retrieve_summary_info(state: State) -> Box<HandlerFuture> {
     res
 }
 
-pub fn finalize_tx(mut state: State) -> Box<HandlerFuture> {
+pub fn _finalize_tx(mut state: State) -> Box<HandlerFuture> {
     let future = Body::take_from(&mut state)
         .concat2()
         .then(|body| match body {
-            Ok(body) => match handle_finalize_tx(&state, &body) {
+            Ok(body) => match _handle_finalize_tx(&state, &body) {
                 Ok(res) => future::ok((state, res)),
                 Err(e) => future::err((state, ApiError::new(e).into_handler_error())),
             },
@@ -222,7 +222,7 @@ pub fn finalize_tx(mut state: State) -> Box<HandlerFuture> {
     Box::new(future)
 }
 
-pub fn handle_finalize_tx(state: &State, body: &Chunk) -> Result<Response<Body>, Error> {
+pub fn _handle_finalize_tx(state: &State, body: &Chunk) -> Result<Response<Body>, Error> {
     trace_state_and_body(state, body);
     let mut slate: Slate = serde_json::from_slice(&body)?;
     let container = WalletContainer::borrow_from(&state);
@@ -243,11 +243,11 @@ pub struct CancelTransactionQueryParams {
     id: u32,
 }
 
-pub fn post_tx(mut state: State) -> Box<HandlerFuture> {
+pub fn _post_tx(mut state: State) -> Box<HandlerFuture> {
     let future = Body::take_from(&mut state)
         .concat2()
         .then(|body| match body {
-            Ok(body) => match handle_post_tx(&state, &body) {
+            Ok(body) => match _handle_post_tx(&state, &body) {
                 Ok(res) => future::ok((state, res)),
                 Err(e) => future::err((state, ApiError::new(e).into_handler_error())),
             },
@@ -259,16 +259,16 @@ pub fn post_tx(mut state: State) -> Box<HandlerFuture> {
 
 #[derive(Deserialize, StateData, StaticResponseExtender)]
 pub struct PostTransactionQueryParams {
-    fluff: Option<bool>,
+    _fluff: Option<bool>,
 }
 
-pub fn handle_post_tx(state: &State, body: &Chunk) -> Result<Response<Body>, Error> {
+pub fn _handle_post_tx(state: &State, body: &Chunk) -> Result<Response<Body>, Error> {
     trace_state_and_body(state, body);
     let slate: Slate = serde_json::from_slice(&body)?;
-    let &PostTransactionQueryParams { fluff } = PostTransactionQueryParams::borrow_from(&state);
+    let &PostTransactionQueryParams { _fluff } = PostTransactionQueryParams::borrow_from(&state);
     let container = WalletContainer::borrow_from(&state);
     let wallet = container.lock()?;
-    wallet.post_tx(&slate.tx, fluff.unwrap_or(false))?;
+    wallet._post_tx(&slate.tx, _fluff.unwrap_or(false))?;
     Ok(create_empty_response(&state, StatusCode::OK))
 }
 
