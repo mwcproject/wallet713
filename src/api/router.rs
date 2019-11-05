@@ -104,19 +104,19 @@ where
         .get("/v1/wallet/owner/retrieve_summary_info")
         .to(owner::retrieve_summary_info);
 
-    //route
-    //    .post("/v1/wallet/owner/finalize_tx")
-    //    .to(owner::finalize_tx);
+    route
+        .post("/v1/wallet/owner/finalize_tx")
+        .to(owner::finalize_tx);
 
     route
         .get("/v1/wallet/owner/cancel_tx")
         .with_query_string_extractor::<owner::CancelTransactionQueryParams>()
         .to(owner::cancel_tx);
 
-    //route
-    //    .post("/v1/wallet/owner/post_tx")
-    //    .with_query_string_extractor::<owner::PostTransactionQueryParams>()
-    //    .to(owner::post_tx);
+    route
+        .post("/v1/wallet/owner/post_tx")
+        .with_query_string_extractor::<owner::PostTransactionQueryParams>()
+        .to(owner::post_tx);
 
     route
         .post("/v1/wallet/owner/issue_send_tx")
