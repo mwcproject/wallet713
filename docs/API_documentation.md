@@ -4,6 +4,10 @@
 
 mwc713 supports both an 'Owner API' and a 'Foreign API'. The owner api controls functions that the owner of the wallet may only access and the foreign API is for receiving payments and invoices and may be accessed by the public.
 
+### Authentication
+
+API is ising base Authentication with user 'mwc' and password from the config XXXXX_api_secret.
+
 ### Owner API Documentation
 
 The owner API must be configured on startup. The parameters which go into your mwc713.toml configuration file are as follows:
@@ -82,7 +86,69 @@ Below is the documentation for the individual API end points:
 
 ### Foreign API Documentation
 
-Will be added.
+The foreign API must be configured on startup. The parameters which go into your mwc713.toml configuration file are as follows:
+
+| parameter           | value  |
+| ------------------- | ------ |
+| foreign_api         | true   |
+| foreign_api_address | The ip address:port to bind to for example: 127.0.0.1:13416. |
+| foreign_api_secret  | The Basic Auth secret to connect to the owner API. |
+
+A sample, configuration may look like this:
+
+```
+chain = "Floonet"
+wallet713_data_path = "wallet713_data"
+keybase_listener_auto_start = true
+default_keybase_ttl = "24h"
+foreign_api = true
+foreign_api_address = "127.0.0.1:13416"
+foreign_api_secret = "password"
+```
+
+Below is the documentation for the individual API end points:
+
+<table>
+  <tr><td>End Point</td><td>Description</td></tr>
+  <tr><td>/v1/wallet/foreign/build_coinbase</td><td>Build a coinbase output and insert into wallet.</td></tr>
+  <tr><td colspan=2><code># curl  -u mwc -X POST http://127.0.0.1:13416/v1/wallet/foreign/build_coinbase -d '{"fees": 0, "height": 130} </code></td></tr>
+  <tr><td colspan=2><code>{ "output": "010957734...b20e0d7efc",
+    "kernel": "0100...02ca22",
+    "key_id": "03000...00000"
+}
+</code></td></tr>
+</table>
+
+<table>
+  <tr><td>End Point</td><td>Description</td></tr>
+  <tr><td>/v1/wallet/foreign/receive_tx</td><td>Recieve payload and generate the respond payload</td></tr>
+  <tr><td colspan=2><code># curl -u mwc -X POST http://localhost:13416/v1/wallet/foreign/receive_tx -d '{"version_info": ......2d0ced60292d"}]}''</code></td></tr>
+  <tr><td colspan=2><code>
+    "version_info": {
+        "version": 2,
+        ........... 
+            "message_sig": null
+        }
+    ]
+}
+</code></td></tr>
+</table>
+
+
+<table>
+  <tr><td>End Point</td><td>Description</td></tr>
+  <tr><td>/v1/wallet/foreign/receive_invoice</td><td>Recieve invoice (initiated slate) generate the send payload back. By default this feature disabled. Please check 'max_auto_accept_invoice' setting for more details.</td></tr>
+  <tr><td colspan=2><code># curl -u mwc -X POST http://localhost:13416/v1/wallet/foreign/receive_invoice -d '{"version_info": ......2d0ced60292d"}]}''</code></td></tr>
+  <tr><td colspan=2><code>
+    "version_info": {
+        "version": 2,
+        ........... 
+            "message_sig": null
+        }
+    ]
+}
+</code></td></tr>
+</table>
 
 ### TODO
 
