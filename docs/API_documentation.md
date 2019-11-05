@@ -87,15 +87,17 @@ Below is the documentation for the individual API end points:
   <tr><td>End Point</td><td>Description</td></tr>
   <tr><td>/v1/wallet/owner/finalize_tx</td><td>Finalise and post transaction. Input is a respond slate. Transaction must belong to this wallet and can be finalized once.</td></tr>
   <tr><td colspan=2><code># curl -u mwc -X POST http://127.0.0.1:13415/v1/wallet/owner/finalize_tx -d '{"version_info": ......2d0ced60292d"}]}'</code></td></tr>
-  <tr><td colspan=2><code>HTTP Code: 200 for success. <br> HTTP Code: 400 for failure: {"error": "error: failed finalizing slate!"} </code></td></tr>
+  <tr><td colspan=2><code>HTTP Code: 200 for success.</code></td></tr>
+  <tr><td colspan=2><code>HTTP Code: 400 for failure: {"error": "error: failed finalizing slate!"} </code></td></tr>
 </table>
 
 <table>
   <tr><td>End Point</td><td>Description</td></tr>
   <tr><td>v1/wallet/owner/post_tx</td><td>Post transaction for the network. Input is a finalized slate. Slate can belong to any wallet, this commant just publish it. It can be used for cold wallet implementation.</td></tr>
   <tr><td colspan=2><code># curl -u mwc -X POST http://127.0.0.1:13415v1/wallet/owner/post_tx -d '{"version_info": ......2d0ced60292d"}]}'</code></td></tr>
-  <tr><td colspan=2><code>HTTP Code: 200 for success. <br> HTTP Code: 400 for failure: {"error": "Client Callback Error: Posting transaction to node: Request error: Wrong response code: 500 Internal Server Error with data Body(Streaming)"}
-   <br> Note: this error mean that slate is likely already published.
+  <tr><td colspan=2><code>HTTP Code: 200 for success.</code></td></tr>
+  <tr><td colspan=2><code>HTTP Code: 400 for failure: {"error": "Client Callback Error: Posting transaction to node: Request error: Wrong response code: 500 Internal Server Error with data Body(Streaming)"}</code></td></tr>
+  <tr><td colspan=2><code>Note: this error mean that slate is most likely already published.
 </code></td></tr>
 </table>
 
