@@ -22,7 +22,7 @@ pub use grin_core::core::hash::Hash;
 pub use grin_core::core::{Output, Transaction, TxKernel};
 pub use grin_keychain::{ChildNumber, ExtKeychain, Identifier, Keychain};
 pub use grin_util::secp::key::{PublicKey, SecretKey};
-pub use super::seed::{EncryptedWalletSeed, WalletSeed};
+pub use grin_wallet_impls::{EncryptedWalletSeed, WalletSeed};
 
 pub use common::{Arc, Error, ErrorKind, Mutex, MutexGuard, Result};
 

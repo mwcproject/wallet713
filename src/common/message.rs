@@ -1,13 +1,13 @@
 use grin_util::secp::key::{PublicKey, SecretKey};
 use grin_util::secp::Secp256k1;
-use rand::thread_rng;
-use rand::Rng;
-use ring::aead;
-use ring::{digest, pbkdf2};
+use rand::{thread_rng,Rng};
 
 use crate::common::crypto::{from_hex, to_hex};
 use crate::common::{ErrorKind, Result};
 use crate::contacts::GrinboxAddress;
+
+use grin_wallet_impls::encrypt;
+use std::num::NonZeroU32;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EncryptedMessage {
@@ -17,6 +17,9 @@ pub struct EncryptedMessage {
     salt: String,
     nonce: String,
 }
+
+// See comments at  mwc-wallet/impls/src/seed.rs
+// Seed is encrypted exactlty the same way ...
 
 impl EncryptedMessage {
     pub fn new(
@@ -36,15 +39,15 @@ impl EncryptedMessage {
         let salt: [u8; 8] = thread_rng().gen();
         let nonce: [u8; 12] = thread_rng().gen();
         let mut key = [0; 32];
-        pbkdf2::derive(&digest::SHA512, 100, &salt, common_secret_slice, &mut key);
+        ring::pbkdf2::derive(&ring::digest::SHA512, NonZeroU32::new(100).unwrap(), &salt, common_secret_slice, &mut key);
         let mut enc_bytes = message.as_bytes().to_vec();
-        let suffix_len = aead::CHACHA20_POLY1305.tag_len();
+        let suffix_len = encrypt::aead::CHACHA20_POLY1305.tag_len();
         for _ in 0..suffix_len {
             enc_bytes.push(0);
         }
-        let sealing_key = aead::SealingKey::new(&aead::CHACHA20_POLY1305, &key)
+        let sealing_key = encrypt::aead::SealingKey::new(&encrypt::aead::CHACHA20_POLY1305, &key)
             .map_err(|_| ErrorKind::Encryption)?;
-        aead::seal_in_place(&sealing_key, &nonce, &[], &mut enc_bytes, suffix_len)
+        encrypt::aead::seal_in_place(&sealing_key, &nonce, &[], &mut enc_bytes, suffix_len)
             .map_err(|_| ErrorKind::Encryption)?;
 
         Ok(EncryptedMessage {
@@ -67,7 +70,7 @@ impl EncryptedMessage {
         let common_secret_slice = &common_secret_ser[1..33];
 
         let mut key = [0; 32];
-        pbkdf2::derive(&digest::SHA512, 100, &salt, common_secret_slice, &mut key);
+        ring::pbkdf2::derive(&ring::digest::SHA512, NonZeroU32::new(100).unwrap(), &salt, common_secret_slice, &mut key);
 
         Ok(key)
     }
@@ -77,10 +80,10 @@ impl EncryptedMessage {
             from_hex(self.encrypted_message.clone()).map_err(|_| ErrorKind::Decryption)?;
         let nonce = from_hex(self.nonce.clone()).map_err(|_| ErrorKind::Decryption)?;
 
-        let opening_key = aead::OpeningKey::new(&aead::CHACHA20_POLY1305, key)
+        let opening_key = encrypt::aead::OpeningKey::new(&encrypt::aead::CHACHA20_POLY1305, key)
             .map_err(|_| ErrorKind::Decryption)?;
         let decrypted_data =
-            aead::open_in_place(&opening_key, &nonce, &[], 0, &mut encrypted_message)
+            encrypt::aead::open_in_place(&opening_key, &nonce, &[], 0, &mut encrypted_message)
                 .map_err(|_| ErrorKind::Decryption)?;
         String::from_utf8(decrypted_data.to_vec()).map_err(|_| ErrorKind::Decryption.into())
     }
