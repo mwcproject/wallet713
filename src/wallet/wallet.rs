@@ -36,7 +36,7 @@ impl Wallet {
 
     pub fn seed_exists(config: &Wallet713Config) -> bool {
         let wallet_config = config.as_wallet_config().unwrap();
-        WalletSeed::seed_file_exists(&wallet_config).is_err()
+        WalletSeed::seed_file_exists(&wallet_config.data_file_dir).is_err()
     }
 
     pub fn unlock(
@@ -111,7 +111,7 @@ impl Wallet {
 
     pub fn show_mnemonic(&self, config: &Wallet713Config, passphrase: &str) -> Result<()> {
         let wallet_config = config.as_wallet_config()?;
-        let seed = WalletSeed::from_file(&wallet_config, passphrase)?;
+        let seed = WalletSeed::from_file(&wallet_config.data_file_dir, passphrase)?;
         seed.show_recovery_phrase()?;
         Ok(())
     }
@@ -157,7 +157,7 @@ impl Wallet {
         passphrase: &str,
     ) -> Result<()> {
         let wallet_config = config.as_wallet_config()?;
-        WalletSeed::recover_from_phrase(&wallet_config, &words.join(" "), passphrase)?;
+        WalletSeed::recover_from_phrase(&wallet_config.data_file_dir, &words.join(" "), passphrase)?;
         Ok(())
     }
 
@@ -633,13 +633,13 @@ impl Wallet {
         create_file: bool,
         seed: Option<WalletSeed>,
     ) -> Result<WalletSeed> {
-        let result = WalletSeed::from_file(&wallet_config, passphrase);
+        let result = WalletSeed::from_file(&wallet_config.data_file_dir, passphrase);
         let seed = match result {
             Ok(seed) => seed,
             Err(_) => {
                 // could not load from file, let's create a new one
                 if create_new {
-                    WalletSeed::init_file(&wallet_config, 32, None, passphrase, create_file, seed)?
+                    WalletSeed::init_file_impl(&wallet_config.data_file_dir, 32, None, passphrase, create_file,!create_file, seed)?
                 } else {
                     return Err(ErrorKind::WalletSeedCouldNotBeOpened.into());
                 }
@@ -669,7 +669,7 @@ impl Wallet {
             &wallet_config.check_node_api_http_addr,
             config.mwc_node_secret().clone(),
         );
-        let _ = WalletSeed::from_file(&wallet_config, passphrase)?;
+        let _ = WalletSeed::from_file(&wallet_config.data_file_dir, passphrase)?;
         let mut db_wallet = Backend::new(&wallet_config, passphrase, node_client)?;
         db_wallet.set_parent_key_id_by_name(account)?;
         self.backend = Some(Arc::new(Mutex::new(db_wallet)));

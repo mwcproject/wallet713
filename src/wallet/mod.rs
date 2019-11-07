@@ -1,7 +1,6 @@
 pub mod api;
 mod backend;
 pub mod error;
-mod seed;
 pub mod wallet;
 
 pub mod types;

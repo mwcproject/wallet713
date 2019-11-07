@@ -20,6 +20,7 @@ extern crate digest;
 extern crate failure;
 extern crate futures;
 extern crate gotham;
+extern crate rustls;
 extern crate hmac;
 extern crate hyper;
 extern crate hyper_rustls;
@@ -47,6 +48,7 @@ extern crate grin_keychain;
 extern crate grin_store;
 extern crate grin_util;
 extern crate grin_p2p;
+extern crate grin_wallet_impls;
 
 use serde_json::Value;
 use std::env;
@@ -838,6 +840,27 @@ fn main() {
     }
 
     if config.owner_api() || config.foreign_api() {
+
+        let tls_server_config: Option<Arc<rustls::ServerConfig>> = if config.is_tls_enabled() {
+            cli_message!( "TLS is enabled. Wallet will use secure connection for Rest API" );
+            let factory = grin_api::TLSConfig::new(config.tls_certificate_file.clone().unwrap(),
+                                           config.tls_certificate_key.clone().unwrap() );
+
+            match factory.build_server_config() {
+                Ok( config ) => Some(config),
+                Err(e) => {
+                    println!("{}: Unable to read and validate PEM certificated from config {}", "ERROR".bright_red(), e);
+                    std::process::exit(1);
+                }
+            }
+
+        }
+        else {
+            cli_message!("{}: TLS configuration is not set, non secure HTTP connection will be used. It is recommended to use secure TLS connection.",
+                        "WARNING".bright_yellow() );
+            None
+        };
+
         owner_api_handle = match config.owner_api {
             Some(true) => {
                 cli_message!(
@@ -860,8 +883,12 @@ fn main() {
                     config.clone(),
                 );
                 let address = config.owner_api_address();
+                let thr_tls_server_config = tls_server_config.clone();
                 Some(std::thread::spawn(move || {
-                    gotham::start(address, router);
+                    match thr_tls_server_config {
+                        Some( tls_config ) => gotham::tls::start( address, router, (*tls_config).clone() ),
+                        None => gotham::start(address, router)
+                    }
                 }))
             }
             _ => None,
@@ -888,8 +915,12 @@ fn main() {
                     config.clone(),
                 );
                 let address = config.foreign_api_address();
+                let thr_tls_server_config = tls_server_config.clone();
                 Some(std::thread::spawn(move || {
-                    gotham::start(address, router);
+                    match thr_tls_server_config {
+                        Some(tls_config) => gotham::tls::start(address, router, (*tls_config).clone()),
+                        None => gotham::start(address, router)
+                    }
                 }))
             }
             _ => None,

@@ -32,13 +32,15 @@ regex = "1"
 rustyline = "5.0"
 hmac = "0.6"
 ripemd160 = "0.7"
-ring = "0.13"
+ring = "0.14"
 prettytable-rs = "0.7"
-gotham = "0.3.0"
-gotham_derive = "0.3.0"
+# Requesting gotham 0.4 for tls support
+gotham = "0.4.0"
+gotham_derive = "0.4.0"
+rustls = "0.15"
 hyper = "0.12"
 hyper-tls = "0.3.2"
-hyper-rustls = "0.14"
+hyper-rustls = "0.16"
 mime = "0.3"
 chrono = { version = "0.4.4", features = ["serde"] }
 blake2-rfc = "0.2"
@@ -52,9 +54,21 @@ commands = "0.0.5"
 enquote = "1.0"
 reqwest = "0.9.22"
 
-grin_api = { git = "https://github.com/mwcproject/mwc-node", tag="2.4.0"}
-grin_core = { git = "https://github.com/mwcproject/mwc-node", tag="2.4.0"}
-grin_keychain = { git = "https://github.com/mwcproject/mwc-node", tag="2.4.0"}
-grin_util = { git = "https://github.com/mwcproject/mwc-node", tag="2.4.0"}
-grin_store = { git = "https://github.com/mwcproject/mwc-node", tag="2.4.0"}
-grin_p2p = { git = "https://github.com/mwcproject/mwc-node", tag="2.4.0"}
+# Release
+grin_api = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }
+grin_core = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }
+grin_keychain = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }
+grin_util = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }
+grin_store = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }
+grin_p2p = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }
+grin_wallet_impls = { git = "https://github.com/mwcproject/mwc-wallet", branch = "master" }
+
+
+# For local testing
+#grin_api = { path = "../mwc-node/api", version= "2.4.2-beta.1"}
+#grin_core = { path = "../mwc-node/core", version= "2.4.2-beta.1"}
+#grin_keychain = { path = "../mwc-node/keychain", version= "2.4.2-beta.1"}
+#grin_util = { path = "../mwc-node/util", version= "2.4.2-beta.1"}
+#grin_store = { path = "../mwc-node/store", version= "2.4.2-beta.1"}
+#grin_p2p = { path = "../mwc-node/p2p", version= "2.4.2-beta.1" }
+#grin_wallet_impls = { path = "../mwc-wallet/impls", version= "2.4.3-beta.1" }

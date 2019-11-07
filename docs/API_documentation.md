@@ -8,6 +8,15 @@ mwc713 supports both an 'Owner API' and a 'Foreign API'. The owner api controls 
 
 API is using base Authentication with user 'mwc' and password from the config XXXXX_api_secret.
 
+### TLS/SSL connection for API.
+
+In order to activate the secure connection you have to specify certificates stored at pem files
+
+| parameter | value |
+| --------- | ------ |
+| tls_certificate_file | path of TLS certificate file, self-signed certificates are not supported  |
+| tls_certificate_key  | private key for the TLS certificate |
+ 
 ### Owner API Documentation
 
 The owner API must be configured on startup. The parameters which go into your mwc713.toml configuration file are as follows:
@@ -94,7 +103,7 @@ Below is the documentation for the individual API end points:
 <table>
   <tr><td>End Point</td><td>Description</td></tr>
   <tr><td>v1/wallet/owner/post_tx</td><td>Post transaction for the network. Input is a finalized slate. Slate can belong to any wallet, this commant just publish it. It can be used for cold wallet implementation.</td></tr>
-  <tr><td colspan=2><code># curl -u mwc -X POST http://127.0.0.1:13415v1/wallet/owner/post_tx -d '{"version_info": ......2d0ced60292d"}]}'</code></td></tr>
+  <tr><td colspan=2><code># curl -u mwc -X POST http://127.0.0.1:13415/v1/wallet/owner/post_tx -d '{"version_info": ......2d0ced60292d"}]}'</code></td></tr>
   <tr><td colspan=2><code>HTTP Code: 200 for success.</code></td></tr>
   <tr><td colspan=2><code>HTTP Code: 400 for failure: {"error": "Client Callback Error: Posting transaction to node: Request error: Wrong response code: 500 Internal Server Error with data Body(Streaming)"}</code></td></tr>
   <tr><td colspan=2><code>Note: this error mean that slate is most likely already published.

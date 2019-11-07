@@ -46,6 +46,13 @@ pub struct Wallet713Config {
     pub disable_history: Option<bool>,
     pub foreign_api_address: Option<String>,
     pub foreign_api_secret: Option<String>,
+
+    /// If enabled both tls_certificate_file and tls_certificate_key, TSL will be applicable to all rest API
+    /// TLS certificate file
+    pub tls_certificate_file: Option<String>,
+    /// TLS certificate private key file
+    pub tls_certificate_key: Option<String>,
+
     pub check_updates: Option<bool>,
     #[serde(skip)]
     pub config_home: Option<String>,
@@ -253,6 +260,12 @@ impl Wallet713Config {
 
     pub fn foreign_api(&self) -> bool {
         self.foreign_api.unwrap_or(false)
+    }
+
+    /// If enabled both tls_certificate_file and tls_certificate_key, TSL will be applicable to all rest API
+  /// TLS certificate file
+    pub fn is_tls_enabled(&self) -> bool {
+        self.tls_certificate_file.is_some() && self.tls_certificate_key.is_some()
     }
 
 }

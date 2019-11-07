@@ -128,7 +128,7 @@ where
 {
     /// Initialise with whatever stored credentials we have
     fn open_with_credentials(&mut self) -> Result<()> {
-        let wallet_seed = WalletSeed::from_file(&self.config, &self.passphrase)
+        let wallet_seed = WalletSeed::from_file(&self.config.data_file_dir, &self.passphrase)
             .context(ErrorKind::OpenWalletError)?;
         self.keychain = Some(
             wallet_seed
