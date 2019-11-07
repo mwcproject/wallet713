@@ -900,9 +900,9 @@ fn main() {
                     "starting listener for foreign api on [{}]",
                     config.foreign_api_address().bright_green()
                 );
-                if config.foreign_api_secret.is_none() {
+                if config.foreign_api_secret.is_some() {
                     cli_message!(
-                        "{}: no api secret for foreign api, it is recommended to set one.",
+                        "{}: setting the foreign_api_secret will prevent mwc wallets from sending to this wallet because they do not currently support basic auth. It is reccomended to not set one unless you are implementing your own custom wallet that supports basic auth.",
                         "WARNING".bright_yellow()
                     );
                 }
