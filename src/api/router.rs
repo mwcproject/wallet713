@@ -132,6 +132,11 @@ where
     C: PipelineHandleChain<P> + Copy + Send + Sync + 'static,
     P: RefUnwindSafe + Send + Sync + 'static,
 {
+
+    route
+        .post("v2/foreign")
+        .to(foreign::v2foreign);
+
     route
         .post("/v1/wallet/foreign/receive_tx")
         .to(foreign::receive_tx);
