@@ -1,10 +1,82 @@
 use gotham::handler::{HandlerFuture };
+use serde_json::Value;
+use grin_core::core;
+use colored::Colorize;
 use gotham::state::{FromState, State};
 use hyper::body::Chunk;
 use hyper::{Body, Response, StatusCode};
 use crate::api::router::{trace_create_response, trace_state_and_body, WalletContainer};
 use common::Result;
 use wallet::types::{BlockFees, Slate};
+
+pub fn v2foreign(state: State) -> Box<HandlerFuture> {
+        Box::new(super::executor::RunHandlerInThread::new(state, handle_v2foreign ) )
+}
+
+fn handle_v2foreign(state: &State, body: &Chunk) -> Result<Response<Body>> {
+        trace_state_and_body(state, body);
+        let res = String::from_utf8(body.to_vec())?;
+
+        let res: Value = serde_json::from_str(&res).unwrap();
+        if res["error"] != json!(null) {
+            let report = format!(
+                "Posting transaction slate: Error: {}, Message: {}",
+                res["error"]["code"], res["error"]["message"]
+            );
+            println!("{}", report);
+        }
+
+        let slate_value = res["params"][0].clone();
+        
+        let mut slate = Slate::deserialize_upgrade(&serde_json::to_string(&slate_value).unwrap())?;
+        let id;
+
+        if slate.num_participants > slate.participant_data.len() {
+            let message = &slate.participant_data[0].message;
+            let display_from = "https listener";
+            if message.is_some() {
+                id = message.clone().unwrap();
+                cli_message!(
+                "slate [{}] received from [{}] for [{}] MWCs. Message: [\"{}\"]",
+                slate.id.to_string().bright_green(),
+                display_from.bright_green(),
+                core::amount_to_hr_string(slate.amount, false).bright_green(),
+                id.bright_green()
+                );
+            } else {
+                id = "".to_string();
+                cli_message!(
+                "slate [{}] received from [{}] for [{}] MWCs.",
+                slate.id.to_string().bright_green(),
+                display_from.bright_green(),
+                core::amount_to_hr_string(slate.amount, false).bright_green()
+                );
+            }
+        } else {
+            id = "".to_string();
+        }
+
+        let wallet = WalletContainer::borrow_from(&state).lock()?;
+        wallet.process_sender_initiated_slate(Some(format!("https://{}", id)), &mut slate, None, None)?;
+
+        let slate_resp = json!({
+                                   "id": 1,
+                                   "jsonrpc": "2.0",
+                                   "result": {             
+                                       "Ok": slate
+                                   }
+                               });
+
+
+        Ok(trace_create_response(
+        &state,
+        StatusCode::OK,
+        mime::APPLICATION_JSON,
+        serde_json::to_string(&slate_resp)?,
+        ))
+
+}
+
 
 pub fn receive_tx(state: State) -> Box<HandlerFuture> {
     Box::new(super::executor::RunHandlerInThread::new(state, handle_receive_tx ) )
