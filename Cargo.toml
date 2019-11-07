@@ -1,6 +1,6 @@
 [package]
 name = "mwc713"
-version = "2.4.4-beta.1"
+version = "2.4.4"
 authors = ["vault713 devs"]
 description = "A wallet that makes it easy to send, store, and swap MWC."
 keywords = [ "grin", "mimblewimble", "rust", "crypto", "cryptocurrency" ]
@@ -55,13 +55,13 @@ enquote = "1.0"
 reqwest = "0.9.22"
 
 # Release
-grin_api = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }
-grin_core = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }
-grin_keychain = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }
-grin_util = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }
-grin_store = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }
-grin_p2p = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }
-grin_wallet_impls = { git = "https://github.com/mwcproject/mwc-wallet", branch = "master" }
+grin_api = { git = "https://github.com/mwcproject/mwc-node", version = "2.4.2" }
+grin_core = { git = "https://github.com/mwcproject/mwc-node", version = "2.4.2" }
+grin_keychain = { git = "https://github.com/mwcproject/mwc-node", version = "2.4.2" }
+grin_util = { git = "https://github.com/mwcproject/mwc-node", version = "2.4.2" }
+grin_store = { git = "https://github.com/mwcproject/mwc-node", version = "2.4.2" }
+grin_p2p = { git = "https://github.com/mwcproject/mwc-node", version = "2.4.2" }
+grin_wallet_impls = { git = "https://github.com/mwcproject/mwc-wallet", version = "2.4.3" }
 
 
 # For local testing
