@@ -6,7 +6,7 @@ mwc713 supports both an 'Owner API' and a 'Foreign API'. The owner api controls 
 
 ### Authentication
 
-API is ising base Authentication with user 'mwc' and password from the config XXXXX_api_secret.
+API is using base Authentication with user 'mwc' and password from the config XXXXX_api_secret.
 
 ### Owner API Documentation
 
