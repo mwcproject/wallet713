@@ -19,3 +19,19 @@ Here we document a standard setup which may be useful.
 
 ![Install Wallet](https://raw.githubusercontent.com/mwcproject/mwc713/master/docs/init_mwc713.png "Install Wallet")
 
+7.) Continue through the install process and exit:
+
+```wallet713> exit```
+
+8.) Modify your config file to look something like this:
+
+```echo "chain = "Floonet"
+wallet713_data_path = "wallet713_data"
+keybase_binary = "keybase"
+default_keybase_ttl = "24h"
+foreign_api = true
+foreign_api_address = "0.0.0.0:443"
+tls_certificate_file = "/home/ubuntu/httpstest/mwc713/target/2/fullchain.pem"
+tls_certificate_key = "/home/ubuntu/httpstest/mwc713/target/2/privkey.pem"" >> mwc713.config```
+
+
