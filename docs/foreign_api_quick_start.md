@@ -25,7 +25,8 @@ Here we document a standard setup which may be useful.
 
 8.) Modify your config file to look something like this:
 
-```echo "chain = "Floonet"
+```
+# echo "chain = "Floonet"
 wallet713_data_path = "wallet713_data"
 keybase_binary = "keybase"
 default_keybase_ttl = "24h"
