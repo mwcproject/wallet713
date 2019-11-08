@@ -65,3 +65,8 @@ Before proceeding to verification, please ensure that firewalls are off and you 
 ![Payment](https://raw.githubusercontent.com/mwcproject/mwc713/master/docs/payment.png "Payment")
 
 Congratulations, you have configured the foreign API to accept incoming payments.
+
+14.) Finally you may also send to this address using the mwc-qt-wallet GUI. See screenshot below.
+
+![Payment2](https://raw.githubusercontent.com/mwcproject/mwc713/master/docs/qt.png "Payment2")
+
