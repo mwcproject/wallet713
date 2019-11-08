@@ -47,3 +47,10 @@ You will now have an mwc713 instance with the foreign listener listening for dep
 
 ![Listener Wallet](https://raw.githubusercontent.com/mwcproject/mwc713/master/docs/listening.png "Listener Wallet")
 
+11.) Open another mwc713 instance in another terminal:
+
+```# mwc713 --floonet```
+
+12.) Send to the http listener with the following command:
+
+``` wallet713> send --to https://dev1.mwc.mw 0.1 -c 1 -g "hi there, message appears."```
