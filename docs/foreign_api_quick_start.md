@@ -54,3 +54,9 @@ You will now have an mwc713 instance with the foreign listener listening for dep
 12.) Send to the http listener with the following command:
 
 ``` wallet713> send --to https://dev1.mwc.mw 0.1 -c 1 -g "hi there, message appears."```
+
+13.) Go back to the terminal where you foreign API is running. You should see something like the screenshot below.
+
+![Payment](https://raw.githubusercontent.com/mwcproject/mwc713/master/docs/payment.png "Payment")
+
+Congratulations, you have configured the foreign API to accept incoming payments.
