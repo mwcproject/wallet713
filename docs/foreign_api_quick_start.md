@@ -23,7 +23,7 @@ Here we document a standard setup which may be useful.
 
 ```wallet713> exit```
 
-8.) Obtain a certificate and private key from a certificate authority. You may use certbot to do this in which case, the cert/privkey will be located in /etc/letsencrypt/live/<your_domain>/privkey.pem and /etc/letsencrypt/live/<your_domain>/fullchain.pem respectively.
+8.) Obtain a certificate and private key from a certificate authority. You may use certbot to do this in which case, the cert/privkey will be located in /etc/letsencrypt/live/<your_domain>/privkey.pem and /etc/letsencrypt/live/<your_domain>/fullchain.pem respectively. Note that the domain name must match the domain name you use to send your payments.
 
 9.) Modify your mwc713.config file to look something like this:
 
@@ -47,13 +47,15 @@ You will now have an mwc713 instance with the foreign listener listening for dep
 
 ![Listener Wallet](https://raw.githubusercontent.com/mwcproject/mwc713/master/docs/listening.png "Listener Wallet")
 
+Before proceeding to verification, please ensure that firewalls are off and you can remotely access this port.
+
 11.) Open another mwc713 instance in another terminal:
 
 ```# mwc713 --floonet```
 
 12.) Send to the http listener with the following command:
 
-``` wallet713> send --to https://dev1.mwc.mw 0.1 -c 1 -g "hi there, message appears."```
+``` wallet713> send --to https://myhost.com 0.1 -c 1 -g "hi there, message appears."```
 
 13.) Go back to the terminal where you foreign API is running. You should see something like the screenshot below.
 
