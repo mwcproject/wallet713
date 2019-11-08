@@ -23,16 +23,25 @@ Here we document a standard setup which may be useful.
 
 ```wallet713> exit```
 
-8.) Modify your config file to look something like this:
+8.) Obtain a certificate and private key from a certificate authority. You may use certbot to do this in which case, the cert/privkey will be located in /etc/letsencrypt/live/<your_domain>/privkey.pem and /etc/letsencrypt/live/<your_domain>/fullchain.pem respectively.
+
+9.) Modify your mwc713.config file to look something like this:
 
 ```
-# echo "chain = "Floonet"
+chain = "Floonet"
 wallet713_data_path = "wallet713_data"
 keybase_binary = "keybase"
 default_keybase_ttl = "24h"
 foreign_api = true
-foreign_api_address = "0.0.0.0:443"
-tls_certificate_file = "/home/ubuntu/httpstest/mwc713/target/2/fullchain.pem"
-tls_certificate_key = "/home/ubuntu/httpstest/mwc713/target/2/privkey.pem"" >> mwc713.config```
+foreign_api_address = "0.0.0.0:8443"
+tls_certificate_file = "/path/to/certs/fullchain.pem"
+tls_certificate_key = "/path/to/certs/privkey.pem"
+```
+Note: this install assumes you have keybase installed. If you do not have keybase installed and don't wish to support keybase, you can remove keybase_binary line above.
 
+10.) Execute mwc713 with this configuration file.
+
+```# mwc713 -c mwc713.config```
+
+You will now have an mwc713 instance with the foreign listener listening for deposits. See screenshot.
 
