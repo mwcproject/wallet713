@@ -45,3 +45,5 @@ Note: this install assumes you have keybase installed. If you do not have keybas
 
 You will now have an mwc713 instance with the foreign listener listening for deposits. See screenshot.
 
+![Listener Wallet](https://raw.githubusercontent.com/mwcproject/mwc713/master/docs/listening.png "Listener Wallet")
+
