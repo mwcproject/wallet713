@@ -696,6 +696,17 @@ pub fn process_handle_issue_send_tx(container: &WalletContainer, config: &Wallet
                                  }
 
                              } else {
+                                 let ret_id = wallet.get_id(slate.id);
+                                 if ret_id.is_ok() {
+                                     let ret = wallet.cancel(ret_id.unwrap(), None, None);
+                                     if ret.is_err() {
+                                         println!("{}: Could not cancel failed transaction. You must manually cancel",
+                                             "WARNING".bright_yellow());
+                                     }
+                                 } else {
+                                     println!("{}: Could not cancel failed transaction. You must manually cancel",
+                                             "WARNING".bright_yellow());
+                                 }
                                  println!("Error: {:?}", res);
                                  "{\"error\": \"An error occured while contacting destination.\"}".to_string()
 
