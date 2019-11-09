@@ -1774,29 +1774,32 @@ fn do_command(
 
                     trace!("Sending receive_tx request: {}", req);
 
-                    let res: String = post(url.as_str(), None, &req).map_err(|e| {
-                        let report = format!("Posting transaction slate (is recipient listening?): {}", e);
-                        error!("{}", report);
-                        ErrorKind::HttpRequest
-                    })?;
+                    let res = post(url.as_str(), None, &req);
 
-                    let res: Value = serde_json::from_str(&res).unwrap();
-                    trace!("Response: {}", res);
-                    if res["error"] != json!(null) {
-                        let report = format!(
+                    if res.is_err() {
+                        let ret_id = wallet.lock().get_id(slate.id)?;
+                        wallet.lock().cancel(ret_id, None, None)?;
+                        return Err(ErrorKind::HttpRequest.into());
+                    } else {
+                        let res = res.unwrap();
+                        let res: Value = serde_json::from_str(&res).unwrap();
+                        trace!("Response: {}", res);
+                        if res["error"] != json!(null) {
+                            let report = format!(
                                 "Posting transaction slate: Error: {}, Message: {}",
                                 res["error"]["code"], res["error"]["message"]
-                        );
-                        error!("{}", report);
-                        return Err(ErrorKind::HttpRequest.into());
+                            );
+                            error!("{}", report);
+                            return Err(ErrorKind::HttpRequest.into());
+                        }
+
+                        let slate_value = res["result"]["Ok"].clone();
+
+                        let slate: VersionedSlate =
+                            serde_json::from_str(&serde_json::to_string(&slate_value).unwrap())?;
+
+                        Slate::from(slate)
                     }
-
-                    let slate_value = res["result"]["Ok"].clone();
-
-                    let slate: VersionedSlate =
-                        serde_json::from_str(&serde_json::to_string(&slate_value).unwrap())?;
-
-                    Slate::from(slate)
                 }
             };
 
