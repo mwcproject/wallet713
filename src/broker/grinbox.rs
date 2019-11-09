@@ -297,7 +297,7 @@ impl Handler for GrinboxClient {
 
         guard.retries = 0;
 
-        try!(self.sender.timeout(KEEPALIVE_INTERVAL_MS, KEEPALIVE_TOKEN));
+        self.sender.timeout(KEEPALIVE_INTERVAL_MS, KEEPALIVE_TOKEN)?;
         Ok(())
     }
 
