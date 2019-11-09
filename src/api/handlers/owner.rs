@@ -121,12 +121,8 @@ fn handle_retrieve_outputs(state: &State) -> Result<Response<Body>, Error> {
     ))
 }
 
-pub fn retrieve_txs(state: State) -> (State, Response<Body>) {
-    let res = match handle_retrieve_txs(&state) {
-        Ok(res) => res,
-        Err(e) => ApiError::new(e).into_handler_error().into_response(&state),
-    };
-    (state, res)
+pub fn retrieve_txs(state: State) -> Box<HandlerFuture> {
+    Box::new(super::executor::RunHandlerInThread::new(state, handle_retrieve_txs ) )
 }
 
 #[derive(Deserialize, StateData, StaticResponseExtender)]
@@ -136,7 +132,7 @@ pub struct RetrieveTransactionsQueryParams {
     tx_id: Option<String>,
 }
 
-fn handle_retrieve_txs(state: &State) -> Result<Response<Body>, Error> {
+pub fn handle_retrieve_txs(state: &State, _body: &Chunk) -> Result<Response<Body>, Error> {
     trace_state(state);
     let &RetrieveTransactionsQueryParams {
         refresh,
@@ -145,7 +141,7 @@ fn handle_retrieve_txs(state: &State) -> Result<Response<Body>, Error> {
     } = RetrieveTransactionsQueryParams::borrow_from(&state);
     let wallet = WalletContainer::borrow_from(&state).lock()?;
     let response = wallet.retrieve_txs(
-        refresh.unwrap_or(false),
+        refresh.unwrap_or(true),
         id,
         tx_id
             .clone()
