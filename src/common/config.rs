@@ -18,7 +18,6 @@ const WALLET713_DEFAULT_CONFIG_FILENAME: &str = "wallet713.toml";
 const DEFAULT_CONFIG: &str = r#"
 	wallet713_data_path = "wallet713_data"
 	default_keybase_ttl = "24h"
-        keybase_binary = "keybase"
 "#;
 
 #[derive(Clone, Debug, Serialize, Deserialize, StateData)]
