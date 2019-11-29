@@ -171,6 +171,8 @@ where
             let mut tx = &mut txs[i];
             if !tx.confirmed && tx.tx_type == TxLogEntryType::TxSent {
                 // if it's not confirmed, see if we have any outputs
+                // Point that if we found output - it is mean that transaction didn't go through.
+                //  otherwise we can mark is confirmed, but unfortunatelly without block height
                 let mut confirmed = true;
                 for j in 0..output_list.len() {
                      if output_list[j].0.tx_log_entry.is_some() {
@@ -183,6 +185,7 @@ where
                 }
                 tx.confirmed = confirmed;
                 if tx.confirmed {
+                    tx.output_height = 0;
                     tx.update_confirmation_ts();
                     batch.save_tx_log_entry(&tx)?;
                 }
@@ -375,6 +378,7 @@ where
                                 log_id,
                             );
                             t.confirmed = true;
+                            t.output_height = output.height;
                             t.amount_credited = output.value;
                             t.amount_debited = 0;
                             t.num_outputs = 1;
@@ -393,6 +397,7 @@ where
                             if let Some(mut t) = tx {
                                 t.update_confirmation_ts();
                                 t.confirmed = true;
+                                t.output_height = output.height;
                                 batch.save_tx_log_entry(&t)?;
                             }
                         }
