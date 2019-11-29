@@ -130,6 +130,7 @@ pub fn txs(
         bMG->"Address",
         bMG->"Creation Time",
         bMG->"Confirmed?",
+        bMG->"Height",
         bMG->"Confirmation Time",
         bMG->"Net \nDifference",
         bMG->"Proof?",
@@ -167,6 +168,8 @@ pub fn txs(
             true => "yes",
             false => "",
         };
+        let height = if t.confirmed && t.output_height>0 { format!("{}",t.output_height) } else { "".to_string() };
+
         let net_diff = if t.amount_credited >= t.amount_debited {
             core::amount_to_hr_string(t.amount_credited - t.amount_debited, true)
         } else {
@@ -191,6 +194,7 @@ pub fn txs(
                 bFC->address,
                 bFB->creation_ts,
                 bFG->confirmed,
+                bFG->height,
                 bFB->confirmation_ts,
                 bFY->net_diff,
                 bFG->proof,
@@ -204,6 +208,7 @@ pub fn txs(
                     bFD->address,
                     bFB->creation_ts,
                     bFg->confirmed,
+                    bFg->height,
                     bFB->confirmation_ts,
                     bFG->net_diff,
                     bFg->proof,
@@ -216,6 +221,7 @@ pub fn txs(
                     bFD->address,
                     bFB->creation_ts,
                     bFR->confirmed,
+                    bFR->height,
                     bFB->confirmation_ts,
                     bFG->net_diff,
                     bFR->proof,
