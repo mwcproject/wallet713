@@ -434,9 +434,9 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn check_repair(&self) -> Result<()> {
+    pub fn check_repair(&self, delete_unconfirmed: bool) -> Result<()> {
         let wallet = self.get_wallet_instance()?;
-        controller::owner_single_use(wallet.clone(), |api| api.check_repair())?;
+        controller::owner_single_use(wallet.clone(), |api| api.check_repair(delete_unconfirmed))?;
         Ok(())
     }
 
