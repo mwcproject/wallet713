@@ -305,10 +305,8 @@ where
         Ok(())
     }
 
-    fn check_repair(&mut self) -> Result<()> {
-        // this boolean is for delete unconfirmed. For now, true.
-        // could allow user to choose later.
-        restore::check_repair(self, true).context(ErrorKind::Restore)?;
+    fn check_repair(&mut self, delete_unconfirmed: bool) -> Result<()> {
+        restore::check_repair(self, delete_unconfirmed).context(ErrorKind::Restore)?;
         Ok(())
     }
 

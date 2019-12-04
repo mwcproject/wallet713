@@ -725,7 +725,7 @@ fn main() {
                 println!("Set an optional password to secure your wallet with. Leave blank for no password.");
                 println!();
                 let cmd = format!("init -p {}", &passphrase);
-                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut grinbox_broker, &mut mwcmqs_broker, &mut out_is_safe, &mut false, &mut false) {
+                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut grinbox_broker, &mut mwcmqs_broker, &mut out_is_safe) {
                     println!("{}: {}", "ERROR".bright_red(), err);
                     std::process::exit(1);
                 }
@@ -753,7 +753,7 @@ fn main() {
                 println!();
                 // TODO: refactor this
                 let cmd = format!("recover -m {} -p {}", mnemonic, &passphrase);
-                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut grinbox_broker, &mut mwcmqs_broker, &mut out_is_safe, &mut false, &mut false) {
+                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut grinbox_broker, &mut mwcmqs_broker, &mut out_is_safe) {
                     println!("{}: {}", "ERROR".bright_red(), err);
                     std::process::exit(1);
                 }
@@ -979,8 +979,6 @@ fn main() {
     }
 
     let prompt_plus = matches.value_of("ready-phrase").unwrap_or("").to_string();
-    let mut first: bool = true;
-    let mut was_init_or_getnextkey: bool = false;
 
     loop {
         if ! prompt_plus.is_empty() {
@@ -1011,13 +1009,7 @@ fn main() {
                     &mut grinbox_broker,
                     &mut mwcmqs_broker,
                     &mut out_is_safe,
-                    &mut first,
-                    &mut was_init_or_getnextkey,
                 );
-
-                if was_init_or_getnextkey == false {
-                    first = false;
-                }
 
                 if let Err(err) = result {
                     cli_message!("{}", err);
@@ -1132,10 +1124,7 @@ fn do_command(
     grinbox_broker: &mut Option<(GrinboxPublisher, GrinboxSubscriber)>,
     mwcmqs_broker: &mut Option<(MWCMQPublisher, MWCMQSubscriber)>,
     out_is_safe: &mut bool,
-    first: &mut bool,
-    was_init_or_getnext_key: &mut bool,
 ) -> Result<()> {
-    *was_init_or_getnext_key = false;
     *out_is_safe = true;
     let home_dir = dirs::home_dir()
         .map(|p| p.to_str().unwrap().to_string())
@@ -1178,7 +1167,6 @@ fn do_command(
             show_address(config, true)?;
         }
         Some("init") => {
-            *was_init_or_getnext_key = true;
             *out_is_safe = false;
             if keybase_broker.is_some() || grinbox_broker.is_some() {
                 return Err(ErrorKind::HasListener.into());
@@ -1452,21 +1440,16 @@ fn do_command(
             wallet.lock().cancel(id, None, None)?;
         }
         Some("getnextkey") => {
-            *was_init_or_getnext_key = true;
-            if *first {
-                let args =  matches.subcommand_matches("getnextkey").unwrap();
-                let amount = args.value_of("amount").unwrap_or("0");
-                let amount = amount.parse::<u64>().unwrap();
-                if amount <= 0 {
-                    cli_message!("Error: amount greater than 0 must be specified");
-                }
-                else
-                {
-                    wallet.lock().getnextkey(amount)?;
-                }
+            let args =  matches.subcommand_matches("getnextkey").unwrap();
+            let amount = args.value_of("amount").unwrap_or("0");
+            let amount = amount.parse::<u64>().unwrap();
+
+            if amount <= 0 {
+                cli_message!("Error: amount greater than 0 must be specified");
             }
-            else {
-                println!("getnextkey may only be run as the first command. Please exit and retry");
+            else
+            {
+                wallet.lock().getnextkey(amount)?;
             }
         }
         Some("receive") => {
@@ -1975,12 +1958,14 @@ fn do_command(
             }
         }
         Some("check") => {
+            let args = matches.subcommand_matches("check").unwrap();
+
             if keybase_broker.is_some() || grinbox_broker.is_some() || mwcmqs_broker.is_some() {
                 return Err(ErrorKind::HasListener.into());
             }
             println!("checking and repairing... please wait as this could take a few minutes to complete.");
             let wallet = wallet.lock();
-            wallet.check_repair()?;
+            wallet.check_repair(!args.is_present("--no-delete_unconfirmed"))?;
             cli_message!("check and repair done!");
         }
         Some("set-recv") => {

@@ -350,6 +350,9 @@ impl<'a, 'b> Parser {
             )
             .subcommand(
                 SubCommand::with_name("check")
+                    .subcommand(SubCommand::with_name("--no-delete_unconfirmed")
+                        .about("do not delete unconfirmed transactions.")
+                    )
                     .about("checks a wallet's outputs against a live node, repairing and restoring missing outputs if required")
             )
             .subcommand(
