@@ -60,6 +60,8 @@ struct RestoredTxStats {
 	pub amount_credited: u64,
 	///
 	pub num_outputs: usize,
+	/// Height of the output. Just want to know for transaction
+	pub output_heiht: u64,
 }
 
 fn identify_utxo_outputs<T, C, K>(
@@ -195,6 +197,7 @@ where
 					log_id: batch.next_tx_log_id(&parent_key_id)?,
 					amount_credited: 0,
 					num_outputs: 0,
+					output_heiht: 0,
 				},
 			);
 		}
@@ -208,6 +211,7 @@ where
 		};
 		let mut t = TxLogEntry::new(parent_key_id.clone(), entry_type, log_id);
 		t.confirmed = true;
+		t.output_height = output.height;
 		t.amount_credited = output.value;
 		t.num_outputs = 1;
 		t.update_confirmation_ts();
@@ -222,6 +226,7 @@ where
 					log_id: ts.log_id,
 					amount_credited: ts.amount_credited + output.value,
 					num_outputs: ts.num_outputs + 1,
+					output_heiht: output.height,
 				},
 			);
 			ts.log_id
@@ -472,6 +477,7 @@ where
 			let mut batch = wallet.batch()?;
 			let mut t = TxLogEntry::new(path.clone(), TxLogEntryType::TxReceived, s.log_id);
 			t.confirmed = true;
+			t.output_height = s.output_heiht;
 			t.amount_credited = s.amount_credited;
 			t.num_outputs = s.num_outputs;
 			t.update_confirmation_ts();

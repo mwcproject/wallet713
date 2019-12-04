@@ -30,6 +30,10 @@ pub struct TxLogEntry {
     /// confirmed (In all cases either all outputs involved in a tx should be
     /// confirmed, or none should be; otherwise there's a deeper problem)
     pub confirmed: bool,
+    /// height of confirmed output.
+    /// Users want to see that in there transaction list
+    #[serde(default = "TxLogEntry::default_output_height")]
+    pub output_height: u64,
     /// number of inputs involved in TX
     pub num_inputs: usize,
     /// number of outputs involved in TX
@@ -54,6 +58,7 @@ impl TxLogEntry {
             creation_ts: Utc::now(),
             confirmation_ts: None,
             confirmed: false,
+            output_height: 0,
             amount_credited: 0,
             amount_debited: 0,
             num_inputs: 0,
@@ -65,6 +70,11 @@ impl TxLogEntry {
     /// Update confirmation TS with now
     pub fn update_confirmation_ts(&mut self) {
         self.confirmation_ts = Some(Utc::now());
+    }
+
+    /// Return zero height - mean unknown. Needed for backward compatibility
+    pub fn default_output_height() -> u64 {
+        0
     }
 }
 
