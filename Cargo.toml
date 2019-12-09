@@ -55,21 +55,32 @@ enquote = "1.0"
 reqwest = "0.9.22"
 
 # Release
-grin_core = { git = "https://github.com/mwcproject/mwc-node", tag = "2.4.3" }
-grin_keychain = { git = "https://github.com/mwcproject/mwc-node", tag = "2.4.3" }
-grin_chain = { git = "https://github.com/mwcproject/mwc-node", tag = "2.4.3" }
-grin_util = { git = "https://github.com/mwcproject/mwc-node", tag = "2.4.3" }
-grin_api = { git = "https://github.com/mwcproject/mwc-node", tag = "2.4.3" }
-grin_store = { git = "https://github.com/mwcproject/mwc-node", tag = "2.4.3" }
-grin_p2p = { git = "https://github.com/mwcproject/mwc-node", tag = "2.4.3" }
-grin_wallet_impls = { git = "https://github.com/mwcproject/mwc-wallet", tag = "2.4.4" }
+#grin_core = { git = "https://github.com/mwcproject/mwc-node", tag = "2.4.3" }
+#grin_keychain = { git = "https://github.com/mwcproject/mwc-node", tag = "2.4.3" }
+#grin_chain = { git = "https://github.com/mwcproject/mwc-node", tag = "2.4.3" }
+#grin_util = { git = "https://github.com/mwcproject/mwc-node", tag = "2.4.3" }
+#grin_api = { git = "https://github.com/mwcproject/mwc-node", tag = "2.4.3" }
+#grin_store = { git = "https://github.com/mwcproject/mwc-node", tag = "2.4.3" }
+#grin_p2p = { git = "https://github.com/mwcproject/mwc-node", tag = "2.4.3" }
+#grin_wallet_impls = { git = "https://github.com/mwcproject/mwc-wallet", tag = "2.4.4" }
+
+# For bleeding edge
+grin_core = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }
+grin_keychain = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }
+grin_chain = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }
+grin_util = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }
+grin_api = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }
+grin_store = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }
+grin_p2p = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }
+grin_wallet_impls = { git = "https://github.com/mwcproject/mwc-wallet", branch = "master" }
 
 
 # For local testing
-#grin_api = { path = "../mwc-node/api", version= "2.4.2-beta.1"}
-#grin_core = { path = "../mwc-node/core", version= "2.4.2-beta.1"}
-#grin_keychain = { path = "../mwc-node/keychain", version= "2.4.2-beta.1"}
-#grin_util = { path = "../mwc-node/util", version= "2.4.2-beta.1"}
-#grin_store = { path = "../mwc-node/store", version= "2.4.2-beta.1"}
-#grin_p2p = { path = "../mwc-node/p2p", version= "2.4.2-beta.1" }
-#grin_wallet_impls = { path = "../mwc-wallet/impls", version= "2.4.3-beta.1" }
+#grin_api = { path = "../mwc-node/api", version= "2.4.4-beta.1"}
+#grin_core = { path = "../mwc-node/core", version= "2.4.4-beta.1"}
+#grin_keychain = { path = "../mwc-node/keychain", version= "2.4.4-beta.1"}
+#grin_chain = {path = "../mwc-node/chain", version= "2.4.4-beta.1" }
+#grin_util = { path = "../mwc-node/util", version= "2.4.4-beta.1"}
+#grin_store = { path = "../mwc-node/store", version= "2.4.4-beta.1"}
+#grin_p2p = { path = "../mwc-node/p2p", version= "2.4.4-beta.1" }
+#grin_wallet_impls = { path = "../mwc-wallet/impls", version= "2.4.6" }
