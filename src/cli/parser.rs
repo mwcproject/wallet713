@@ -315,6 +315,19 @@ impl<'a, 'b> Parser {
                     )
             )
             .subcommand(
+                SubCommand::with_name("proveoutputamount")
+                    .about("gets a key, prints its identifier and pubkey")
+                    .arg(
+                        Arg::from_usage("-o, --output=<output> 'output to prove'")
+                    )
+                    .arg(
+                        Arg::from_usage("-f, --file=<file> 'the file to save proof to'")
+                    )
+                    .arg(
+                        Arg::from_usage("-m, --message=<message> 'the message to sign'")
+                    )
+            )
+            .subcommand(
                 SubCommand::with_name("receive")
                     .about("receives a sender initiated slate from file and produces signed slate")
                     .arg(
