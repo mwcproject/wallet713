@@ -106,6 +106,54 @@ where
         w.close()?;
         res
     }
+
+    pub fn proveoutputamount(&self, _file: &str, _output: &str, _message: &str) -> Result<(), Error>
+    where
+                K: Keychain {
+
+        let mut w = self.wallet.lock();
+        w.open_with_credentials()?;
+        let parent_key_id = w.get_parent_key_id();
+
+        self.update_outputs(&mut w, false, None, None);
+
+        let outputs = updater::retrieve_outputs(&mut *w,
+                                  false,
+                                  None,
+                                  Some(&parent_key_id),
+                                  0,
+                                  0)?;
+
+
+        for _o in outputs {
+/*
+                let mut found: bool = false;
+                if output_list.is_some() {
+                    let ol = output_list.clone().unwrap();
+                    for lo in ol {
+                        if o.0.commit.is_some() && lo == o.0.commit.clone().unwrap() {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    found = true;
+                }
+
+                if found && o.0.eligible_to_spend(height, minimum_confirmations) {
+                    value += o.0.value;
+                }
+*/
+        }
+
+        w.close()?;
+
+
+        Ok(())
+    }
+
     pub fn getnextkey(&self, amount: u64) -> Result<String, Error>
     where
                 K: Keychain {

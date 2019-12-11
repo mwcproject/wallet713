@@ -52,6 +52,22 @@ impl Wallet {
         Ok(())
     }
 
+    pub fn proveoutputamount(
+        &mut self,
+        file: &str,
+        output: &str,
+        message: &str,
+        ) -> Result<()> {
+        let wallet = self.get_wallet_instance()?;
+
+        controller::owner_single_use(wallet.clone(), |api| {
+            api.proveoutputamount(file, output, message)?;
+            Ok(())
+        })?;
+
+        Ok(())
+    }
+
     pub fn getnextkey(
         &mut self,
         amount: u64,
