@@ -1992,16 +1992,26 @@ fn do_command(
                 cli_message!("Account {:?} does not exist!", account);
             }
         }
+        Some("verifyoutputamount") => {
+            let args = matches.subcommand_matches("verifyoutputamount").unwrap();
+            let output = args.value_of("commit").unwrap();
+            let message = args.value_of("message").unwrap();
+            let amount = args.value_of("amount").unwrap();
+            let amount = amount.parse::<u64>().unwrap();
+            let pubkey = args.value_of("pubkey").unwrap();
+            let signature = args.value_of("signature").unwrap();
+
+            let mut w = wallet.lock();
+            w.verifyoutputamount(output, message, amount, signature, pubkey)?;
+        }
         Some("proveoutputamount") => {
             let args = matches.subcommand_matches("proveoutputamount").unwrap();
-            let file = args.value_of("file").unwrap();
             let output = args.value_of("output").unwrap();
             let message = args.value_of("message").unwrap();
 
             let mut w = wallet.lock();
 
-            w.proveoutputamount(file, output, message)?;
-            println!("prove output amount");
+            w.proveoutputamount(output, message)?;
         }
         Some("export-proof") => {
             let args = matches.subcommand_matches("export-proof").unwrap();

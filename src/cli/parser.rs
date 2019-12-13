@@ -315,13 +315,29 @@ impl<'a, 'b> Parser {
                     )
             )
             .subcommand(
-                SubCommand::with_name("proveoutputamount")
-                    .about("gets a key, prints its identifier and pubkey")
+                SubCommand::with_name("verifyoutputamount")
+                    .about("verifies a signature and amount for a given output")
                     .arg(
-                        Arg::from_usage("-o, --output=<output> 'output to prove'")
+                        Arg::from_usage("-c, --commit=<commit> 'commitment to verify'")
                     )
                     .arg(
-                        Arg::from_usage("-f, --file=<file> 'the file to save proof to'")
+                        Arg::from_usage("-m, --message=<message> 'the message to sign'")
+                    )
+                    .arg(
+                        Arg::from_usage("-s, --signature=<signature> 'signature'")
+                    )
+                    .arg(
+                        Arg::from_usage("-a, --amount=<amount> 'amount in nanomwc'")
+                    )
+                    .arg(
+                        Arg::from_usage("-p, --pubkey=<pubkey> 'pubkey'")
+                    )
+            )
+            .subcommand(
+                SubCommand::with_name("proveoutputamount")
+                    .about("prove an amount by signing a message with an output's private key")
+                    .arg(
+                        Arg::from_usage("-o, --output=<output> 'output to prove'")
                     )
                     .arg(
                         Arg::from_usage("-m, --message=<message> 'the message to sign'")

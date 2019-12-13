@@ -3,11 +3,14 @@ use std::collections::HashMap;
 use std::marker::PhantomData;
 use uuid::Uuid;
 
+pub use grin_util::secp::{Message};
+use common::crypto::Hex;
+use grin_core::core::hash::{Hash};
 use grin_api::Output;
 use grin_core::ser;
 use grin_util::secp::key::PublicKey;
 use grin_util::secp::pedersen;
-use grin_util::secp::{ContextFlag, Secp256k1};
+use grin_util::secp::{ContextFlag, Secp256k1, Signature};
 use grin_p2p::types::PeerInfoDisplay;
 
 use crate::contacts::GrinboxAddress;
@@ -107,7 +110,74 @@ where
         res
     }
 
-    pub fn proveoutputamount(&self, _file: &str, _output: &str, _message: &str) -> Result<(), Error>
+    pub fn verifyoutputamount(&self, _output: &str, message: &str, _amount: u64, signature: &str, pubkey: &str) -> Result<(), Error>
+    where
+                K: Keychain {
+
+        let mut w = self.wallet.lock();
+        w.open_with_credentials()?;
+
+        let message = Hash::from_hex(&message);
+        if message.is_err() {
+            println!("ERROR: invalid message");
+            return Ok(());
+        }
+        let message = message.unwrap();
+
+        let msg = Message::from_slice(message.as_bytes());
+
+        if msg.is_err() {
+            println!("ERROR: invalid message");
+            return Ok(());
+        }
+
+        let msg = msg.unwrap();
+
+        let secp = Secp256k1::with_caps(ContextFlag::VerifyOnly);
+        let pk = grin_util::from_hex(pubkey.to_string());
+
+        if pk.is_err() {
+            println!("ERROR: invalid pubkey");
+            return Ok(());
+        }
+        let pk = pk.unwrap();
+
+        let pk = PublicKey::from_slice(&secp, &pk);
+
+        if pk.is_err() {
+            println!("ERROR: invalid pubkey");
+            return Ok(());
+        }
+        let pk = pk.unwrap();
+
+
+        let signature = grin_util::from_hex(signature.to_string());
+
+        if signature.is_err() {
+            println!("ERROR: invalid signature");
+            return Ok(());
+        }
+        let signature = signature.unwrap();
+
+        let signature = Signature::from_der(&secp, &signature);
+
+        if signature.is_err() {
+            println!("ERROR: invalid signature");
+            return Ok(());
+        }
+        let signature = signature.unwrap();
+
+        let is_verified = secp.verify(&msg, &signature, &pk).is_ok();
+        if is_verified {
+            println!("Proof valid!");
+        } else {
+            println!("WARNING: Proof INVALID!");
+        }
+
+        Ok(())
+    }
+
+    pub fn proveoutputamount(&self, output: &str, message: &str) -> Result<(), Error>
     where
                 K: Keychain {
 
@@ -125,31 +195,44 @@ where
                                   0)?;
 
 
-        for _o in outputs {
-/*
-                let mut found: bool = false;
-                if output_list.is_some() {
-                    let ol = output_list.clone().unwrap();
-                    for lo in ol {
-                        if o.0.commit.is_some() && lo == o.0.commit.clone().unwrap() {
-                            found = true;
-                            break;
-                        }
-                    }
+        for o in outputs {
+            if output == o.0.commit.unwrap() {
+                let id = o.0.key_id;
+                let value = o.0.value;
+                let sec_key = w.keychain().derive_key(value, &id, &SwitchCommitmentType::Regular)?;
+                let pubkey = PublicKey::from_secret_key(w.keychain().secp(), &sec_key)?;
+                let message_proc = Hash::from_hex(&message);
+                if message_proc.is_err() {
+                    println!("ERROR: invalid hex message specified");
+                    return Ok(());
                 }
-                else
-                {
-                    found = true;
+                let message_proc = message_proc.unwrap();
+                let message_proc = Message::from_slice(message_proc.as_bytes());
+
+                if message_proc.is_err() {
+                    println!("ERROR: invalid hex message specified");
+                    return Ok(());
                 }
 
-                if found && o.0.eligible_to_spend(height, minimum_confirmations) {
-                    value += o.0.value;
-                }
-*/
+                let message_proc = message_proc.unwrap();
+
+                let sig = w.keychain().sign(&message_proc, value, &id, &SwitchCommitmentType::Regular)?;
+                println!("Proof for message = {:?}", message);
+                println!("----------------------------------------------------------------------------------------------------------------------------------------------------------");
+                println!("Commit: {}", output);
+                println!("PublicKey: {}", pubkey.to_hex());
+                println!("Signature: {}", sig.to_hex());
+                println!("Amount: {}", value);
+                println!("----------------------------------------------------------------------------------------------------------------------------------------------------------");
+
+
+                w.close()?; 
+                return Ok(());
+            }
         }
 
+        println!("Output specified was not found!");
         w.close()?;
-
 
         Ok(())
     }
