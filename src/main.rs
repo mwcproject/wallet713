@@ -2013,6 +2013,16 @@ fn do_command(
 
             w.proveoutputamount(output, message)?;
         }
+        Some("scan_outputs") => {
+            let args = matches.subcommand_matches("scan_outputs").unwrap();
+
+            let pub_key = args.value_of("pubkey").unwrap();
+
+            println!("scaning outputs for public key {} please wait as this could take a few minutes to complete.", pub_key);
+            let mut wallet = wallet.lock();
+            wallet.scan_outputs( pub_key )?;
+            cli_message!("scaning outputs is completeed!");
+        }
         Some("export-proof") => {
             let args = matches.subcommand_matches("export-proof").unwrap();
             let input = args.value_of("file").unwrap();

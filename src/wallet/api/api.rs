@@ -637,6 +637,18 @@ where
         Ok(())
     }
 
+    pub fn scan_outputs(&mut self, pubkey : &str)  -> Result<(), Error> {
+
+        let public_key = PublicKey::from_hex(pubkey)?;
+
+        let mut w = self.wallet.lock();
+        w.open_with_credentials()?;
+        self.update_outputs(&mut w, true, None, None);
+        w.scan_outputs(public_key)?;
+        w.close()?;
+        Ok(())
+    }
+
     pub fn node_height(&mut self) -> Result<(u64, bool), Error> {
         let res = {
             let mut w = self.wallet.lock();
