@@ -2,6 +2,7 @@ use super::{
     AcctPathMapping, Context, Identifier, Keychain, NodeClient, OutputData, Result, Transaction,
     TxLogEntry, TxProof, WalletBackendBatch,
 };
+use wallet::types::PublicKey;
 
 pub trait WalletBackend<C, K>
 where
@@ -12,6 +13,7 @@ where
     fn close(&mut self) -> Result<()>;
     fn restore(&mut self) -> Result<()>;
     fn check_repair(&mut self, delete_unconfirmed: bool) -> Result<()>;
+    fn scan_outputs(&mut self, pub_key: PublicKey) -> Result<()>;
     fn get_parent_key_id(&self) -> Identifier;
     fn set_parent_key_id(&mut self, id: &Identifier);
     fn set_parent_key_id_by_name(&mut self, label: &str) -> Result<()>;

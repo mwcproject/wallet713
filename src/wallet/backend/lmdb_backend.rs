@@ -22,6 +22,7 @@ use super::types::{
     NodeClient, OutputData, Result, Transaction, TxLogEntry, TxProof, WalletBackend,
     WalletBackendBatch, WalletSeed,
 };
+use wallet::types::PublicKey;
 
 pub const DB_DIR: &'static str = "db";
 pub const TX_SAVE_DIR: &'static str = "saved_txs";
@@ -307,6 +308,11 @@ where
 
     fn check_repair(&mut self, delete_unconfirmed: bool) -> Result<()> {
         restore::check_repair(self, delete_unconfirmed).context(ErrorKind::Restore)?;
+        Ok(())
+    }
+
+    fn scan_outputs(&mut self, pub_key: PublicKey) -> Result<()> {
+        restore::scan_outputs(self, pub_key).context(ErrorKind::Restore)?;
         Ok(())
     }
 

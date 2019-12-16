@@ -344,6 +344,13 @@ impl<'a, 'b> Parser {
                     )
             )
             .subcommand(
+                SubCommand::with_name("scan_outputs")
+                    .about("scan outputs that belong to account root public key (account must use this method for commit IO)")
+                    .arg(
+                        Arg::from_usage("-p, --pubkey=<hex public key> 'public key to scan'")
+                    )
+            )
+            .subcommand(
                 SubCommand::with_name("receive")
                     .about("receives a sender initiated slate from file and produces signed slate")
                     .arg(

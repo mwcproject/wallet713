@@ -17,7 +17,7 @@ use super::{keys, updater};
 use crate::common::ErrorKind;
 use crate::wallet::types::{
 	NodeClient, OutputData, OutputStatus, TxLogEntry, TxLogEntryType,
-	WalletBackend,
+	WalletBackend,PublicKey
 };
 use failure::Error;
 use grin_core::consensus::{valid_header_version, WEEK_HEIGHT};
@@ -28,6 +28,7 @@ use grin_keychain::{Identifier, Keychain, SwitchCommitmentType};
 use grin_util::secp::pedersen::{Commitment, RangeProof};
 use std::collections::HashMap;
 use std::time::Instant;
+use common::crypto::Hex;
 
 /// Utility struct for return values from below
 #[derive(Clone)]
@@ -312,6 +313,9 @@ where
 {
 	// First, get a definitive list of outputs we own from the chain
 	println!("Starting wallet check.");
+
+	println!("Your account Root Public Key: {}", wallet.keychain().public_root_key().to_hex() );
+
 	let chain_outs = collect_chain_outputs(wallet)?;
 	println!(
 		"Identified {} wallet_outputs as belonging to this wallet",
@@ -423,6 +427,76 @@ where
 	}
 	Ok(())
 }
+
+
+/// Check / repair wallet contents
+/// assume wallet contents have been freshly updated with contents
+/// of latest block
+pub fn scan_outputs<T, C, K>(wallet: &mut T, pub_key: PublicKey ) -> Result<(), Error>
+	where
+		T: WalletBackend<C, K>,
+		C: NodeClient,
+		K: Keychain,
+{
+	use grin_util::secp::key::SecretKey;
+	use grin_util::secp::{ContextFlag, Secp256k1};
+	use blake2_rfc::blake2b::{blake2b};
+	use crate::common::crypto;
+
+	// First, get a definitive list of outputs we own from the chain
+	println!("Starting scan outputs.");
+
+	let batch_size = 1000;
+	let mut start_index = 1;
+
+	let secp = Secp256k1::with_caps(ContextFlag::VerifyOnly);
+
+	// Calculate rewind_hash for the commit.
+	let public_root_key = pub_key.serialize_vec( &secp, true);
+	let rewind_hash = blake2b(32, &[], &public_root_key[..]).as_bytes().to_vec();
+
+	loop {
+		let (highest_index, last_retrieved_index, outputs) = wallet
+			.w2n_client()
+			.get_outputs_by_pmmr_index(start_index, batch_size)?;
+		println!(
+			"Scanning {} outputs, up to index {}. (Highest index: {})",
+			outputs.len(),
+			highest_index,
+			last_retrieved_index,
+		);
+
+		// Scanning outputs
+		for output in outputs.iter() {
+			let (commit, proof, _, height, mmr_index) = output;
+
+			// Not processing 'legacy' logic. It is ok to test all commits. Naturally will skip 'non public' ones
+            //   Legacy logic try to hadble the latest data similar way, it is extra for scanning
+			let res = blake2b(32, &commit.0, &rewind_hash);
+			let nonce = SecretKey::from_slice(&secp, res.as_bytes()).map_err(|e| {
+				ErrorKind::GenericError(format!("error: Unable to create nonce: {:?}", e))
+			})?;
+
+			let info = secp.rewind_bullet_proof(*commit, nonce.clone(), None, *proof);
+			if info.is_err() {
+				continue;
+			}
+
+			let info = info.unwrap();
+			println!( "Found commit {} with nonce {}, amount={} height={} mmr_index={}", commit.to_hex(), crypto::to_hex( nonce.0.to_vec() ), info.value, height, mmr_index);
+            // Note, proof at this moment is totally valid. We are not checking the proof because the network already did that.
+            // No reasons to be so paranoid.
+		}
+
+		if highest_index == last_retrieved_index {
+			break;
+		}
+		start_index = last_retrieved_index + 1;
+	}
+
+	Ok(())
+}
+
 
 /// Restore a wallet
 pub fn restore<T, C, K>(wallet: &mut T) -> Result<(), Error>

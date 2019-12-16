@@ -85,6 +85,19 @@ impl Wallet {
         Ok(())
     }
 
+    pub fn scan_outputs(
+        &mut self,
+        pubkey: &str,
+    ) -> Result<()> {
+        let wallet = self.get_wallet_instance()?;
+
+        controller::owner_single_use(wallet.clone(), |api| {
+            api.scan_outputs(pubkey)?;
+            Ok(())
+        })?;
+        Ok(())
+    }
+
     pub fn getnextkey(
         &mut self,
         amount: u64,
