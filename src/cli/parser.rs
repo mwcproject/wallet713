@@ -232,6 +232,9 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("<amount> 'the amount of MWCs to send'")
                     )
                     .arg(
+                        Arg::from_usage("[apisecret] -a, --apisecret=<apisecret> 'receiver wallet apisecret. Applicable to http/https address only. Default: none'")
+                    )
+                    .arg(
                         Arg::from_usage("[strategy] -s, --strategy=<strategy> 'the input selection strategy (all/smallest/custom). Default: smallest'")
                     )
                     .arg(

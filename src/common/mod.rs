@@ -12,7 +12,6 @@ pub use self::error_kind::ErrorKind;
 pub use self::macros::*;
 pub use failure::Error;
 use grin_api;
-use grin_core::global;
 pub use parking_lot::{Mutex, MutexGuard};
 use serde::Serialize;
 use std::result::Result as StdResult;
@@ -41,18 +40,11 @@ pub fn is_cli() -> bool {
 pub const COLORED_PROMPT: &'static str = "\x1b[36mwallet713>\x1b[0m ";
 pub const PROMPT: &'static str = "wallet713> ";
 
-pub fn post<IN>(url: &str, api_secret: Option<String>, input: &IN) -> StdResult<String, grin_api::Error>
+pub fn post<IN>(url: &str, api_secret: Option<String>, basic_auth_key: Option<String>, input: &IN) -> StdResult<String, grin_api::Error>
 where
 	IN: Serialize,
 {
-
-        let req = if global::is_mainnet() {
-                grin_api::client::create_post_request(url, api_secret, input, global::ChainTypes::Mainnet)?
-        } else if global::is_floonet() {
-                grin_api::client::create_post_request(url, api_secret, input, global::ChainTypes::Floonet)?
-        } else {
-                grin_api::client::create_post_request(url, api_secret, input, global::ChainTypes::UserTesting)?
-        };
+    let req = grin_api::client::create_post_request_ex(url, api_secret, basic_auth_key, input)?;
 	let res = grin_api::client::send_request(req)?;
 	Ok(res)
 }
