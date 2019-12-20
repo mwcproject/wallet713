@@ -902,7 +902,7 @@ fn main() {
                 );
                 if config.foreign_api_secret.is_some() {
                     cli_message!(
-                        "{}: setting the foreign_api_secret will prevent mwc wallets from sending to this wallet because they do not currently support basic auth. It is reccomended to not set one unless you are implementing your own custom wallet that supports basic auth.",
+                        "{}: setting the foreign_api_secret will prevent mwc-wallet from sending to this wallet because it doesn't support basic auth. mwc-qt-wallet and mwc713 support it and sender need to be aware about that.",
                         "WARNING".bright_yellow()
                     );
                 }
@@ -1544,6 +1544,7 @@ fn do_command(
             let to = args.value_of("to");
             let input = args.value_of("file");
             let message = args.value_of("message").map(|s| s.to_string());
+            let apisecret = args.value_of("apisecret").map(|s| s.to_string());
 
             let strategy = args.value_of("strategy").unwrap_or("smallest");
             if strategy != "smallest" && strategy != "all" && strategy != "custom" {
@@ -1757,7 +1758,7 @@ fn do_command(
 
                     trace!("Sending receive_tx request: {}", req);
 
-                    let res = post(url.as_str(), None, &req);
+                    let res = post(url.as_str(), apisecret, Some("mwc".to_string()), &req);
 
                     if res.is_err() {
                         let ret_id = wallet.lock().get_id(slate.id)?;
