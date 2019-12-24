@@ -18,6 +18,7 @@ use crate::common::hasher::derive_address_key;
 use crate::contacts::AddressBook;
 use crate::wallet::api::Wallet713OwnerAPI;
 use crate::wallet::types::TxProof;
+use wallet::types::PublicKey;
 
 pub struct Wallet {
     pub active_account: String,
@@ -87,12 +88,13 @@ impl Wallet {
 
     pub fn scan_outputs(
         &mut self,
-        pubkey: &str,
+        pub_keys: Vec<PublicKey>,
+        output_fn: String
     ) -> Result<()> {
         let wallet = self.get_wallet_instance()?;
 
         controller::owner_single_use(wallet.clone(), |api| {
-            api.scan_outputs(pubkey)?;
+            api.scan_outputs(pub_keys, output_fn)?;
             Ok(())
         })?;
         Ok(())
@@ -139,7 +141,7 @@ impl Wallet {
 
     pub fn account_exists(
         &mut self,
-        account: &str) -> Result<(bool)> {
+        account: &str) -> Result<bool> {
         let mut ret = false;
         let wallet = self.get_wallet_instance()?;
         controller::owner_single_use(wallet.clone(), |api| {
@@ -177,7 +179,7 @@ impl Wallet {
         account: &str,
         passphrase: &str,
         create_new: bool,
-    ) -> Result<(WalletSeed)> {
+    ) -> Result<WalletSeed> {
         let wallet_config = config.as_wallet_config()?;
         let seed = self.init_seed(&wallet_config, passphrase, create_new, true, Some(seed))?;
         self.init_backend(&wallet_config, &config, passphrase)?;
@@ -190,7 +192,7 @@ impl Wallet {
         config: &Wallet713Config,
         passphrase: &str,
         create_new: bool,
-    ) -> Result<(WalletSeed)> {
+    ) -> Result<WalletSeed> {
         let wallet_config = config.as_wallet_config()?;
         let seed = self.init_seed(&wallet_config, passphrase, create_new, false, None)?;
         Ok(seed)
@@ -246,7 +248,7 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn get_id(&self, slate_id: Uuid) -> Result<(u32)> {
+    pub fn get_id(&self, slate_id: Uuid) -> Result<u32> {
         let mut id = 1;
         let wallet = self.get_wallet_instance()?;
         controller::owner_single_use(wallet.clone(), |api| {
@@ -258,7 +260,7 @@ impl Wallet {
         Ok(id)
     }
 
-    pub fn txs_count(&self) -> Result<(usize)> {
+    pub fn txs_count(&self) -> Result<usize> {
         let wallet = self.get_wallet_instance()?;
         let mut txs_count = 0;
         controller::owner_single_use(wallet.clone(), |api| {
@@ -289,7 +291,7 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn total_value(&self, minimum_confirmations: u64, output_list: Option<Vec<&str>>) -> Result<(u64)> {
+    pub fn total_value(&self, minimum_confirmations: u64, output_list: Option<Vec<&str>>) -> Result<u64> {
         let wallet = self.get_wallet_instance()?;
 
         let mut value = 0;
@@ -322,7 +324,7 @@ impl Wallet {
         Ok(value)
     }
 
-    pub fn all_output_count(&self, show_spent: bool) -> Result<(usize)> {
+    pub fn all_output_count(&self, show_spent: bool) -> Result<usize> {
         let wallet = self.get_wallet_instance()?;
         let mut count = 0;
         controller::owner_single_use(wallet.clone(), |api| {
@@ -333,7 +335,7 @@ impl Wallet {
         Ok(count)
     }
 
-    pub fn output_count(&self, minimum_confirmations: u64, output_list: Option<Vec<&str>>) -> Result<(usize)> {
+    pub fn output_count(&self, minimum_confirmations: u64, output_list: Option<Vec<&str>>) -> Result<usize> {
         let wallet = self.get_wallet_instance()?;
 
         let mut count = 0;

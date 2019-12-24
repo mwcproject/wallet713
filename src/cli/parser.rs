@@ -348,9 +348,9 @@ impl<'a, 'b> Parser {
             )
             .subcommand(
                 SubCommand::with_name("scan_outputs")
-                    .about("scan outputs that belong to account root public key (account must use this method for commit IO)")
+                    .about("scan outputs that belong to accounts root public key (account must use this method for commit IO)")
                     .arg(
-                        Arg::from_usage("-p, --pubkey=<hex public key> 'public key to scan'")
+                        Arg::from_usage("-p, --pubkey_file=<file name> 'file name with a public keys to scan. One key per line'")
                     )
             )
             .subcommand(

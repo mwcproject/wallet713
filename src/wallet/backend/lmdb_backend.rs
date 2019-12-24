@@ -302,17 +302,17 @@ where
     }
 
     fn restore(&mut self) -> Result<()> {
-        restore::restore(self).context(ErrorKind::Restore)?;
+        restore::restore(self).map_err(|err| ErrorKind::Restore(err.to_string()))?;
         Ok(())
     }
 
     fn check_repair(&mut self, delete_unconfirmed: bool) -> Result<()> {
-        restore::check_repair(self, delete_unconfirmed).context(ErrorKind::Restore)?;
+        restore::check_repair(self, delete_unconfirmed).map_err(|err| ErrorKind::Restore(err.to_string()))?;
         Ok(())
     }
 
-    fn scan_outputs(&mut self, pub_key: PublicKey) -> Result<()> {
-        restore::scan_outputs(self, pub_key).context(ErrorKind::Restore)?;
+    fn scan_outputs(&mut self, pub_keys: Vec<PublicKey>, output_fn : String ) -> Result<()> {
+        restore::scan_outputs(self, pub_keys, output_fn ).map_err(|err| ErrorKind::Restore(err.to_string()))?;
         Ok(())
     }
 
