@@ -1996,26 +1996,23 @@ fn do_command(
                 cli_message!("Account {:?} does not exist!", account);
             }
         }
-        Some("verifyoutputamount") => {
-            let args = matches.subcommand_matches("verifyoutputamount").unwrap();
-            let output = args.value_of("commit").unwrap();
-            let message = args.value_of("message").unwrap();
-            let amount = args.value_of("amount").unwrap();
-            let amount = amount.parse::<u64>().unwrap();
-            let pubkey = args.value_of("pubkey").unwrap();
-            let signature = args.value_of("signature").unwrap();
+        Some("getrootpublickey") => {
+            let args = matches.subcommand_matches("getrootpublickey").unwrap();
+            let message = args.value_of("message");
 
             let mut w = wallet.lock();
-            w.verifyoutputamount(output, message, amount, signature, pubkey)?;
+            w.getrootpublickey(message)?;
         }
-        Some("proveoutputamount") => {
-            let args = matches.subcommand_matches("proveoutputamount").unwrap();
-            let output = args.value_of("output").unwrap();
+        Some("verifysignature") => {
+            let args = matches.subcommand_matches("verifysignature").unwrap();
             let message = args.value_of("message").unwrap();
+            let signature = args.value_of("signature").unwrap();
+            let pubkey = args.value_of("pubkey").unwrap();
 
+            // Note. We don't need any wallet access, we just need tools and API that wallet has.
+            // Also want to keep wallet API pattern
             let mut w = wallet.lock();
-
-            w.proveoutputamount(output, message)?;
+            w.verifysignature(message, signature, pubkey)?;
         }
         Some("scan_outputs") => {
             let args = matches.subcommand_matches("scan_outputs").unwrap();

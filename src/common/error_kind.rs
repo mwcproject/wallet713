@@ -217,7 +217,7 @@ pub enum ErrorKind {
     HttpRequest,
     #[fail(display = "Node API error")]
     Node,
-    #[fail(display = "{}", 0)]
+    #[fail(display = "\x1b[31;1merror:\x1b[0m {}", 0)]
     GenericError(String),
     #[fail(display = "\x1b[31;1merror:\x1b[0m unable to verify proof")]
     VerifyProof,

@@ -318,11 +318,15 @@ impl<'a, 'b> Parser {
                     )
             )
             .subcommand(
-                SubCommand::with_name("verifyoutputamount")
-                    .about("verifies a signature and amount for a given output")
+                SubCommand::with_name("getrootpublickey")
+                    .about("get wallt root public key that can be used for tracking of acount balance")
                     .arg(
-                        Arg::from_usage("-c, --commit=<commit> 'commitment to verify'")
+                        Arg::from_usage("[message] -m, --message=<message> 'the optional message to sign'")
                     )
+            )
+            .subcommand(
+                SubCommand::with_name("verifysignature")
+                    .about("verify signature for any public key")
                     .arg(
                         Arg::from_usage("-m, --message=<message> 'the message to sign'")
                     )
@@ -330,20 +334,7 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("-s, --signature=<signature> 'signature'")
                     )
                     .arg(
-                        Arg::from_usage("-a, --amount=<amount> 'amount in nanomwc'")
-                    )
-                    .arg(
                         Arg::from_usage("-p, --pubkey=<pubkey> 'pubkey'")
-                    )
-            )
-            .subcommand(
-                SubCommand::with_name("proveoutputamount")
-                    .about("prove an amount by signing a message with an output's private key")
-                    .arg(
-                        Arg::from_usage("-o, --output=<output> 'output to prove'")
-                    )
-                    .arg(
-                        Arg::from_usage("-m, --message=<message> 'the message to sign'")
                     )
             )
             .subcommand(
