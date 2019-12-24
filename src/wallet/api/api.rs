@@ -85,7 +85,7 @@ where
         num_change_outputs: usize,
         selection_strategy_is_use_all: bool,
         message: Option<String>,
-    ) -> Result<(impl FnOnce(&mut W, &Transaction) -> Result<(), Error>), Error> {
+    ) -> Result<impl FnOnce(&mut W, &Transaction) -> Result<(), Error>, Error> {
         let mut w = self.wallet.lock();
         w.open_with_credentials()?;
         let parent_key_id = w.get_parent_key_id();
@@ -558,7 +558,7 @@ where
         w.get_stored_tx(uuid)
     }
 
-    pub fn node_info(&self) -> Result<(NodeInfo), Error> {
+    pub fn node_info(&self) -> Result<NodeInfo, Error> {
         // first get height
         let height = {
             let mut w = self.wallet.lock();
@@ -637,14 +637,12 @@ where
         Ok(())
     }
 
-    pub fn scan_outputs(&mut self, pubkey : &str)  -> Result<(), Error> {
-
-        let public_key = PublicKey::from_hex(pubkey)?;
+    pub fn scan_outputs(&mut self, pub_keys: Vec<PublicKey>, output_fn : String)  -> Result<(), Error> {
 
         let mut w = self.wallet.lock();
         w.open_with_credentials()?;
         self.update_outputs(&mut w, true, None, None);
-        w.scan_outputs(public_key)?;
+        w.scan_outputs(pub_keys, output_fn)?;
         w.close()?;
         Ok(())
     }

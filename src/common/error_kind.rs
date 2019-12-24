@@ -209,8 +209,8 @@ pub enum ErrorKind {
     Encryption,
     #[fail(display = "\x1b[31;1merror:\x1b[0m unable to decrypt message")]
     Decryption,
-    #[fail(display = "\x1b[31;1merror:\x1b[0m restore error")]
-    Restore,
+    #[fail(display = "\x1b[31;1merror:\x1b[0m restore error: {}", 0)]
+    Restore(String),
     #[fail(display = "\x1b[31;1merror:\x1b[0m unknown account: {}", 0)]
     UnknownAccountLabel(String),
     #[fail(display = "\x1b[31;1merror:\x1b[0m http request error")]
@@ -223,4 +223,6 @@ pub enum ErrorKind {
     VerifyProof,
     #[fail(display = "\x1b[31;1merror:\x1b[0m file '{}' not found", 0)]
     FileNotFound(String),
+    #[fail(display = "\x1b[31;1merror:\x1b[0m unable to delete the file '{}'", 0)]
+    FileUnableToDelete(String),
 }

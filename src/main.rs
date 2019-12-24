@@ -97,6 +97,9 @@ use crate::wallet::types::{Arc, Mutex, Slate, TxProof};
 
 use contacts::{Address, AddressBook, AddressType, Backend, Contact, GrinboxAddress};
 
+use wallet::types::PublicKey;
+use common::crypto::Hex;
+
 const CLI_HISTORY_PATH: &str = ".history";
 static mut RECV_ACCOUNT: Option<String> = None;
 static mut RECV_PASS: Option<String> = None;
@@ -2017,12 +2020,39 @@ fn do_command(
         Some("scan_outputs") => {
             let args = matches.subcommand_matches("scan_outputs").unwrap();
 
-            let pub_key = args.value_of("pubkey").unwrap();
+            let pub_key_file = args.value_of("pubkey_file").unwrap();
 
-            println!("scaning outputs for public key {} please wait as this could take a few minutes to complete.", pub_key);
+            let file = File::open(pub_key_file)
+                    .map_err(|_| ErrorKind::FileNotFound( pub_key_file.to_string()) )?;
+
+            let output_fn = format!("{}.commits", pub_key_file);
+
+            if std::fs::metadata(output_fn.clone()).is_ok() {
+                std::fs::remove_file(output_fn.clone()).map_err( |_| ErrorKind::FileUnableToDelete(output_fn.clone()) )?;
+            }
+
+
+            let mut pub_keys = Vec::new();
+
+            for line in io::BufReader::new(file).lines() {
+                let pubkey_str = line.map_err(|_| ErrorKind::FileNotFound( pub_key_file.to_string()) )?;
+                if pubkey_str.is_empty() {
+                    continue;
+                }
+
+                match  PublicKey::from_hex(&pubkey_str ) {
+                    Ok(pk) => { pub_keys.push(pk); }
+                    _ => { cli_message!(
+                                "{}: unable to read a public key `{}`. Will be skipped.",
+                                "WARNING".bright_yellow(), pubkey_str );
+                    }
+                }
+            }
+
+            println!("Scaning outputs for {} public keys. Please wait as this could take a few minutes to complete.", pub_keys.len() );
             let mut wallet = wallet.lock();
-            wallet.scan_outputs( pub_key )?;
-            cli_message!("scaning outputs is completeed!");
+            wallet.scan_outputs( pub_keys, output_fn.clone() )?;
+            cli_message!("scanning of the outputs is completed! result file location: {}", output_fn );
         }
         Some("export-proof") => {
             let args = matches.subcommand_matches("export-proof").unwrap();

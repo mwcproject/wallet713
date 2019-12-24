@@ -230,7 +230,7 @@ pub fn invoice_tx<T: ?Sized, C, K>(
     selection_strategy_is_use_all: bool,
     parent_key_id: Identifier,
     message: Option<String>,
-) -> Result<(impl FnOnce(&mut T, &Transaction) -> Result<(), Error>), Error>
+) -> Result<impl FnOnce(&mut T, &Transaction) -> Result<(), Error>, Error>
 where
     T: WalletBackend<C, K>,
     C: NodeClient,
