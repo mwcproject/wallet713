@@ -23,7 +23,7 @@ use super::types::{
     TxWrapper, WalletBackend, WalletInfo,
 };
 use super::updater;
-use grin_keychain::SwitchCommitmentType;
+use grin_keychain::{SwitchCommitmentType, ExtKeychainPath};
 
 pub struct Wallet713OwnerAPI<W: ?Sized, C, K>
 where
@@ -110,130 +110,60 @@ where
         res
     }
 
-    pub fn verifyoutputamount(&self, _output: &str, message: &str, _amount: u64, signature: &str, pubkey: &str) -> Result<(), Error>
+    pub fn getrootpublickey(&self, message: Option<&str>)  -> Result<(), Error>
     where
-                K: Keychain {
+            K: Keychain {
 
         let mut w = self.wallet.lock();
         w.open_with_credentials()?;
 
-        let message = Hash::from_hex(&message);
-        if message.is_err() {
-            println!("ERROR: invalid message");
-            return Ok(());
+
+        let root_pub_key = w.keychain().public_root_key().to_hex();
+
+        cli_message!("Root public key: {}", root_pub_key);
+
+        match message {
+            Some(msg) => {
+                // that path and type will give as the root private key
+                let id = ExtKeychainPath::new(0,0,0,0,0).to_identifier();
+
+                // Note, first 32 bytes of the message will be used...
+                // Hash size equal to the message size (32 bytes).
+                // Actually we could sign the message, not
+                let msg_hash = Hash::from_vec(msg.as_bytes());
+                let msg_message = Message::from_slice(msg_hash.as_bytes())?;
+
+                // id pointes to the root key. Will check
+                let signature = w.keychain().sign(&msg_message,0, &id, &SwitchCommitmentType::None)?;
+
+                println!("Signature: {}", signature.to_hex());
+            },
+            None  => {}
         }
-        let message = message.unwrap();
-
-        let msg = Message::from_slice(message.as_bytes());
-
-        if msg.is_err() {
-            println!("ERROR: invalid message");
-            return Ok(());
-        }
-
-        let msg = msg.unwrap();
-
-        let secp = Secp256k1::with_caps(ContextFlag::VerifyOnly);
-        let pk = grin_util::from_hex(pubkey.to_string());
-
-        if pk.is_err() {
-            println!("ERROR: invalid pubkey");
-            return Ok(());
-        }
-        let pk = pk.unwrap();
-
-        let pk = PublicKey::from_slice(&secp, &pk);
-
-        if pk.is_err() {
-            println!("ERROR: invalid pubkey");
-            return Ok(());
-        }
-        let pk = pk.unwrap();
-
-
-        let signature = grin_util::from_hex(signature.to_string());
-
-        if signature.is_err() {
-            println!("ERROR: invalid signature");
-            return Ok(());
-        }
-        let signature = signature.unwrap();
-
-        let signature = Signature::from_der(&secp, &signature);
-
-        if signature.is_err() {
-            println!("ERROR: invalid signature");
-            return Ok(());
-        }
-        let signature = signature.unwrap();
-
-        let is_verified = secp.verify(&msg, &signature, &pk).is_ok();
-        if is_verified {
-            println!("Proof valid!");
-        } else {
-            println!("WARNING: Proof INVALID!");
-        }
-
         Ok(())
     }
 
-    pub fn proveoutputamount(&self, output: &str, message: &str) -> Result<(), Error>
+    pub fn verifysignature( &self, message: &str, signature: &str, pubkey: &str) -> Result<(), Error>
     where
-                K: Keychain {
+            K: Keychain {
 
         let mut w = self.wallet.lock();
         w.open_with_credentials()?;
-        let parent_key_id = w.get_parent_key_id();
 
-        self.update_outputs(&mut w, false, None, None);
+        let msg = Hash::from_vec(message.as_bytes());
+        let msg = Message::from_slice(msg.as_bytes())?;
 
-        let outputs = updater::retrieve_outputs(&mut *w,
-                                  false,
-                                  None,
-                                  Some(&parent_key_id),
-                                  0,
-                                  0)?;
+        let secp = Secp256k1::with_caps(ContextFlag::VerifyOnly);
+        let pk = grin_util::from_hex(pubkey.to_string())?;
+        let pk = PublicKey::from_slice(&secp, &pk)?;
 
+        let signature = grin_util::from_hex(signature.to_string())?;
+        let signature = Signature::from_der(&secp, &signature)?;
 
-        for o in outputs {
-            if output == o.0.commit.unwrap() {
-                let id = o.0.key_id;
-                let value = o.0.value;
-                let sec_key = w.keychain().derive_key(value, &id, &SwitchCommitmentType::Regular)?;
-                let pubkey = PublicKey::from_secret_key(w.keychain().secp(), &sec_key)?;
-                let message_proc = Hash::from_hex(&message);
-                if message_proc.is_err() {
-                    println!("ERROR: invalid hex message specified");
-                    return Ok(());
-                }
-                let message_proc = message_proc.unwrap();
-                let message_proc = Message::from_slice(message_proc.as_bytes());
-
-                if message_proc.is_err() {
-                    println!("ERROR: invalid hex message specified");
-                    return Ok(());
-                }
-
-                let message_proc = message_proc.unwrap();
-
-                let sig = w.keychain().sign(&message_proc, value, &id, &SwitchCommitmentType::Regular)?;
-                println!("Proof for message = {:?}", message);
-                println!("----------------------------------------------------------------------------------------------------------------------------------------------------------");
-                println!("Commit: {}", output);
-                println!("PublicKey: {}", pubkey.to_hex());
-                println!("Signature: {}", sig.to_hex());
-                println!("Amount: {}", value);
-                println!("----------------------------------------------------------------------------------------------------------------------------------------------------------");
-
-
-                w.close()?; 
-                return Ok(());
-            }
+        match secp.verify(&msg, &signature, &pk) {
+            Ok(_) => println!("Message, signature and public key are valid!"),
+            Err(_) => println!("WARNING: Message, signature and public key are INVALID!"),
         }
-
-        println!("Output specified was not found!");
-        w.close()?;
-
         Ok(())
     }
 

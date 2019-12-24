@@ -53,33 +53,29 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn verifyoutputamount(
+    pub fn getrootpublickey(
         &mut self,
-        output: &str,
-        message: &str,
-        amount: u64,
-        signature: &str,
-        pubkey: &str,
-        ) -> Result<()> {
+        message: Option<&str>,
+    ) -> Result<()> {
         let wallet = self.get_wallet_instance()?;
 
         controller::owner_single_use(wallet.clone(), |api| {
-            api.verifyoutputamount(output, message, amount, signature, pubkey)?;
+            api.getrootpublickey(message).map_err(|err| ErrorKind::GenericError(err.to_string()))?;
             Ok(())
         })?;
 
         Ok(())
     }
 
-    pub fn proveoutputamount(
+    pub fn verifysignature(
         &mut self,
-        output: &str,
         message: &str,
-        ) -> Result<()> {
+        signature: &str,
+        pubkey: &str) -> Result<()> {
         let wallet = self.get_wallet_instance()?;
 
         controller::owner_single_use(wallet.clone(), |api| {
-            api.proveoutputamount(output, message)?;
+            api.verifysignature(message, signature, pubkey).map_err(|err| ErrorKind::GenericError(err.to_string()))?;
             Ok(())
         })?;
 
