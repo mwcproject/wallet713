@@ -319,7 +319,7 @@ impl<'a, 'b> Parser {
             )
             .subcommand(
                 SubCommand::with_name("getrootpublickey")
-                    .about("get wallt root public key that can be used for tracking of acount balance")
+                    .about("get wallet root public key that can be used for tracking of acount balance")
                     .arg(
                         Arg::from_usage("[message] -m, --message=<message> 'the optional message to sign'")
                     )
