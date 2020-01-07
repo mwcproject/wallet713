@@ -1,6 +1,7 @@
 use failure::Error;
 use grin_core::core::amount_to_hr_string;
 use colored::Colorize;
+use std::io::Write;
 use grin_api::Output;
 use grin_util as util;
 use url::Url;
@@ -11,6 +12,7 @@ use wallet::wallet::Wallet;
 use std::collections::HashMap;
 use grin_util::secp::pedersen::Commitment;
 use wallet::types::slate::versions::VersionedSlate;
+use std::fs::File;
 use grin_util::to_hex;
 use std::clone::Clone;
 use serde_json::Value;
@@ -606,6 +608,21 @@ pub fn process_handle_issue_send_tx(container: &WalletContainer, config: &Wallet
                         println!("Error: {:?}", address);
                         "{\"error\": \"An error occurred while parsing keybase address.\"}".to_string()
                     }
+                }
+            }
+            IssueSendMethod::File => {
+                if !body.dest.is_some() {                                                                                                                                         "{\"error\": \"dest was not specified.\"}".to_string()                                                                                                    }                                                                                                                                                             else {                                                                                                                                                             let destination = body.dest.unwrap();
+                     let mut file = File::create(destination.clone())?;
+                     let slate = wallet.initiate_send_tx(Some(destination), body.amount, body.minimum_confirmations, selection_strategy, body.num_change_outputs, body.max_outputs, body.message, None, body.version, 1, None, None,);
+                     if slate.is_ok() {
+                         let slate = slate.unwrap();
+                         file.write_all(serde_json::to_string(&slate)?.as_bytes())?;
+                         "{\"success\": true}".to_string()
+                     }
+                     else {
+                         println!("error: {:?}", slate);
+                         "{\"error\": \"error generating slate.\"}".to_string()
+                     }
                 }
             }
             IssueSendMethod::Http => {
