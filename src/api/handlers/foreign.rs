@@ -6,14 +6,14 @@ use gotham::state::{FromState, State};
 use hyper::body::Chunk;
 use hyper::{Body, Response, StatusCode};
 use crate::api::router::{trace_create_response, trace_state_and_body, WalletContainer};
-use common::Result;
-use wallet::types::{BlockFees, Slate};
+use grin_wallet_libwallet::{BlockFees, Slate};
+use common::Error;
 
 pub fn v2foreign(state: State) -> Box<HandlerFuture> {
         Box::new(super::executor::RunHandlerInThread::new(state, handle_v2foreign ) )
 }
 
-fn handle_v2foreign(state: &State, body: &Chunk) -> Result<Response<Body>> {
+fn handle_v2foreign(state: &State, body: &Chunk) -> Result<Response<Body>, Error> {
         trace_state_and_body(state, body);
         let res = String::from_utf8(body.to_vec())?;
 
@@ -57,7 +57,8 @@ fn handle_v2foreign(state: &State, body: &Chunk) -> Result<Response<Body>> {
         }
 
         let wallet = WalletContainer::borrow_from(&state).lock()?;
-        wallet.process_sender_initiated_slate(Some(format!("https://{}", id)), &mut slate, None, None)?;
+        wallet.process_sender_initiated_slate(Some(format!("https://{}", id)), &mut slate, None,
+                                              None, Some( &wallet.active_account ) )?;
 
         let slate_resp = json!({
                                    "id": 1,
@@ -82,11 +83,11 @@ pub fn receive_tx(state: State) -> Box<HandlerFuture> {
     Box::new(super::executor::RunHandlerInThread::new(state, handle_receive_tx ) )
 }
 
-fn handle_receive_tx(state: &State, body: &Chunk) -> Result<Response<Body>> {
+fn handle_receive_tx(state: &State, body: &Chunk) -> Result<Response<Body>, Error> {
     trace_state_and_body(state, body);
     let mut slate = Slate::deserialize_upgrade(&String::from_utf8(body.to_vec())?)?;
     let wallet = WalletContainer::borrow_from(&state).lock()?;
-    wallet.process_sender_initiated_slate(None, &mut slate, None, None)?;
+    wallet.process_sender_initiated_slate(None, &mut slate, None, None, Some(&wallet.active_account) )?;
     Ok(trace_create_response(
         &state,
         StatusCode::OK,
@@ -99,7 +100,7 @@ pub fn build_coinbase(state: State) -> Box<HandlerFuture> {
     Box::new(super::executor::RunHandlerInThread::new(state, handle_build_coinbase ) )
 }
 
-fn handle_build_coinbase(state: &State, body: &Chunk) -> Result<Response<Body>> {
+fn handle_build_coinbase(state: &State, body: &Chunk) -> Result<Response<Body>, Error> {
     trace_state_and_body(state, body);
     let block_fees: BlockFees = serde_json::from_slice(&body)?;
     let wallet = WalletContainer::borrow_from(&state).lock()?;
@@ -116,11 +117,11 @@ pub fn receive_invoice(state: State) -> Box<HandlerFuture> {
     Box::new(super::executor::RunHandlerInThread::new(state, handle_receive_invoice ) )
 }
 
-fn handle_receive_invoice(state: &State, body: &Chunk) -> Result<Response<Body>> {
+fn handle_receive_invoice(state: &State, body: &Chunk) -> Result<Response<Body>, Error> {
     trace_state_and_body(state, body);
     let mut slate: Slate = serde_json::from_slice(&body)?;
     let wallet = WalletContainer::borrow_from(&state).lock()?;
-    wallet.process_receiver_initiated_slate(&mut slate)?;
+    wallet.process_receiver_initiated_slate(&mut slate, None)?;
     Ok(trace_create_response(
         &state,
         StatusCode::OK,

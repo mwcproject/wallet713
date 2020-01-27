@@ -1,5 +1,4 @@
 pub mod api;
-mod backend;
 pub mod error;
 pub mod wallet;
 

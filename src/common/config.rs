@@ -5,24 +5,20 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 use grin_core::global::ChainTypes;
-use grin_util::LoggingConfig;
+use grin_util::logger::LoggingConfig;
 
 use super::crypto::{public_key_from_secret_key, PublicKey, SecretKey};
-use super::{ErrorKind, Result};
+use super::ErrorKind;
 use super::is_cli;
 use crate::contacts::{GrinboxAddress, MWCMQSAddress, DEFAULT_GRINBOX_PORT};
+use crate::common::Error;
 
 const WALLET713_HOME: &str = ".mwc713";
 const WALLET713_DEFAULT_CONFIG_FILENAME: &str = "wallet713.toml";
 
-const DEFAULT_CONFIG: &str = r#"
-	wallet713_data_path = "wallet713_data"
-	default_keybase_ttl = "24h"
-"#;
-
-#[derive(Clone, Debug, Serialize, Deserialize, StateData)]
+#[derive(Clone, Debug, Serialize, Deserialize, StateData, PartialEq)]
 pub struct Wallet713Config {
-    pub chain: Option<ChainTypes>,
+    pub chain: ChainTypes,
     pub wallet713_data_path: String,
     pub keybase_binary: Option<String>,
     pub mwcmq_domain: Option<String>,
@@ -52,15 +48,58 @@ pub struct Wallet713Config {
     /// TLS certificate private key file
     pub tls_certificate_key: Option<String>,
 
-    pub check_updates: Option<bool>,
     #[serde(skip)]
     pub config_home: Option<String>,
     #[serde(skip)]
     pub grinbox_address_key: Option<SecretKey>,
+
+    // Wallet state update frequency. In none, no updates will be run in the background.
+    pub wallet_updater_frequency_sec: Option<u32>,
+}
+
+impl Default for Wallet713Config{
+    fn default() -> Wallet713Config {
+        Wallet713Config::default(&ChainTypes::Mainnet)
+    }
 }
 
 impl Wallet713Config {
-    pub fn exists(config_path: Option<&str>, chain: &Option<ChainTypes>) -> Result<bool> {
+
+    pub fn default(chain: &ChainTypes) -> Wallet713Config {
+        Wallet713Config {
+            chain: chain.clone(),
+            wallet713_data_path: "wallet713_data".to_string(),
+            keybase_binary: None,
+            mwcmq_domain: None,
+            mwcmq_port: None,
+            mwcmqs_domain: None,
+            mwcmqs_port: None,
+            grinbox_protocol_unsecure: None,
+            grinbox_address_index: None,
+            mwc_node_uri: None,
+            mwc_node_secret: None,
+            grinbox_listener_auto_start: None,
+            keybase_listener_auto_start: None,
+            max_auto_accept_invoice: None,
+            default_keybase_ttl: Some("24h".to_string()),
+            owner_api: None,
+            owner_api_address: None,
+            owner_api_secret: None,
+            owner_api_include_foreign: Some(false),
+            foreign_api: None,
+            disable_history: None,
+            foreign_api_address: None,
+            foreign_api_secret: None,
+            tls_certificate_file: None,
+            tls_certificate_key: None,
+            config_home: None,
+            grinbox_address_key: None,
+            wallet_updater_frequency_sec: None,
+        }
+    }
+
+
+    pub fn exists(config_path: Option<&str>, chain: &ChainTypes) -> Result<bool, Error> {
         let default_path_buf = Wallet713Config::default_config_path(chain)?;
         let default_path = default_path_buf.to_str().unwrap();
         let config_path = config_path.unwrap_or(default_path);
@@ -69,8 +108,8 @@ impl Wallet713Config {
 
     pub fn from_file(
         config_path: Option<&str>,
-        chain: &Option<ChainTypes>,
-    ) -> Result<Wallet713Config> {
+        chain: &ChainTypes,
+    ) -> Result<Wallet713Config, Error> {
         let default_path_buf = Wallet713Config::default_config_path(chain)?;
         let default_path = default_path_buf.to_str().unwrap();
         let config_path = config_path.unwrap_or(default_path);
@@ -82,34 +121,25 @@ impl Wallet713Config {
         Ok(config)
     }
 
-    pub fn default_config_path(chain: &Option<ChainTypes>) -> Result<PathBuf> {
+    pub fn default_config_path(chain: &ChainTypes) -> Result<PathBuf, Error> {
         let mut path = Wallet713Config::default_home_path(chain)?;
         path.push(WALLET713_DEFAULT_CONFIG_FILENAME);
         Ok(path)
     }
 
-    pub fn default_home_path(chain: &Option<ChainTypes>) -> Result<PathBuf> {
+    pub fn default_home_path(chain: &ChainTypes) -> Result<PathBuf, Error> {
         let mut path = match dirs::home_dir() {
             Some(home) => home,
             None => std::env::current_dir()?,
         };
 
         path.push(WALLET713_HOME);
-        match chain {
-            Some(ref chain_type) => path.push(chain_type.shortname()),
-            None => path.push(ChainTypes::Mainnet.shortname()),
-        };
+        path.push(chain.shortname());
         std::fs::create_dir_all(path.as_path())?;
         Ok(path)
     }
 
-    pub fn default(chain: &Option<ChainTypes>) -> Result<Wallet713Config> {
-        let mut config: Wallet713Config = toml::from_str(DEFAULT_CONFIG)?;
-        config.chain = chain.clone();
-        Ok(config)
-    }
-
-    pub fn to_file(&mut self, config_path: Option<&str>) -> Result<()> {
+    pub fn to_file(&mut self, config_path: Option<&str>) -> Result<(), Error> {
         let default_path_buf = Wallet713Config::default_config_path(&self.chain)?;
         let default_path = default_path_buf.to_str().unwrap();
         let config_path = config_path.unwrap_or(default_path);
@@ -120,17 +150,7 @@ impl Wallet713Config {
         Ok(())
     }
 
-    pub fn as_wallet_config(&self) -> Result<WalletConfig> {
-        let data_path_buf = self.get_data_path()?;
-        let data_path = data_path_buf.to_str().unwrap();
-        let mut wallet_config = WalletConfig::default();
-        wallet_config.chain_type = self.chain.clone();
-        wallet_config.data_file_dir = data_path.to_string();
-        wallet_config.check_node_api_http_addr = self.mwc_node_uri().clone();
-        Ok(wallet_config)
-    }
-
-    pub fn get_mwcmqs_address(&self) -> Result<MWCMQSAddress> {
+    pub fn get_mwcmqs_address(&self) -> Result<MWCMQSAddress, Error> {
         let public_key = self.get_grinbox_public_key()?;
         Ok(MWCMQSAddress::new(
             public_key,
@@ -143,7 +163,7 @@ impl Wallet713Config {
         self.disable_history.unwrap_or(false)
     }
 
-    pub fn get_mwcmqs_secret_key(&self) -> Result<SecretKey> {
+    pub fn get_mwcmqs_secret_key(&self) -> Result<SecretKey, Error> {
         self.grinbox_address_key.clone()
             .ok_or_else(|| ErrorKind::NoWallet.into())
     }
@@ -168,7 +188,7 @@ impl Wallet713Config {
         self.grinbox_address_index.unwrap_or(0)
     }
 
-    pub fn get_grinbox_address(&self) -> Result<GrinboxAddress> {
+    pub fn get_grinbox_address(&self) -> Result<GrinboxAddress, Error> {
         let public_key = self.get_grinbox_public_key()?;
         Ok(GrinboxAddress::new(
             public_key,
@@ -177,16 +197,28 @@ impl Wallet713Config {
         ))
     }
 
-    pub fn get_grinbox_public_key(&self) -> Result<PublicKey> {
+    pub fn get_grinbox_public_key(&self) -> Result<PublicKey, Error> {
         public_key_from_secret_key(&self.get_grinbox_secret_key()?)
     }
 
-    pub fn get_grinbox_secret_key(&self) -> Result<SecretKey> {
+    pub fn get_grinbox_secret_key(&self) -> Result<SecretKey, Error> {
         self.grinbox_address_key.clone()
             .ok_or_else(|| ErrorKind::NoWallet.into())
     }
 
-    pub fn get_data_path(&self) -> Result<PathBuf> {
+    // mwc-wallet using top level dir + data dir. We need to follow it
+    pub fn get_top_level_directory(&self) -> Result<String, Error> {
+        let dir = String::from( self.get_data_path()?.parent().unwrap().to_str().unwrap() );
+        Ok(dir)
+    }
+
+    // mwc-wallet using top level dir + data dir. We need to follow it
+    pub fn get_wallet_data_directory(&self) -> Result<String, Error> {
+        let wallet_dir = String::from(self.get_data_path()?.file_name().unwrap().to_str().unwrap());
+        Ok(wallet_dir)
+    }
+
+    pub fn get_data_path(&self) -> Result<PathBuf, Error> {
         let mut data_path = PathBuf::new();
         data_path.push(self.wallet713_data_path.clone());
         if data_path.is_absolute() {
@@ -204,8 +236,13 @@ impl Wallet713Config {
         Ok(data_path)
     }
 
+    pub fn get_data_path_str(&self) -> Result<String, Error> {
+        let path_str = self.get_data_path()?.to_str().unwrap().to_owned();
+        Ok(path_str)
+    }
+
     pub fn mwc_node_uri(&self) -> String {
-        let chain_type = self.chain.as_ref().unwrap_or(&ChainTypes::Floonet);
+        let chain_type = self.chain.clone();
         self.mwc_node_uri.clone().unwrap_or(match chain_type {
             ChainTypes::Mainnet => String::from("https://mwc713.mwc.mw"),
             _ => String::from("https://mwc713.floonet.mwc.mw"),
@@ -213,7 +250,7 @@ impl Wallet713Config {
     }
 
     pub fn mwc_node_secret(&self) -> Option<String> {
-        let chain_type = self.chain.as_ref().unwrap_or(&ChainTypes::Mainnet);
+        let chain_type = self.chain.clone();
         match self.mwc_node_uri {
             Some(_) => self.mwc_node_secret.clone(),
             None => match chain_type {
@@ -232,7 +269,7 @@ impl Wallet713Config {
     }
 
     pub fn owner_api_address(&self) -> String {
-        let chain_type = self.chain.as_ref().unwrap_or(&ChainTypes::Mainnet);
+        let chain_type = self.chain.clone();
         self.owner_api_address
             .as_ref()
             .map(|a| a.clone())
@@ -243,7 +280,7 @@ impl Wallet713Config {
     }
 
     pub fn foreign_api_address(&self) -> String {
-        let chain_type = self.chain.as_ref().unwrap_or(&ChainTypes::Mainnet);
+        let chain_type = self.chain.clone();
         self.foreign_api_address
             .as_ref()
             .map(|a| a.clone())
@@ -266,7 +303,6 @@ impl Wallet713Config {
     pub fn is_tls_enabled(&self) -> bool {
         self.tls_certificate_file.is_some() && self.tls_certificate_key.is_some()
     }
-
 }
 
 impl fmt::Display for Wallet713Config {
@@ -280,92 +316,6 @@ impl fmt::Display for Wallet713Config {
     }
 }
 
-
-/// Command-line wallet configuration
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct WalletConfig {
-	/// Chain parameters (default to Mainnet if none at the moment)
-	pub chain_type: Option<ChainTypes>,
-	/// The api interface/ip_address that this api server (i.e. this wallet) will run
-	/// by default this is 127.0.0.1 (and will not accept connections from external clients)
-	pub api_listen_interface: String,
-	/// The port this wallet will run on
-	pub api_listen_port: u16,
-	/// The port this wallet's owner API will run on
-	pub owner_api_listen_port: Option<u16>,
-	/// Location of the secret for basic auth on the Owner API
-	pub api_secret_path: Option<String>,
-	/// Location of the node api secret for basic auth on the Grin API
-	pub node_api_secret_path: Option<String>,
-	/// The api address of a running server node against which transaction inputs
-	/// will be checked during send
-	pub check_node_api_http_addr: String,
-	/// Whether to include foreign API endpoints on the Owner API
-	pub owner_api_include_foreign: Option<bool>,
-	/// The directory in which wallet files are stored
-	pub data_file_dir: String,
-	/// If Some(true), don't cache commits alongside output data
-	/// speed improvement, but your commits are in the database
-	pub no_commit_cache: Option<bool>,
-	/// TLS certificate file
-	pub tls_certificate_file: Option<String>,
-	/// TLS certificate private key file
-	pub tls_certificate_key: Option<String>,
-	/// Whether to use the black background color scheme for command line
-	/// if enabled, wallet command output color will be suitable for black background terminal
-	pub dark_background_color_scheme: Option<bool>,
-	/// The exploding lifetime (minutes) for keybase notification on coins received
-	pub keybase_notify_ttl: Option<u16>,
-}
-
-impl Default for WalletConfig {
-	fn default() -> WalletConfig {
-		WalletConfig {
-			chain_type: Some(ChainTypes::Mainnet),
-			api_listen_interface: "127.0.0.1".to_string(),
-			api_listen_port: 3415,
-			owner_api_listen_port: Some(WalletConfig::default_owner_api_listen_port()),
-			api_secret_path: Some(".api_secret".to_string()),
-			node_api_secret_path: Some(".api_secret".to_string()),
-			check_node_api_http_addr: "http://127.0.0.1:3413".to_string(),
-			owner_api_include_foreign: Some(false),
-			data_file_dir: ".".to_string(),
-			no_commit_cache: Some(false),
-			tls_certificate_file: None,
-			tls_certificate_key: None,
-			dark_background_color_scheme: Some(true),
-			keybase_notify_ttl: Some(1440),
-		}
-	}
-}
-
-#[allow(dead_code)]
-impl WalletConfig {
-        /*
-	/// API Listen address
-	pub fn api_listen_addr(&self) -> String {
-		format!("{}:{}", self.api_listen_interface, self.api_listen_port)
-	}
-        */
-
-	/// Default listener port
-	pub fn default_owner_api_listen_port() -> u16 {
-		3420
-	}
-
-	/// Use value from config file, defaulting to sensible value if missing.
-	pub fn owner_api_listen_port(&self) -> u16 {
-		self.owner_api_listen_port
-			.unwrap_or(WalletConfig::default_owner_api_listen_port())
-	}
-
-        /*
-	/// Owner API listen address
-	pub fn owner_api_listen_addr(&self) -> String {
-		format!("127.0.0.1:{}", self.owner_api_listen_port())
-	}
-        */
-}
 /// Error type wrapping config errors.
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -427,7 +377,7 @@ pub struct GlobalWalletConfig {
 pub struct GlobalWalletConfigMembers {
 	/// Wallet configuration
 	#[serde(default)]
-	pub wallet: WalletConfig,
+	pub wallet: Wallet713Config,
 	/// Logging config
 	pub logging: Option<LoggingConfig>,
 }

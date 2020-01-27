@@ -34,7 +34,7 @@ impl AddressBookBackend for Backend {
         let contact_key = to_key(CONTACT_PREFIX, &mut name.to_vec());
         option_to_not_found(
             self.db.get_ser(&contact_key),
-            &format!("Contact id: {:x?}", name.to_vec()),
+            || format!("Contact id: {:x?}", name.to_vec()),
         )
         .map_err(|e| e.into())
     }

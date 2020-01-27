@@ -5,7 +5,8 @@ use gotham::state::{FromState, State};
 use hyper::body::Chunk;
 use hyper::{Body, Response, StatusCode};
 
-use common::{Result, Arc};
+use common::Arc;
+use crate::common::{Error};
 use tokio::prelude::Async;
 use std::thread;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -25,12 +26,12 @@ pub struct RunHandlerInThread {
 
     // Need option because join require ownership transfer. That is why can't belong to 'self' dicertly
     // (State, Result<Response<Body>>)  - resulting from API call as required by gotham
-    worker_thread: Option<thread::JoinHandle<(State, Result<Response<Body>>)>>,
+    worker_thread: Option<thread::JoinHandle<(State, Result<Response<Body>, Error>)>>,
 }
 
 impl RunHandlerInThread
 {
-    pub fn new(mut state: State, handler:  fn(state: &State, body: &Chunk) -> Result<Response<Body>> ) -> RunHandlerInThread {
+    pub fn new(mut state: State, handler:  fn(state: &State, body: &Chunk) -> Result<Response<Body>, Error> ) -> RunHandlerInThread {
         // 'self' variables
         let running = Arc::new( AtomicBool::new(true));
         let task= Arc::new( std::sync::Mutex::new( RunningTask{task:None} ) );

@@ -17,7 +17,7 @@ use broker::mwcmq::MWCMQSubscriber;
 use crate::api::auth::BasicAuthMiddleware;
 use crate::api::handlers::{foreign, owner};
 use crate::broker::{GrinboxPublisher, GrinboxSubscriber, KeybasePublisher, KeybaseSubscriber};
-use crate::wallet::types::{Arc, Mutex, MutexGuard};
+use crate::common::{Arc, Mutex, MutexGuard};
 use crate::wallet::Wallet;
 use common::ErrorKind;
 
@@ -51,10 +51,6 @@ impl WalletContainer {
 
     pub fn lock(&self) -> Result<MutexGuard<Wallet>, Error> {
         Ok(self.wallet.lock())
-    }
-
-    pub fn get_config(&self) -> Result<&Wallet713Config, Error> {
-        Ok(&self.config)
     }
 
     pub fn mwcmqs_publisher(&self) -> Result<&MWCMQPublisher, Error> {

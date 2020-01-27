@@ -3,7 +3,7 @@ use grin_util::secp::Secp256k1;
 use rand::{thread_rng,Rng};
 
 use crate::common::crypto::{from_hex, to_hex};
-use crate::common::{ErrorKind, Result};
+use crate::common::{ErrorKind, Error};
 use crate::contacts::GrinboxAddress;
 
 use grin_wallet_impls::encrypt;
@@ -27,7 +27,7 @@ impl EncryptedMessage {
         destination: &GrinboxAddress,
         receiver_public_key: &PublicKey,
         secret_key: &SecretKey,
-    ) -> Result<EncryptedMessage> {
+    ) -> Result<EncryptedMessage, Error> {
         let secp = Secp256k1::new();
         let mut common_secret = receiver_public_key.clone();
         common_secret
@@ -58,7 +58,7 @@ impl EncryptedMessage {
         })
     }
 
-    pub fn key(&self, sender_public_key: &PublicKey, secret_key: &SecretKey) -> Result<[u8; 32]> {
+    pub fn key(&self, sender_public_key: &PublicKey, secret_key: &SecretKey) -> Result<[u8; 32], Error> {
         let salt = from_hex(self.salt.clone()).map_err(|_| ErrorKind::Decryption)?;
 
         let secp = Secp256k1::new();
@@ -75,7 +75,7 @@ impl EncryptedMessage {
         Ok(key)
     }
 
-    pub fn decrypt_with_key(&self, key: &[u8; 32]) -> Result<String> {
+    pub fn decrypt_with_key(&self, key: &[u8; 32]) -> Result<String, Error> {
         let mut encrypted_message =
             from_hex(self.encrypted_message.clone()).map_err(|_| ErrorKind::Decryption)?;
         let nonce = from_hex(self.nonce.clone()).map_err(|_| ErrorKind::Decryption)?;

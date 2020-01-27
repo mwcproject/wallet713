@@ -7,9 +7,9 @@ use std::time::Duration;
 use serde::Serialize;
 use serde_json::{json, Value};
 
-use crate::wallet::types::Slate;
+use grin_wallet_libwallet::Slate;
 use super::types::{CloseReason, Publisher, Subscriber, SubscriptionHandler};
-use common::{Arc, ErrorKind, Mutex, Result};
+use common::{Arc, Mutex, Error, ErrorKind};
 use contacts::{Address, KeybaseAddress};
 use std::path::Path;
 
@@ -25,7 +25,7 @@ pub struct KeybasePublisher {
 }
 
 impl KeybasePublisher {
-    pub fn new(ttl: Option<String>, keybase_binary: Option<String>) -> Result<Self> {
+    pub fn new(ttl: Option<String>, keybase_binary: Option<String>) -> Result<Self, Error> {
         let _broker = KeybaseBroker::new(keybase_binary.clone())?;
         Ok(Self { ttl, keybase_binary })
     }
@@ -38,7 +38,7 @@ pub struct KeybaseSubscriber {
 }
 
 impl KeybaseSubscriber {
-    pub fn new(keybase_binary: Option<String>) -> Result<Self> {
+    pub fn new(keybase_binary: Option<String>) -> Result<Self, Error> {
         Ok(Self {
             stop_signal: Arc::new(Mutex::new(true)),
             keybase_binary: keybase_binary,
@@ -47,7 +47,7 @@ impl KeybaseSubscriber {
 }
 
 impl Publisher for KeybasePublisher {
-    fn post_slate(&self, slate: &Slate, to: &dyn Address) -> Result<()> {
+    fn post_slate(&self, slate: &Slate, to: &dyn Address) -> Result<(), Error> {
         let keybase_address = KeybaseAddress::from_str(&to.to_string())?;
 
         // make sure we don't send message with ttl to wallet713 as keybase oneshot does not support exploding lifetimes
@@ -68,7 +68,7 @@ impl Publisher for KeybasePublisher {
 }
 
 impl Subscriber for KeybaseSubscriber {
-    fn start(&mut self, handler: Box<dyn SubscriptionHandler + Send>) -> Result<()> {
+    fn start(&mut self, handler: Box<dyn SubscriptionHandler + Send>) -> Result<(), Error> {
         {
             let mut guard = self.stop_signal.lock();
             *guard = false;
@@ -76,7 +76,7 @@ impl Subscriber for KeybaseSubscriber {
 
         let mut subscribed = false;
         let mut dropped = false;
-        let result: Result<()> = loop {
+        let result: Result<(), Error> = loop {
             if *self.stop_signal.lock() {
                 break Ok(());
             };
@@ -140,7 +140,7 @@ impl Subscriber for KeybaseSubscriber {
 struct KeybaseBroker {}
 
 impl KeybaseBroker {
-    pub fn new(keybase_binary: Option<String>) -> Result<Self> {
+    pub fn new(keybase_binary: Option<String>) -> Result<Self, Error> {
         // where doesn't handle path verification at all. It expect path and pattern.
         // That is why for this case checking for file existance
         if cfg!(target_os = "windows") && keybase_binary.is_some() {
@@ -170,7 +170,7 @@ impl KeybaseBroker {
         }
     }
 
-    pub fn api_send(keybase_binary: Option<String>, payload: &str) -> Result<Value> {
+    pub fn api_send(keybase_binary: Option<String>, payload: &str) -> Result<Value, Error> {
         let mut proc = if keybase_binary.is_some() {
             Command::new(keybase_binary.unwrap())
         } else {
@@ -183,7 +183,7 @@ impl KeybaseBroker {
         Ok(response)
     }
 
-    pub fn read_from_channel(channel: &str, topic: &str, keybase_binary: Option<String>) -> Result<Vec<(String, String, String)>> {
+    pub fn read_from_channel(channel: &str, topic: &str, keybase_binary: Option<String>) -> Result<Vec<(String, String, String)>, Error> {
         let payload = json!({
             "method": "read",
             "params": {
@@ -216,7 +216,7 @@ impl KeybaseBroker {
         Ok(unread)
     }
 
-    pub fn get_unread(keybase_binary: Option<String>, topics: HashSet<&str>) -> Result<Vec<(String, String, String)>> {
+    pub fn get_unread(keybase_binary: Option<String>, topics: HashSet<&str>) -> Result<Vec<(String, String, String)>, Error> {
         let payload = json!({
             "method": "list",
             "params": {
@@ -254,7 +254,7 @@ impl KeybaseBroker {
         topic: &str,
         ttl: &Option<String>,
         keybase_binary: Option<String>,
-    ) -> Result<()> {
+    ) -> Result<(), Error> {
         let mut payload = json!({
             "method": "send",
             "params": {

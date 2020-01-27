@@ -9,7 +9,7 @@ use grin_keychain::Keychain;
 use grin_util::secp::key::SecretKey;
 use grin_keychain::SwitchCommitmentType;
 
-use crate::common::Result;
+use crate::common::Error;
 
 type HmacSha512 = Hmac<Sha512>;
 
@@ -72,7 +72,7 @@ impl BIP32Hasher for BIP32GrinboxHasher {
     }
 }
 
-pub fn derive_address_key<K: Keychain>(keychain: &K, index: u32) -> Result<SecretKey> {
+pub fn derive_address_key<K: Keychain>(keychain: &K, index: u32) -> Result<SecretKey, Error> {
     let root = keychain.derive_key(713, &K::root_key_id(), &SwitchCommitmentType::Regular)?;
     let mut hasher = BIP32GrinboxHasher::new(is_floonet());
     let secp = keychain.secp();

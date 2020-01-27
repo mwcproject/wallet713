@@ -7,7 +7,7 @@ use grin_core::global::is_mainnet;
 use common::crypto::{
     Base58, PublicKey, GRINBOX_ADDRESS_VERSION_MAINNET, GRINBOX_ADDRESS_VERSION_TESTNET,
 };
-use common::{ErrorKind, Result};
+use common::{ErrorKind, Error};
 
 const ADDRESS_REGEX: &str = r"^((?P<address_type>keybase|mwcmq|mwcmqs|https)://).+$";
 const GRINBOX_ADDRESS_REGEX: &str = r"^(mwcmq://)?(?P<public_key>[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{52})(@(?P<domain>[a-zA-Z0-9\.]+)(:(?P<port>[0-9]*))?)?$";
@@ -32,7 +32,7 @@ pub enum AddressType {
 }
 
 pub trait Address: Debug + Display {
-    fn from_str(s: &str) -> Result<Self>
+    fn from_str(s: &str) -> Result<Self, Error>
     where
         Self: Sized;
     fn address_type(&self) -> AddressType;
@@ -40,7 +40,7 @@ pub trait Address: Debug + Display {
 }
 
 impl dyn Address {
-    pub fn parse(address: &str) -> Result<Box<dyn Address>> {
+    pub fn parse(address: &str) -> Result<Box<dyn Address>, Error> {
         let re = Regex::new(ADDRESS_REGEX)?;
         let captures = re.captures(address);
         if captures.is_none() {
@@ -61,15 +61,15 @@ impl dyn Address {
 }
 
 pub trait AddressBookBackend {
-    fn get_contact(&mut self, name: &[u8]) -> Result<Contact>;
+    fn get_contact(&mut self, name: &[u8]) -> Result<Contact, Error>;
     fn contacts(&self) -> Box<dyn Iterator<Item = Contact>>;
-    fn batch<'a>(&'a self) -> Result<Box<dyn AddressBookBatch + 'a>>;
+    fn batch<'a>(&'a self) -> Result<Box<dyn AddressBookBatch + 'a>, Error>;
 }
 
 pub trait AddressBookBatch {
-    fn save_contact(&mut self, contact: &Contact) -> Result<()>;
-    fn delete_contact(&mut self, public_key: &[u8]) -> Result<()>;
-    fn commit(&mut self) -> Result<()>;
+    fn save_contact(&mut self, contact: &Contact) -> Result<(), Error>;
+    fn delete_contact(&mut self, public_key: &[u8]) -> Result<(), Error>;
+    fn commit(&mut self) -> Result<(), Error>;
 }
 
 pub struct AddressBook {
@@ -77,12 +77,12 @@ pub struct AddressBook {
 }
 
 impl AddressBook {
-    pub fn new(backend: Box<dyn AddressBookBackend + Send>) -> Result<Self> {
+    pub fn new(backend: Box<dyn AddressBookBackend + Send>) -> Result<Self, Error> {
         let address_book = Self { backend };
         Ok(address_book)
     }
 
-    pub fn add_contact(&mut self, contact: &Contact) -> Result<()> {
+    pub fn add_contact(&mut self, contact: &Contact) -> Result<(), Error> {
         let result = self.get_contact(&contact.name);
         if result.is_ok() {
             return Err(ErrorKind::ContactAlreadyExists(contact.name.clone()))?;
@@ -93,19 +93,19 @@ impl AddressBook {
         Ok(())
     }
 
-    pub fn remove_contact(&mut self, name: &str) -> Result<()> {
+    pub fn remove_contact(&mut self, name: &str) -> Result<(), Error> {
         let mut batch = self.backend.batch()?;
         batch.delete_contact(name.as_bytes())?;
         batch.commit()?;
         Ok(())
     }
 
-    pub fn get_contact(&mut self, name: &str) -> Result<Contact> {
+    pub fn get_contact(&mut self, name: &str) -> Result<Contact, Error> {
         let contact = self.backend.get_contact(name.as_bytes())?;
         Ok(contact)
     }
 
-    pub fn get_contact_by_address(&mut self, address: &str) -> Result<Contact> {
+    pub fn get_contact_by_address(&mut self, address: &str) -> Result<Contact, Error> {
         for contact in self.contacts() {
             if contact.address == address {
                 return Ok(contact);
@@ -126,7 +126,7 @@ pub struct Contact {
 }
 
 impl Contact {
-    pub fn new(name: &str, address: Box<dyn Address>) -> Result<Self> {
+    pub fn new(name: &str, address: Box<dyn Address>) -> Result<Self, Error> {
         Ok(Self {
             name: name.to_string(),
             address: address.to_string(),
@@ -156,7 +156,7 @@ pub struct KeybaseAddress {
 }
 
 impl Address for KeybaseAddress {
-    fn from_str(s: &str) -> Result<Self> {
+    fn from_str(s: &str) -> Result<Self, Error> {
         let re = Regex::new(KEYBASE_ADDRESS_REGEX).unwrap();
         let captures = re.captures(s);
         if captures.is_none() {
@@ -212,13 +212,13 @@ impl MWCMQSAddress {
         }
     }
     
-    pub fn public_key(&self) -> Result<PublicKey> {
+    pub fn public_key(&self) -> Result<PublicKey, Error> {
         PublicKey::from_base58_check(&self.public_key, version_bytes())
     }
 }
 
 impl Address for MWCMQSAddress {
-    fn from_str(s: &str) -> Result<Self> {
+    fn from_str(s: &str) -> Result<Self, Error> {
         let re = Regex::new(MWCMQ_ADDRESS_REGEX).unwrap();
         let captures = re.captures(s);
         if captures.is_none() {
@@ -277,13 +277,13 @@ impl GrinboxAddress {
         }
     }
 
-    pub fn public_key(&self) -> Result<PublicKey> {
+    pub fn public_key(&self) -> Result<PublicKey, Error> {
         PublicKey::from_base58_check(&self.public_key, version_bytes())
     }
 }
 
 impl Address for GrinboxAddress {
-    fn from_str(s: &str) -> Result<Self> {
+    fn from_str(s: &str) -> Result<Self, Error> {
         let re = Regex::new(GRINBOX_ADDRESS_REGEX).unwrap();
         let captures = re.captures(s);
         if captures.is_none() {
@@ -332,7 +332,7 @@ pub struct HttpsAddress {
 }
 
 impl Address for HttpsAddress {
-    fn from_str(s: &str) -> Result<Self> {
+    fn from_str(s: &str) -> Result<Self, Error> {
         Url::parse(s).map_err(|_| ErrorKind::HttpsAddressParsingError(s.to_string()))?;
 
         Ok(Self { uri: s.to_string() })
