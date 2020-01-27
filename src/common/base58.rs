@@ -1,4 +1,4 @@
-use super::{ErrorKind, Result};
+use super::{ErrorKind, Error};
 use sha2::{Digest, Sha256};
 
 const ALPHABET: &'static [u8] = b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -22,8 +22,8 @@ pub trait ToBase58 {
 /// A trait for converting base58 encoded values.
 pub trait FromBase58 {
     /// Convert a value of `self`, interpreted as base58 encoded data, into an owned vector of bytes, returning a vector.
-    fn from_base58(&self) -> Result<Vec<u8>>;
-    fn from_base58_check(&self, version_bytes: usize) -> Result<(Vec<u8>, Vec<u8>)>;
+    fn from_base58(&self) -> Result<Vec<u8>, Error>;
+    fn from_base58_check(&self, version_bytes: usize) -> Result<(Vec<u8>, Vec<u8>), Error>;
 }
 
 impl ToBase58 for [u8] {
@@ -78,7 +78,7 @@ impl ToBase58 for [u8] {
 }
 
 impl FromBase58 for str {
-    fn from_base58(&self) -> Result<Vec<u8>> {
+    fn from_base58(&self) -> Result<Vec<u8>, Error> {
         let mut bin = [0u8; 132];
         let mut out = [0u32; (132 + 3) / 4];
         let bytesleft = (bin.len() % 4) as u8;
@@ -153,7 +153,7 @@ impl FromBase58 for str {
         Ok(bin[leading_zeros - zcount..].to_vec())
     }
 
-    fn from_base58_check(&self, version_bytes: usize) -> Result<(Vec<u8>, Vec<u8>)> {
+    fn from_base58_check(&self, version_bytes: usize) -> Result<(Vec<u8>, Vec<u8>), Error> {
         let mut payload: Vec<u8> = self.from_base58()?;
         if payload.len() < 5 {
             Err(ErrorKind::InvalidBase58Checksum)?;

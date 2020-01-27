@@ -1,7 +1,5 @@
 use failure::Fail;
 
-use crate::wallet::error::ErrorKind as WalletErrorKind;
-
 #[derive(Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ErrorKind {
     #[fail(display = "\x1b[31;1merror:\x1b[0m secp error")]
@@ -10,61 +8,8 @@ pub enum ErrorKind {
     ModelNotFound,
     #[fail(display = "\x1b[31;1merror:\x1b[0m could not open wallet seed!")]
     WalletSeedCouldNotBeOpened,
-    #[fail(display = "\x1b[31;1merror:\x1b[0m error opening wallet!")]
-    OpenWalletError,
-    #[fail(display = "\x1b[31;1merror:\x1b[0m error deriving keychain!")]
-    DeriveKeychainError,
-    #[fail(display = "\x1b[31;1merror:\x1b[0m wallet should be empty before attempting restore!")]
-    WalletShouldBeEmpty,
-    #[fail(display = "\x1b[31;1merror:\x1b[0m default account cannot be renamed!")]
-    AccountDefaultCannotBeRenamed,
-    #[fail(display = "\x1b[31;1merror:\x1b[0m Amount specified does not match slate! slate = {} / sum = {}",
-                           amount, sum)]
-    AmountMismatch { amount: u64, sum: u64 } ,
-    #[fail(
-        display = "\x1b[31;1merror:\x1b[0m transaction with slate id {} already received!",
-        0
-    )]
-    TransactionAlreadyReceived(String),
-    #[fail(
-        display = "\x1b[31;1merror:\x1b[0m transaction with slate id {} does not exist!",
-        0
-    )]
-    TransactionDoesntExist(String),
-    #[fail(
-        display = "\x1b[31;1merror:\x1b[0m transaction with slate id {} can not be cancelled!",
-        0
-    )]
-    TransactionNotCancellable(String),
-    #[fail(
-        display = "\x1b[31;1merror:\x1b[0m transaction cancellation error: {}",
-        _0
-    )]
-    TransactionCancellationError(&'static str),
     #[fail(display = "\x1b[31;1merror:\x1b[0m transaction doesn't have a proof!")]
     TransactionHasNoProof,
-    #[fail(display = "\x1b[31;1merror:\x1b[0m internal transaction error!")]
-    LibTX(WalletErrorKind),
-    #[fail(
-        display = "\x1b[31;1merror:\x1b[0m Not enough funds. Required: {}, Available: {}",
-        needed_disp, available_disp
-    )]
-    NotEnoughFunds {
-        available: u64,
-        available_disp: String,
-        needed: u64,
-        needed_disp: String,
-    },
-    #[fail(
-        display = "\x1b[31;1merror:\x1b[0m Account label {} already exists!",
-        0
-    )]
-    AccountLabelAlreadyExists(String),
-    #[fail(
-        display = "\x1b[31;1merror:\x1b[0m Account label {} doesn't exist!",
-        0
-    )]
-    AccountLabelNotExists(String),
     #[fail(
         display = "\x1b[31;1merror:\x1b[0m invalid transaction id given: `{}`",
         0
@@ -209,14 +154,8 @@ pub enum ErrorKind {
     Encryption,
     #[fail(display = "\x1b[31;1merror:\x1b[0m unable to decrypt message")]
     Decryption,
-    #[fail(display = "\x1b[31;1merror:\x1b[0m restore error: {}", 0)]
-    Restore(String),
-    #[fail(display = "\x1b[31;1merror:\x1b[0m unknown account: {}", 0)]
-    UnknownAccountLabel(String),
     #[fail(display = "\x1b[31;1merror:\x1b[0m http request error")]
     HttpRequest,
-    #[fail(display = "Node API error")]
-    Node,
     #[fail(display = "\x1b[31;1merror:\x1b[0m {}", 0)]
     GenericError(String),
     #[fail(display = "\x1b[31;1merror:\x1b[0m unable to verify proof")]
@@ -225,4 +164,26 @@ pub enum ErrorKind {
     FileNotFound(String),
     #[fail(display = "\x1b[31;1merror:\x1b[0m unable to delete the file '{}'", 0)]
     FileUnableToDelete(String),
+
+    #[fail(display = "\x1b[31;1merror:\x1b[0m Tx Proof unable to parse address '{}'", 0)]
+    TxProofParseAddress(String),
+    #[fail(display = "\x1b[31;1merror:\x1b[0m Tx Proof unable to parse an address as a public key")]
+    TxProofParsePublicKey,
+
+    #[fail(display = "\x1b[31;1merror:\x1b[0m Tx Proof unable to parse signature '{}'", 0)]
+    TxProofParseSignature(String),
+
+    #[fail(display = "\x1b[31;1merror:\x1b[0m Tx Proof unable to verify signature")]
+    TxProofVerifySignature,
+    #[fail(display = "\x1b[31;1merror:\x1b[0m Tx Proof unable to parse ecrypted message")]
+    TxProofParseEncryptedMessage,
+    #[fail(display = "\x1b[31;1merror:\x1b[0m Tx Proof unable to verify destination address")]
+    TxProofVerifyDestination,
+
+    #[fail(display = "\x1b[31;1merror:\x1b[0m Tx Proof unable to build a key")]
+    TxProofDecryptionKey,
+    #[fail(display = "\x1b[31;1merror:\x1b[0m Tx Proof unable to decrypt the message")]
+    TxProofDecryptMessage,
+    #[fail(display = "\x1b[31;1merror:\x1b[0m Tx Proof unable to build a slate from the message")]
+    TxProofParseSlate,
 }

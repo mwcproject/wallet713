@@ -88,6 +88,7 @@ Below is the documentation for the individual API end points:
 <table>
   <tr><td>End Point</td><td>Description</td></tr>
   <tr><td>/v1/wallet/owner/issue_send_tx</td><td>The issue send tx API sends payments via your mwc713 wallet instance. As shown in the curl example, you can specify the following values: method (mwcmqs http and keybase are the supported methods for sending at the moment), amount (amount in nanomwc 1 billion nanomwc = 1 mwc.), minimum confirmations (only select from outputs that have at least this many confirmations), max_outputs (the maximum number of outputs to use in this transaction), num_change_outputs (the number of change outputs to specify in this transaction), selection_strategy_is_use_all (whether or not to use all outputs in this transaction), dest (the destination for mwcmqs, it is an mwcmqs address of the recipient, for keybase it is the user's keybase id). The response, if successful, will be the slate that was sent.</td></tr>
+  <tr><td colspan=2>NOTE  methods 'mwcmqs', 'keybase' and 'http' will finalize transaction automatically when they get a respond.</td></tr>
   <tr><td colspan=2><code># curl -u mwc -X POST http://127.0.0.1:13415//v1/wallet/owner/issue_send_tx -d '{"method": "mwcmqs", "amount": 100000000, "minimum_confirmations": 1, "max_outputs": 10, "num_change_outputs": 1, "selection_strategy_is_use_all": true, "dest": "xmgEvZ4MCCGMJnRnNXKHBbHmSGWQchNr9uZpY5J1XXnsCFS45fsU"}'
    </code>
  <tr><td colspan=2><code>  
@@ -149,7 +150,7 @@ Below is the documentation for the individual API end points:
 <table>
   <tr><td>End Point</td><td>Description</td></tr>
   <tr><td>/v1/wallet/foreign/build_coinbase</td><td>Build a coinbase output and insert into wallet.</td></tr>
-  <tr><td colspan=2><code># curl  -u mwc -X POST http://127.0.0.1:13416/v1/wallet/foreign/build_coinbase -d '{"fees": 0, "height": 130} </code></td></tr>
+  <tr><td colspan=2><code># curl  -u mwc -X POST http://127.0.0.1:13416/v1/wallet/foreign/build_coinbase -d '{"fees": 0, "height": 130}' </code></td></tr>
   <tr><td colspan=2><code>{ "output": "010957734...b20e0d7efc",
     "kernel": "0100...02ca22",
     "key_id": "03000...00000"

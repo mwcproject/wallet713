@@ -1,4 +1,5 @@
-use crate::wallet::types::{Slate, TxProof};
+use crate::wallet::types::TxProof;
+use grin_wallet_libwallet::Slate;
 
 use common::config::Wallet713Config;
 use common::Error;

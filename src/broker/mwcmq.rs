@@ -12,7 +12,8 @@ use common::crypto::sign_challenge;
 use common::crypto::Hex;
 use regex::Regex;
 use std::{thread, time};
-use crate::wallet::types::{Slate, TxProof, TxProofErrorKind};
+use crate::wallet::types::TxProof;
+use grin_wallet_libwallet::Slate;
 use std::time::Duration;
 use std::io::Read;
 use std::collections::HashMap;
@@ -20,7 +21,7 @@ use common::COLORED_PROMPT;
 use common::config::Wallet713Config;
 use common::crypto::SecretKey;
 use common::message::EncryptedMessage;
-use common::{Arc, ErrorKind, Mutex, Result};
+use common::{Arc, Mutex, Error, ErrorKind};
 use contacts::{Address, GrinboxAddress, MWCMQSAddress, DEFAULT_MWCMQS_PORT};
 
 use super::types::{Publisher, Subscriber, SubscriptionHandler};
@@ -40,7 +41,7 @@ impl MWCMQPublisher {
         address: &MWCMQSAddress,
         secret_key: &SecretKey,
         config: &Wallet713Config,
-    ) -> Result<Self> {
+    ) -> Result<Self, Error> {
         Ok(Self {
             address: address.clone(),
             broker: MWCMQSBroker::new(config.clone())?,
@@ -51,7 +52,7 @@ impl MWCMQPublisher {
 }
 
 impl Publisher for MWCMQPublisher {
-    fn post_slate(&self, slate: &Slate, to: &dyn Address) -> Result<()> {
+    fn post_slate(&self, slate: &Slate, to: &dyn Address) -> Result<(), Error> {
         let to = MWCMQSAddress::from_str(&to.to_string())?;
         self.broker.post_slate(slate, &to, &self.address, &self.secret_key)?;
         Ok(())
@@ -67,7 +68,7 @@ pub struct MWCMQSubscriber {
 }
 
 impl MWCMQSubscriber {
-    pub fn new(publisher: &MWCMQPublisher) -> Result<Self> {
+    pub fn new(publisher: &MWCMQPublisher) -> Result<Self, Error> {
         Ok(Self {
             address: publisher.address.clone(),
             broker: publisher.broker.clone(),
@@ -78,7 +79,7 @@ impl MWCMQSubscriber {
 }
 
 impl Subscriber for MWCMQSubscriber {
-    fn start(&mut self, handler: Box<dyn SubscriptionHandler + Send>) -> Result<()> {
+    fn start(&mut self, handler: Box<dyn SubscriptionHandler + Send>) -> Result<(), Error> {
         self.broker
             .subscribe(&self.address, &self.secret_key, handler, self.config.clone());
         Ok(())
@@ -118,7 +119,7 @@ struct MWCMQSBroker {
 }
 
 impl MWCMQSBroker {
-    fn new(config: Wallet713Config) -> Result<Self> {
+    fn new(config: Wallet713Config) -> Result<Self, Error> {
         Ok(Self {
             inner: Arc::new(Mutex::new(None)),
             config: config,
@@ -131,7 +132,7 @@ impl MWCMQSBroker {
         to: &MWCMQSAddress,
         from: &MWCMQSAddress,
         secret_key: &SecretKey,
-    ) -> Result<()> {
+    ) -> Result<(), Error> {
 
         if !self.is_running() {
             return Err(ErrorKind::ClosedListener("mwcmqs".to_string()).into());
@@ -655,40 +656,8 @@ impl MWCMQSBroker {
                                         Some(&config.get_grinbox_address().unwrap()),
                                 ) {
                                     Ok(x) => x,
-                                    Err(TxProofErrorKind::ParseAddress) => {
-                                        cli_message!("could not parse address!");
-                                        continue;
-                                    }
-                                    Err(TxProofErrorKind::ParsePublicKey) => {
-                                        cli_message!("could not parse public key!");
-                                        continue;
-                                    }
-                                    Err(TxProofErrorKind::ParseSignature) => {
-                                        cli_message!("could not parse signature!");
-                                        continue;
-                                    }
-                                    Err(TxProofErrorKind::VerifySignature) => {
-                                        cli_message!("invalid slate signature!");
-                                        continue;
-                                    }
-                                    Err(TxProofErrorKind::ParseEncryptedMessage) => {
-                                        cli_message!("could not parse encrypted slate!");
-                                        continue;
-                                    }
-                                    Err(TxProofErrorKind::VerifyDestination) => {
-                                        cli_message!("could not verify destination!");
-                                        continue;
-                                    }
-                                    Err(TxProofErrorKind::DecryptionKey) => {
-                                        cli_message!("could not determine decryption key!");
-                                        continue;
-                                    }
-                                    Err(TxProofErrorKind::DecryptMessage) => {
-                                        cli_message!("could not decrypt slate!");
-                                        continue;
-                                    }
-                                    Err(TxProofErrorKind::ParseSlate) => {
-                                        cli_message!("could not parse decrypted slate!");
+                                    Err(err) => {
+                                        cli_message!("{}", err);
                                         continue;
                                     }
                                 };

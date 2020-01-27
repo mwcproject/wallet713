@@ -6,7 +6,6 @@ pub mod crypto;
 mod error_kind;
 pub mod hasher;
 pub mod message;
-pub mod motd;
 
 pub use self::error_kind::ErrorKind;
 pub use self::macros::*;
@@ -16,8 +15,6 @@ pub use parking_lot::{Mutex, MutexGuard};
 use serde::Serialize;
 use std::result::Result as StdResult;
 pub use std::sync::Arc;
-
-pub type Result<T> = StdResult<T, Error>;
 
 #[derive(Clone, PartialEq)]
 pub enum RuntimeMode {

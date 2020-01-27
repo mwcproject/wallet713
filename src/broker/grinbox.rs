@@ -4,11 +4,12 @@ use ws::{
     Result as WsResult, Sender,
 };
 
-use crate::wallet::types::{Slate, TxProof, TxProofErrorKind};
+use grin_wallet_libwallet::Slate;
+use crate::wallet::types::TxProof;
 use common::config::Wallet713Config;
 use common::crypto::{sign_challenge, Hex, SecretKey};
 use common::message::EncryptedMessage;
-use common::{Arc, ErrorKind, Mutex, Result};
+use common::{Arc, Mutex, Error, ErrorKind};
 use contacts::{Address, GrinboxAddress, DEFAULT_GRINBOX_PORT};
 
 use super::protocol::{ProtocolRequest, ProtocolResponse};
@@ -31,7 +32,7 @@ impl GrinboxPublisher {
         secret_key: &SecretKey,
         protocol_unsecure: bool,
         config: &Wallet713Config,
-    ) -> Result<Self> {
+    ) -> Result<Self, Error> {
         Ok(Self {
             address: address.clone(),
             broker: GrinboxBroker::new(protocol_unsecure)?,
@@ -42,7 +43,7 @@ impl GrinboxPublisher {
 }
 
 impl Publisher for GrinboxPublisher {
-    fn post_slate(&self, slate: &Slate, to: &dyn Address) -> Result<()> {
+    fn post_slate(&self, slate: &Slate, to: &dyn Address) -> Result<(), Error> {
         let to = GrinboxAddress::from_str(&to.to_string())?;
         self.broker.post_slate(slate, &to, &self.address, &self.secret_key)?;
         Ok(())
@@ -58,7 +59,7 @@ pub struct GrinboxSubscriber {
 }
 
 impl GrinboxSubscriber {
-    pub fn new(publisher: &GrinboxPublisher) -> Result<Self> {
+    pub fn new(publisher: &GrinboxPublisher) -> Result<Self, Error> {
         Ok(Self {
             address: publisher.address.clone(),
             broker: publisher.broker.clone(),
@@ -69,7 +70,7 @@ impl GrinboxSubscriber {
 }
 
 impl Subscriber for GrinboxSubscriber {
-    fn start(&mut self, handler: Box<dyn SubscriptionHandler + Send>) -> Result<()> {
+    fn start(&mut self, handler: Box<dyn SubscriptionHandler + Send>) -> Result<(), Error> {
         self.broker
             .subscribe(&self.address, &self.secret_key, handler, self.config.clone())?;
         Ok(())
@@ -106,7 +107,7 @@ impl ConnectionMetadata {
 }
 
 impl GrinboxBroker {
-    fn new(protocol_unsecure: bool) -> Result<Self> {
+    fn new(protocol_unsecure: bool) -> Result<Self, Error> {
         Ok(Self {
             inner: Arc::new(Mutex::new(None)),
             protocol_unsecure,
@@ -119,7 +120,7 @@ impl GrinboxBroker {
         to: &GrinboxAddress,
         from: &GrinboxAddress,
         secret_key: &SecretKey,
-    ) -> Result<()> {
+    ) -> Result<(), Error> {
         if !self.is_running() {
             return Err(ErrorKind::ClosedListener("mwcmq".to_string()).into());
         }
@@ -162,7 +163,7 @@ impl GrinboxBroker {
         secret_key: &SecretKey,
         handler: Box<dyn SubscriptionHandler + Send>,
         config: Wallet713Config,
-    ) -> Result<()> {
+    ) -> Result<(), Error> {
         let handler = Arc::new(Mutex::new(handler));
         let url = {
             let cloned_address = address.clone();
@@ -266,7 +267,7 @@ impl GrinboxClient {
         signature.to_hex()
     }
 
-    fn subscribe(&self, challenge: &str) -> Result<()> {
+    fn subscribe(&self, challenge: &str) -> Result<(), Error> {
         let signature = GrinboxClient::generate_signature(challenge, &self.secret_key);
         let request = ProtocolRequest::Subscribe {
             address: self.address.public_key.to_string(),
@@ -277,7 +278,7 @@ impl GrinboxClient {
         Ok(())
     }
 
-    fn send(&self, request: &ProtocolRequest) -> Result<()> {
+    fn send(&self, request: &ProtocolRequest) -> Result<(), Error> {
         let request = serde_json::to_string(&request).unwrap();
         self.sender.send(request)?;
         Ok(())
@@ -344,40 +345,8 @@ impl Handler for GrinboxClient {
                     Some(&self.address),
                 ) {
                     Ok(x) => x,
-                    Err(TxProofErrorKind::ParseAddress) => {
-                        cli_message!("could not parse address!");
-                        return Ok(());
-                    }
-                    Err(TxProofErrorKind::ParsePublicKey) => {
-                        cli_message!("could not parse public key!");
-                        return Ok(());
-                    }
-                    Err(TxProofErrorKind::ParseSignature) => {
-                        cli_message!("could not parse signature!");
-                        return Ok(());
-                    }
-                    Err(TxProofErrorKind::VerifySignature) => {
-                        cli_message!("invalid slate signature!");
-                        return Ok(());
-                    }
-                    Err(TxProofErrorKind::ParseEncryptedMessage) => {
-                        cli_message!("could not parse encrypted slate!");
-                        return Ok(());
-                    }
-                    Err(TxProofErrorKind::VerifyDestination) => {
-                        cli_message!("could not verify destination!");
-                        return Ok(());
-                    }
-                    Err(TxProofErrorKind::DecryptionKey) => {
-                        cli_message!("could not determine decryption key!");
-                        return Ok(());
-                    }
-                    Err(TxProofErrorKind::DecryptMessage) => {
-                        cli_message!("could not decrypt slate!");
-                        return Ok(());
-                    }
-                    Err(TxProofErrorKind::ParseSlate) => {
-                        cli_message!("could not parse decrypted slate!");
+                    Err(err) => {
+                        cli_message!("{}", err);
                         return Ok(());
                     }
                 };

@@ -3,7 +3,8 @@ use grin_util::secp::pedersen::Commitment;
 pub use grin_util::secp::{Message, Secp256k1, Signature};
 
 use super::base58::{FromBase58, ToBase58};
-use common::{ErrorKind, Result};
+use common::ErrorKind;
+use crate::common::Error;
 use sha2::{Digest, Sha256};
 use std::fmt::Write;
 
@@ -11,15 +12,15 @@ pub const GRINBOX_ADDRESS_VERSION_MAINNET: [u8; 2] = [1, 69];
 pub const GRINBOX_ADDRESS_VERSION_TESTNET: [u8; 2] = [1, 121];
 
 pub trait Hex<T> {
-    fn from_hex(str: &str) -> Result<T>;
+    fn from_hex(str: &str) -> Result<T, Error>;
     fn to_hex(&self) -> String;
 }
 
 pub trait Base58<T> {
-    fn from_base58(str: &str) -> Result<T>;
+    fn from_base58(str: &str) -> Result<T, Error>;
     fn to_base58(&self) -> String;
 
-    fn from_base58_check(str: &str, version_bytes: Vec<u8>) -> Result<T>;
+    fn from_base58_check(str: &str, version_bytes: Vec<u8>) -> Result<T, Error>;
     fn to_base58_check(&self, version: Vec<u8>) -> String;
 }
 
@@ -30,7 +31,7 @@ fn serialize_public_key(public_key: &PublicKey) -> Vec<u8> {
 }
 
 impl Hex<PublicKey> for PublicKey {
-    fn from_hex(str: &str) -> Result<PublicKey> {
+    fn from_hex(str: &str) -> Result<PublicKey, Error> {
         let secp = Secp256k1::new();
         let hex = from_hex(str.to_string())?;
         PublicKey::from_slice(&secp, &hex).map_err(|_| ErrorKind::InvalidBase58Key.into())
@@ -42,7 +43,7 @@ impl Hex<PublicKey> for PublicKey {
 }
 
 impl Base58<PublicKey> for PublicKey {
-    fn from_base58(str: &str) -> Result<PublicKey> {
+    fn from_base58(str: &str) -> Result<PublicKey, Error> {
         let secp = Secp256k1::new();
         let str = str::from_base58(str)?;
         PublicKey::from_slice(&secp, &str).map_err(|_| ErrorKind::InvalidBase58Key.into())
@@ -52,7 +53,7 @@ impl Base58<PublicKey> for PublicKey {
         serialize_public_key(self).to_base58()
     }
 
-    fn from_base58_check(str: &str, version_expect: Vec<u8>) -> Result<PublicKey> {
+    fn from_base58_check(str: &str, version_expect: Vec<u8>) -> Result<PublicKey, Error> {
         let secp = Secp256k1::new();
         let n_version = version_expect.len();
         let (version_actual, key_bytes) = str::from_base58_check(str, n_version)?;
@@ -68,7 +69,7 @@ impl Base58<PublicKey> for PublicKey {
 }
 
 impl Hex<Signature> for Signature {
-    fn from_hex(str: &str) -> Result<Signature> {
+    fn from_hex(str: &str) -> Result<Signature, Error> {
         let secp = Secp256k1::new();
         let hex = from_hex(str.to_string())?;
         Signature::from_der(&secp, &hex).map_err(|_| ErrorKind::Secp.into())
@@ -82,7 +83,7 @@ impl Hex<Signature> for Signature {
 }
 
 impl Hex<SecretKey> for SecretKey {
-    fn from_hex(str: &str) -> Result<SecretKey> {
+    fn from_hex(str: &str) -> Result<SecretKey, Error> {
         let secp = Secp256k1::new();
         let data = from_hex(str.to_string())?;
         SecretKey::from_slice(&secp, &data).map_err(|_| ErrorKind::Secp.into())
@@ -94,7 +95,7 @@ impl Hex<SecretKey> for SecretKey {
 }
 
 impl Hex<Commitment> for Commitment {
-    fn from_hex(str: &str) -> Result<Commitment> {
+    fn from_hex(str: &str) -> Result<Commitment, Error> {
         let data = from_hex(str.to_string())?;
         Ok(Commitment::from_vec(data))
     }
@@ -104,12 +105,12 @@ impl Hex<Commitment> for Commitment {
     }
 }
 
-pub fn public_key_from_secret_key(secret_key: &SecretKey) -> Result<PublicKey> {
+pub fn public_key_from_secret_key(secret_key: &SecretKey) -> Result<PublicKey, Error> {
     let secp = Secp256k1::new();
     PublicKey::from_secret_key(&secp, secret_key).map_err(|_| ErrorKind::Secp.into())
 }
 
-pub fn sign_challenge(challenge: &str, secret_key: &SecretKey) -> Result<Signature> {
+pub fn sign_challenge(challenge: &str, secret_key: &SecretKey) -> Result<Signature, Error> {
     let mut hasher = Sha256::new();
     hasher.input(challenge.as_bytes());
     let message = Message::from_slice(hasher.result().as_slice())?;
@@ -122,7 +123,7 @@ pub fn verify_signature(
     challenge: &str,
     signature: &Signature,
     public_key: &PublicKey,
-) -> Result<()> {
+) -> Result<(), Error> {
     let mut hasher = Sha256::new();
     hasher.input(challenge.as_bytes());
     let message = Message::from_slice(hasher.result().as_slice())?;
@@ -141,7 +142,7 @@ pub fn to_hex(bytes: Vec<u8>) -> String {
 }
 
 /// Decode a hex string into bytes.
-pub fn from_hex(hex_str: String) -> Result<Vec<u8>> {
+pub fn from_hex(hex_str: String) -> Result<Vec<u8>, Error> {
     if hex_str.len() % 2 == 1 {
         Err(ErrorKind::NumberParsingError)?;
     }
@@ -153,7 +154,7 @@ pub fn from_hex(hex_str: String) -> Result<Vec<u8>> {
     let vec = split_n(&hex_trim.trim()[..], 2)
         .iter()
         .map(|b| u8::from_str_radix(b, 16).map_err(|_| ErrorKind::NumberParsingError.into()))
-        .collect::<Result<Vec<u8>>>()?;
+        .collect::<Result<Vec<u8>, Error>>()?;
     Ok(vec)
 }
 

@@ -1,29 +1,40 @@
-use grin_util::secp::pedersen;
-use grin_api::Output;
 use uuid::Uuid;
-use grin_keychain::Identifier;
-use std::collections::HashMap;
-use common::config::{Wallet713Config, WalletConfig};
-use common::{ErrorKind, Result};
+use common::config::Wallet713Config;
+use common::{ErrorKind, Error};
 
-use super::api::{controller, display};
-use super::backend::Backend;
-use super::types::{
-    Arc, BlockFees, CbData, ExtKeychain, HTTPNodeClient, Mutex, OutputData, NodeClient, SecretKey,
-    Slate, Transaction, TxLogEntry, WalletBackend, WalletInfo, WalletInst, WalletSeed,
-};
+use grin_wallet_libwallet::{BlockFees, Slate, TxLogEntry, WalletInfo, CbData, WalletInst, OutputCommitMapping};
+use grin_wallet_impls::lifecycle::WalletSeed;
+use grin_core::core::Transaction;
+use grin_util::secp::key::{ SecretKey, PublicKey };
+use grin_wallet_impls::node_clients::HTTPNodeClient;
+use grin_keychain::keychain::ExtKeychain;
+use crate::common::{Arc, Mutex};
 
 use crate::common::crypto::Hex;
-use crate::common::hasher::derive_address_key;
-use crate::contacts::AddressBook;
-use crate::wallet::api::Wallet713OwnerAPI;
 use crate::wallet::types::TxProof;
-use wallet::types::PublicKey;
+use crate::wallet::api::api;
+use grin_util::ZeroingString;
+use grin_wallet_impls::{DefaultWalletImpl, DefaultLCProvider};
+use grin_wallet_controller::display;
+use std::sync::atomic::{AtomicBool, Ordering};
+use grin_wallet_libwallet::api_impl::owner_updater;
+use std::time::Duration;
+use std::thread;
+use std::thread::JoinHandle;
 
 pub struct Wallet {
     pub active_account: String,
-    backend: Option<Arc<Mutex<Backend<HTTPNodeClient, ExtKeychain>>>>,
+    backend: Option< Arc<Mutex<Box<dyn WalletInst<'static,
+        DefaultLCProvider<'static, HTTPNodeClient, ExtKeychain>,
+        HTTPNodeClient,
+        ExtKeychain>>>> >,
     max_auto_accept_invoice: Option<u64>,
+
+    // Updater comes from mwc-wallet. The only purpose is update statused in the background...
+    /// Stop state for update thread
+    pub updater_running: Arc<AtomicBool>,
+    /// Update thread
+    updater_handler: Option<JoinHandle<()>>,
 }
 
 impl Wallet {
@@ -32,20 +43,24 @@ impl Wallet {
             active_account: "default".to_string(),
             backend: None,
             max_auto_accept_invoice,
+            updater_running: Arc::new(AtomicBool::new(false)),
+            updater_handler: None,
         }
     }
 
     pub fn seed_exists(config: &Wallet713Config) -> bool {
-        let wallet_config = config.as_wallet_config().unwrap();
-        WalletSeed::seed_file_exists(&wallet_config.data_file_dir).is_err()
+        match config.get_data_path_str() {
+            Ok(path) => WalletSeed::seed_file_exists(&path).unwrap_or(false),
+            _ => false
+        }
     }
 
     pub fn unlock(
         &mut self,
         config: &Wallet713Config,
         account: &str,
-        passphrase: &str,
-    ) -> Result<()> {
+        passphrase: grin_util::ZeroingString,
+    ) -> Result<(), Error> {
         self.lock();
         self.create_wallet_instance(config, account, passphrase)
             .map_err(|_| ErrorKind::WalletUnlockFailed)?;
@@ -56,14 +71,8 @@ impl Wallet {
     pub fn getrootpublickey(
         &mut self,
         message: Option<&str>,
-    ) -> Result<()> {
-        let wallet = self.get_wallet_instance()?;
-
-        controller::owner_single_use(wallet.clone(), |api| {
-            api.getrootpublickey(message).map_err(|err| ErrorKind::GenericError(err.to_string()))?;
-            Ok(())
-        })?;
-
+    ) -> Result<(), Error> {
+        api::show_rootpublickey(self.get_wallet_instance()?, message).map_err(|err| ErrorKind::GenericError(err.to_string()))?;
         Ok(())
     }
 
@@ -71,14 +80,9 @@ impl Wallet {
         &mut self,
         message: &str,
         signature: &str,
-        pubkey: &str) -> Result<()> {
-        let wallet = self.get_wallet_instance()?;
-
-        controller::owner_single_use(wallet.clone(), |api| {
-            api.verifysignature(message, signature, pubkey).map_err(|err| ErrorKind::GenericError(err.to_string()))?;
-            Ok(())
-        })?;
-
+        pubkey: &str) -> Result<(), Error>
+    {
+        api::verifysignature(message, signature, pubkey).map_err(|err| ErrorKind::GenericError(err.to_string()))?;
         Ok(())
     }
 
@@ -86,81 +90,76 @@ impl Wallet {
         &mut self,
         pub_keys: Vec<PublicKey>,
         output_fn: String
-    ) -> Result<()> {
-        let wallet = self.get_wallet_instance()?;
-
-        controller::owner_single_use(wallet.clone(), |api| {
-            api.scan_outputs(pub_keys, output_fn)?;
-            Ok(())
-        })?;
+    ) -> Result<(), Error> {
+        api::scan_outputs(self.get_wallet_instance()?, pub_keys, output_fn)?;
         Ok(())
     }
 
     pub fn getnextkey(
         &mut self,
         amount: u64,
-    ) -> Result<()> {
-        let wallet = self.get_wallet_instance()?;
-
-        controller::owner_single_use(wallet.clone(), |api| {
-            let key = api.getnextkey(amount)?;
-            println!("{:?}", key);
-            Ok(())
-        })?;
+    ) -> Result<(), Error> {
+        let key = api::getnextkey(self.get_wallet_instance()?, amount)?;
+        println!("{:?}", key);
         Ok(())
     }
 
     pub fn node_info(
-        &mut self) -> Result<()> {
-        // get wallet instance
-        let wallet = self.get_wallet_instance()?;
+        &mut self) -> Result<(), Error> {
 
-        // create a single use wallet api
-        controller::owner_single_use(wallet.clone(), |api| {
-            let ni = api.node_info().unwrap();
-            // this is an error condition
-            if ni.height == 0 && ni.total_difficulty == 0 {
-                cli_message!("Error occured trying to contact node!");
-            }
-            else
-            {
-                // otherwise it worked, print it out here.
-                cli_message!("Node Info:");
-                cli_message!("Height: {}", ni.height);
-                cli_message!("Total_Difficulty: {}", ni.total_difficulty);
-                cli_message!("PeerInfo: {:?}", ni.peers);
-            }
-            Ok(())
-        })?;
+        let ni = api::node_info(self.get_wallet_instance()?)?;
+        // this is an error condition
+        if ni.height == 0 && ni.total_difficulty == 0 {
+            cli_message!("Error occured trying to contact node!");
+        } else {
+            // otherwise it worked, print it out here.
+            cli_message!("Node Info:");
+            cli_message!("Height: {}", ni.height);
+            cli_message!("Total_Difficulty: {}", ni.total_difficulty);
+            cli_message!("PeerInfo: {:?}", ni.peers);
+        }
         Ok(())
     }
 
     pub fn account_exists(
         &mut self,
-        account: &str) -> Result<bool> {
+        account: &str
+    ) -> Result<bool, Error> {
         let mut ret = false;
-        let wallet = self.get_wallet_instance()?;
-        controller::owner_single_use(wallet.clone(), |api| {
-            let acct_mappings = api.accounts()?;
-            for m in acct_mappings {
-                if m.label == account {
-                    ret = true;
-                }
+        let acct_mappings = api::accounts(self.get_wallet_instance()?)?;
+        for m in acct_mappings {
+            if m.label == account {
+                ret = true;
             }
-            Ok(())
-        })?;
+        }
         Ok(ret)
     }
     
 
-    pub fn show_mnemonic(&self, config: &Wallet713Config, passphrase: &str) -> Result<()> {
-        let wallet_config = config.as_wallet_config()?;
-        let seed = WalletSeed::from_file(&wallet_config.data_file_dir, passphrase)?;
-        seed.show_recovery_phrase()?;
+    pub fn show_mnemonic(&self, config: &Wallet713Config, passphrase: ZeroingString) -> Result<(), Error> {
+        let seed = WalletSeed::from_file( &config.get_data_path_str()?, passphrase)?;
+        grin_wallet_impls::lifecycle::show_recovery_phrase(ZeroingString::from(seed.to_mnemonic()?));
         Ok(())
     }
 
     pub fn lock(&mut self) {
+        // Stop updater thread. Normally it should take 1 second
+        self.updater_running.store(false, Ordering::Relaxed);
+        if self.updater_handler.is_some() {
+
+            let thr = self.updater_handler.take().unwrap();
+            thr.join().expect("error: Update wallet state thread failed");
+        }
+        assert!(self.updater_handler.is_none());
+
+        if self.backend.is_some() {
+            let _ = self.get_wallet_instance().and_then( |wallet_inst| {
+                let inst = wallet_inst.clone();
+                let mut w_lock = inst.lock();
+                let _ = w_lock.lc_provider().and_then(|lc_prov| lc_prov.close_wallet(None) );
+                Ok(())
+            });
+        }
         self.backend = None;
     }
 
@@ -173,12 +172,11 @@ impl Wallet {
         seed: WalletSeed,
         config: &Wallet713Config,
         account: &str,
-        passphrase: &str,
+        passphrase: grin_util::ZeroingString,
         create_new: bool,
-    ) -> Result<WalletSeed> {
-        let wallet_config = config.as_wallet_config()?;
-        let seed = self.init_seed(&wallet_config, passphrase, create_new, true, Some(seed))?;
-        self.init_backend(&wallet_config, &config, passphrase)?;
+    ) -> Result<WalletSeed, Error> {
+        let seed = self.init_seed(&config, passphrase.clone(), create_new, true, Some(seed))?;
+        //self.init_backend(&wallet_config, &config, passphrase)?;
         self.unlock(config, account, passphrase)?;
         Ok(seed)
     }
@@ -186,11 +184,10 @@ impl Wallet {
     pub fn init(
         &mut self,
         config: &Wallet713Config,
-        passphrase: &str,
+        passphrase: grin_util::ZeroingString,
         create_new: bool,
-    ) -> Result<WalletSeed> {
-        let wallet_config = config.as_wallet_config()?;
-        let seed = self.init_seed(&wallet_config, passphrase, create_new, false, None)?;
+    ) -> Result<WalletSeed, Error> {
+        let seed = self.init_seed(&config, passphrase, create_new, false, None)?;
         Ok(seed)
     }
 
@@ -198,300 +195,221 @@ impl Wallet {
         &self,
         config: &Wallet713Config,
         words: &Vec<&str>,
-        passphrase: &str,
-    ) -> Result<()> {
-        let wallet_config = config.as_wallet_config()?;
-        WalletSeed::recover_from_phrase(&wallet_config.data_file_dir, &words.join(" "), passphrase)?;
+        passphrase: grin_util::ZeroingString,
+    ) -> Result<(), Error> {
+        WalletSeed::recover_from_phrase(&config.get_data_path_str()?,
+                                        grin_util::ZeroingString::from( words.join(" ").as_str() ) ,
+                                        passphrase)?;
         Ok(())
     }
 
-    pub fn list_accounts(&self) -> Result<()> {
-        let wallet = self.get_wallet_instance()?;
-        controller::owner_single_use(wallet.clone(), |api| {
-            let acct_mappings = api.accounts()?;
-            display::accounts(acct_mappings);
-            Ok(())
-        })?;
+    pub fn list_accounts(&self) -> Result<(), Error> {
+        let acct_mappings = api::accounts(self.get_wallet_instance()?)?;
+        display::accounts(acct_mappings);
         Ok(())
     }
 
-    pub fn rename_account(&self, old_name: &str, new_name: &str) -> Result<()> {
-        let wallet = self.get_wallet_instance()?;
-        controller::owner_single_use(wallet.clone(), |api| {
-            api.rename_account_path(old_name, new_name)?;
-            Ok(())
-        })?;
+    pub fn rename_account(&self, old_name: &str, new_name: &str) -> Result<(), Error> {
+        api::rename_account_path(self.get_wallet_instance()?, old_name, new_name)?;
         Ok(())
     }
 
-    pub fn create_account(&self, name: &str) -> Result<()> {
-        let wallet = self.get_wallet_instance()?;
-        controller::owner_single_use(wallet.clone(), |api| {
-            api.create_account_path(name)?;
-            Ok(())
-        })?;
+    pub fn create_account(&self, name: &str) -> Result<(), Error> {
+        api::create_account_path(self.get_wallet_instance()?, name)?;
         Ok(())
     }
 
-    pub fn info(&self, refresh: bool, confirmations: u64) -> Result<()> {
-        let wallet = self.get_wallet_instance()?;
-        controller::owner_single_use(wallet.clone(), |api| {
-            let (mut validated, wallet_info) = api.retrieve_summary_info(refresh, confirmations, None, None)?;
-            if !refresh  { validated = true; }
-            display::info(&self.active_account, &wallet_info, validated, true);
-            Ok(())
-        })?;
+    pub fn info(&self, refresh: bool, confirmations: u64) -> Result<(), Error> {
+        let (mut validated, wallet_info) = api::retrieve_summary_info(
+            self.get_wallet_instance()?, refresh,
+            confirmations)?;
+        if !refresh { validated = true; }
+        display::info(&self.active_account, &wallet_info, validated, true);
         Ok(())
     }
 
-    pub fn get_id(&self, slate_id: Uuid) -> Result<u32> {
-        let mut id = 1;
-        let wallet = self.get_wallet_instance()?;
-        controller::owner_single_use(wallet.clone(), |api| {
-            let (_height, _) = api.node_height()?;
-            id = api.retrieve_tx_id_by_slate_id(slate_id)?;
-            Ok(())
-        })?;
-
+    pub fn get_id(&self, slate_id: Uuid) -> Result<u32, Error> {
+        // guess height is needed to check node online status.
+        let (_height, _) = api::node_height(self.get_wallet_instance()?)?;
+        let id = api::retrieve_tx_id_by_slate_id(self.get_wallet_instance()?, slate_id)?;
         Ok(id)
     }
 
-    pub fn txs_count(&self) -> Result<usize> {
-        let wallet = self.get_wallet_instance()?;
-        let mut txs_count = 0;
-        controller::owner_single_use(wallet.clone(), |api| {
-            let (_, txs) = api.retrieve_txs_with_proof_flag(true, None, None, 0, 0)?;
-            txs_count = txs.len();
-            Ok(())
-        })?;
-        Ok(txs_count)
+    pub fn txs_count(&self) -> Result<usize, Error> {
+        let (_, txs) = api::retrieve_txs_with_proof_flag(self.get_wallet_instance()?, true, None, None, None, None)?;
+        Ok(txs.len())
     }
 
-    pub fn txs(&self, address_book: Option<Arc<Mutex<AddressBook>>>, pagination_start: u32, pagination_length: u32) -> Result<()> {
-        let wallet = self.get_wallet_instance()?;
-        controller::owner_single_use(wallet.clone(), |api| {
-            let (height, _) = api.node_height()?;
-            let (validated, txs) = api.retrieve_txs_with_proof_flag(true, None, None, pagination_start, pagination_length)?;
-            display::txs(
-                &self.active_account,
-                height,
-                validated,
-                txs,
-                true,
-                true,
-                address_book,
-            )?;
-            Ok(())
-        })?;
-
+    pub fn txs(&self, pagination_start: Option<u32>, pagination_length: Option<u32>) -> Result<(), Error> {
+        let (height, _) = api::node_height(self.get_wallet_instance()?)?;
+        let (validated, txs) = api::retrieve_txs_with_proof_flag(self.get_wallet_instance()?, true, None, None, pagination_start, pagination_length)?;
+        let txs = txs.iter().map(|tpl| tpl.0.clone()).collect::<Vec<TxLogEntry>>();
+        display::txs(
+            &self.active_account,
+            height,
+            validated,
+            &txs,
+            true,
+            true
+        )?;
         Ok(())
     }
 
-    pub fn total_value(&self, minimum_confirmations: u64, output_list: Option<Vec<&str>>) -> Result<u64> {
-        let wallet = self.get_wallet_instance()?;
-
+    pub fn total_value(&self, minimum_confirmations: u64, output_list: Option<Vec<&str>>) -> Result<u64, Error> {
         let mut value = 0;
-        let _result = controller::owner_single_use(wallet.clone(), |api| {
-            let (height, _) = api.node_height()?;
-            let (_validated, outputs) = api.retrieve_outputs(false, true, None, 0, 0)?;
+        let w = self.get_wallet_instance()?;
 
+        let (height, _) = api::node_height(w.clone())?;
+        let (_validated, outputs) = api::retrieve_outputs(w.clone(), false, true, None, None, None)?;
+
+        if output_list.is_some() {
+            let ol = output_list.clone().unwrap();
             for o in outputs {
-                let mut found: bool = false;
-                if output_list.is_some() {
-                    let ol = output_list.clone().unwrap();
-                    for lo in ol {
-                        if o.0.commit.is_some() && lo == o.0.commit.clone().unwrap() {
-                            found = true;
-                            break;
-                        }
+                if o.output.eligible_to_spend(height, minimum_confirmations) {
+                    let commit_str = o.output.commit.clone().unwrap();
+                    if ol.iter().any(|e| *e == commit_str) {
+                        value += o.output.value;
                     }
                 }
-                else
-                {
-                    found = true;
-                }
-
-                if found && o.0.eligible_to_spend(height, minimum_confirmations) {
-                    value += o.0.value;
+            }
+        } else {
+            for o in outputs {
+                if o.output.eligible_to_spend(height, minimum_confirmations) {
+                    value += o.output.value;
                 }
             }
-            Ok(())
-        })?;
+        }
+
         Ok(value)
     }
 
-    pub fn all_output_count(&self, show_spent: bool) -> Result<usize> {
-        let wallet = self.get_wallet_instance()?;
-        let mut count = 0;
-        controller::owner_single_use(wallet.clone(), |api| {
-            let (_, outputs) = api.retrieve_outputs(show_spent, true, None, 0, 0)?;
-            count = outputs.len();
-            Ok(())
-        })?;
-        Ok(count)
+    pub fn all_output_count(&self, show_spent: bool) -> Result<usize, Error> {
+        let (_, outputs) = api::retrieve_outputs(self.get_wallet_instance()?,show_spent, true, None, None, None)?;
+        Ok(outputs.len())
     }
 
-    pub fn output_count(&self, minimum_confirmations: u64, output_list: Option<Vec<&str>>) -> Result<usize> {
+    pub fn output_count(&self, minimum_confirmations: u64, output_list: Option<Vec<&str>>) -> Result<usize, Error> {
         let wallet = self.get_wallet_instance()?;
 
         let mut count = 0;
-        let _result = controller::owner_single_use(wallet.clone(), |api| {
-            let (height, _) = api.node_height()?;
-            let (_validated, outputs) = api.retrieve_outputs(false, true, None, 0, 0)?;
 
+        let (height, _) = api::node_height(wallet.clone())?;
+        let (_validated, outputs) = api::retrieve_outputs(wallet.clone(),false, true, None, None, None)?;
+
+        if output_list.is_some() {
+            let ol = output_list.clone().unwrap();
             for o in outputs {
-                let mut found: bool = false;
-                if output_list.is_some() {
-                    let ol = output_list.clone().unwrap();
-                    for lo in ol {
-                        if o.0.commit.is_some() && lo == o.0.commit.clone().unwrap() {
-                            found = true;
-                            break;
-                        }
+                if o.output.eligible_to_spend(height, minimum_confirmations) {
+                    let commit_str = o.output.commit.clone().unwrap();
+                    if ol.iter().any(|e| *e == commit_str) {
+                        count = count + 1;
                     }
                 }
-                else
-                {
-                    found = true;
-                }
-
-                if found && o.0.eligible_to_spend(height, minimum_confirmations) {
+            }
+        } else {
+            for o in outputs {
+                if o.output.eligible_to_spend(height, minimum_confirmations) {
                     count = count + 1;
                 }
             }
-            Ok(())
-        })?;
+        }
+
         Ok(count)
     }
 
-    pub fn get_outputs(&self) -> Result<HashMap<pedersen::Commitment, (Identifier, Option<u64>)>> {
+    pub fn outputs(&self, show_spent: bool, pagination_start: Option<u32>, pagination_length: Option<u32>) -> Result<(), Error> {
         let wallet = self.get_wallet_instance()?;
-        let mut outputs = HashMap::new();
-        controller::owner_single_use(wallet.clone(), |api| {
-            outputs = api.retrieve_map_wallet_outputs()?;
-            Ok(())
-        })?;
-
-        Ok(outputs)
+        let (height, _) = api::node_height(wallet.clone())?;
+        let (validated, outputs) = api::retrieve_outputs(wallet, show_spent, true, None, pagination_start, pagination_length)?;
+        display::outputs(&self.active_account, height, validated, outputs, true)?;
+        Ok(())
     }
 
-    pub fn outputs(&self, show_spent: bool, pagination_start: u32, pagination_length: u32) -> Result<()> {
-        let wallet = self.get_wallet_instance()?;
-        let result = controller::owner_single_use(wallet.clone(), |api| {
-            let (height, _) = api.node_height()?;
-            let (validated, outputs) = api.retrieve_outputs(show_spent, true, None, pagination_start, pagination_length)?;
-            display::outputs(&self.active_account, height, validated, outputs, true)?;
-            Ok(())
-        })?;
-        Ok(result)
-    }
-
+    // Create slate but not lock outptus into the DB. Call tx_lock_outputs to do that
     pub fn initiate_send_tx(
         &self,
         address: Option<String>,
         amount: u64,
         minimum_confirmations: u64,
         selection_strategy: &str,
-        change_outputs: usize,
-        max_outputs: usize,
+        change_outputs: u32,
+        max_outputs: u32,
         message: Option<String>,
         outputs: Option<Vec<&str>>,
         version: Option<u16>,
         routputs: usize,
-        height: Option<u64>,
-        node_outputs: Option<Vec<Output>>,
-    ) -> Result<Slate> {
-        let wallet = self.get_wallet_instance()?;
-        let mut s: Slate = Slate::blank(0);
-        controller::owner_single_use(wallet.clone(), |api| {
-            let (slate, lock_fn) = api.initiate_tx(
-                address,
-                amount,
-                minimum_confirmations,
-                max_outputs,
-                change_outputs,
-                selection_strategy == "all",
-                message,
-                outputs,
-                version,
-                routputs,
-                height,
-                node_outputs,
-            )?;
-            api.tx_lock_outputs(&slate.tx, lock_fn)?;
-            s = slate;
-            Ok(())
-        })?;
-        Ok(s)
+    ) -> Result<Slate, Error> {
+        let slate = api::initiate_tx(
+            self.get_wallet_instance()?,
+            Some(self.active_account.clone()),
+            address.clone(),
+            amount,
+            minimum_confirmations,
+            max_outputs,
+            change_outputs,
+            selection_strategy == "all",
+            message,
+            outputs,
+            version,
+            routputs,
+        )?;
+
+        Ok(slate)
     }
 
-    pub fn initiate_receive_tx(&self, amount: u64, num_outputs: usize) -> Result<Slate> {
-        let wallet = self.get_wallet_instance()?;
-        let mut s: Slate = Slate::blank(0);
-        controller::foreign_single_use(wallet.clone(), |api| {
-            let (slate, add_fn) = api.initiate_receive_tx(amount, num_outputs, None)?;
-            api.tx_add_invoice_outputs(&slate, add_fn)?;
-            s = slate;
-            Ok(())
-        })?;
-        Ok(s)
+    // Create invoice transaction
+    pub fn initiate_receive_tx(&self, address: Option<String>, amount: u64, num_outputs: usize) -> Result<Slate, Error> {
+        let slate = api::initiate_receive_tx(self.get_wallet_instance()?,
+                                             address,
+                                             Some(self.active_account.clone()),
+                                             amount, num_outputs, None)?;
+        Ok(slate)
     }
 
-    pub fn repost(&self, id: u32, fluff: bool) -> Result<()> {
+    pub fn repost(&self, id: u32, fluff: bool) -> Result<(), Error> {
         let wallet = self.get_wallet_instance()?;
-        controller::owner_single_use(wallet.clone(), |api| {
-            let (_, txs) = api.retrieve_txs(true, Some(id), None)?;
-            if txs.len() == 0 {
-                return Err(ErrorKind::GenericError(format!(
-                    "could not find transaction with id {}!",
-                    id
-                )))?;
-            }
-            let slate_id = txs[0].tx_slate_id;
-            if let Some(slate_id) = slate_id {
-                let stored_tx = api.get_stored_tx(&slate_id.to_string())?;
-                api.post_tx(&stored_tx, fluff)?;
-                Ok(())
-            } else {
-                Err(ErrorKind::GenericError(format!(
-                    "no transaction data stored for id {}, can not repost!",
-                    id
-                )))?
-            }
-        })?;
+
+        let (_, txs) = api::retrieve_txs(wallet.clone(), true, Some(id), None)?;
+        if txs.len() == 0 {
+            return Err(ErrorKind::GenericError(format!(
+                "could not find transaction with id {}!",
+                id
+            )))?;
+        }
+        let slate_id = txs[0].tx_slate_id;
+        if let Some(slate_id) = slate_id {
+            let stored_tx = api::get_stored_tx( wallet.clone(),&slate_id.to_string())?;
+            api::post_tx(wallet,&stored_tx, fluff)?;
+        } else {
+            Err(ErrorKind::GenericError(format!(
+                "no transaction data stored for id {}, can not repost!",
+                id
+            )))?
+        }
+
         Ok(())
     }
 
     pub fn cancel(&self,
                   id: u32,
-                  height: Option<u64>,
-                  accumulator: Option<Vec<Output>>,
-    ) -> Result<()> {
-        let wallet = self.get_wallet_instance()?;
-        controller::owner_single_use(wallet.clone(), |api| api.cancel_tx(Some(id), None, height, accumulator))?;
+    ) -> Result<(), Error> {
+        api::cancel_tx(self.get_wallet_instance()?,Some(id), None)?;
         Ok(())
     }
 
-    pub fn restore_state(&self) -> Result<()> {
-        let wallet = self.get_wallet_instance()?;
-        controller::owner_single_use(wallet.clone(), |api| api.restore())?;
+    pub fn restore_state(&self) -> Result<(), Error> {
+        api::restore(self.get_wallet_instance()?)?;
         Ok(())
     }
 
-    pub fn check_repair(&self, delete_unconfirmed: bool) -> Result<()> {
-        let wallet = self.get_wallet_instance()?;
-        controller::owner_single_use(wallet.clone(), |api| api.check_repair(delete_unconfirmed))?;
+    pub fn check_repair(&self, delete_unconfirmed: bool) -> Result<(), Error> {
+        api::check_repair(self.get_wallet_instance()?, delete_unconfirmed)?;
         Ok(())
     }
 
-    pub fn build_coinbase(&self, block_fees: &BlockFees) -> Result<CbData> {
-        let wallet = self.get_wallet_instance()?;
-        let mut cb_data = None;
-        controller::foreign_single_use(wallet.clone(), |api| {
-            cb_data = Some(api.build_coinbase(block_fees)?);
-            Ok(())
-        })?;
-        Ok(cb_data.unwrap())
+    pub fn build_coinbase(&self, block_fees: &BlockFees) -> Result<CbData, Error> {
+        let cb_data = api::build_coinbase(self.get_wallet_instance()?, block_fees)?;
+        Ok(cb_data)
     }
 
     pub fn process_sender_initiated_slate(
@@ -500,17 +418,15 @@ impl Wallet {
         slate: &mut Slate,
         key_id: Option<&str>,
         output_amounts: Option<Vec<u64>>,
-    ) -> Result<()> {
-        let wallet = self.get_wallet_instance()?;
-        controller::foreign_single_use(wallet.clone(), |api| {
-            api.receive_tx(address, slate, None, key_id, output_amounts)?;
-            Ok(())
-        })
-        .map_err(|_| ErrorKind::GrinWalletReceiveError)?;
+        dest_acct_name: Option<&str>,
+    ) -> Result<(), Error> {
+        let s = api::receive_tx(self.get_wallet_instance()?, address, slate,
+                                None, key_id, output_amounts, dest_acct_name).map_err(|_| ErrorKind::GrinWalletReceiveError)?;
+        *slate = s;
         Ok(())
     }
 
-    pub fn process_receiver_initiated_slate(&self, slate: &mut Slate) -> Result<()> {
+    pub fn process_receiver_initiated_slate(&self, slate: &mut Slate, address: Option<String> ) -> Result<(), Error> {
         // reject by default unless wallet is set to auto accept invoices under a certain threshold
         let max_auto_accept_invoice = self
             .max_auto_accept_invoice
@@ -520,59 +436,69 @@ impl Wallet {
             Err(ErrorKind::InvoiceAmountTooBig(slate.amount))?;
         }
 
-        let wallet = self.get_wallet_instance()?;
+        *slate = api::invoice_tx(self.get_wallet_instance()?,
+                                 Some(self.active_account.clone()), slate,
+                                 address.clone(),
+                                 10, 500, 1,
+                                 false, None)?;
 
-        controller::owner_single_use(wallet.clone(), |api| {
-            let lock_fn = api.invoice_tx(slate, 10, 500, 1, false, None)?;
-            api.tx_lock_outputs(&slate.tx, lock_fn)?;
-            Ok(())
-        })?;
-        Ok(())
-    }
-
-    pub fn submit(&self, txn: &mut Transaction) -> Result<()> {
-        let wallet = self.get_wallet_instance()?;
-        controller::owner_single_use(wallet.clone(), |api| {
-            api.post_tx(&txn, false)?;
-            Ok(())
-        })
-        .map_err(|_| ErrorKind::GrinWalletPostError)?;
+        api::tx_lock_outputs(
+            self.get_wallet_instance()?,
+            slate,
+            address,
+            1)?;
 
         Ok(())
     }
 
-    pub fn finalize_slate(&self, slate: &mut Slate, tx_proof: Option<&mut TxProof>) -> Result<()> {
+    // Lock slate outputs. In other words create output and transaction record at the DB.
+    pub fn tx_lock_outputs(&self,
+                           slate: &Slate,
+                           address: Option<String>,
+                           participant_id: usize,
+    ) -> Result<(), Error>
+    {
+        api::tx_lock_outputs(
+            self.get_wallet_instance()?,
+            slate,
+            address,
+            participant_id )?;
+        Ok(())
+    }
+
+    pub fn submit(&self, txn: &mut Transaction) -> Result<(), Error> {
+        api::post_tx(self.get_wallet_instance()?, &txn, false).map_err(|_| ErrorKind::GrinWalletPostError)?;
+        Ok(())
+    }
+
+    pub fn finalize_slate(&self, slate: &mut Slate, tx_proof: Option<&mut TxProof>) -> Result<(), Error> {
         let wallet = self.get_wallet_instance()?;
-        let mut should_post: bool = false;
-        controller::owner_single_use(wallet.clone(), |api| {
-            api.verify_slate_messages(&slate)?;
-            Ok(())
-        })
-        .map_err(|_| ErrorKind::GrinWalletVerifySlateMessagesError)?;
-        controller::owner_single_use(wallet.clone(), |api| {
-            should_post = api.finalize_tx(slate, tx_proof)?;
-            Ok(())
-        })
-        .map_err(|_| ErrorKind::GrinWalletFinalizeError)?;
+        api::verify_slate_messages( &slate).map_err(|_| ErrorKind::GrinWalletVerifySlateMessagesError)?;
+
+        let should_post = api::finalize_tx( wallet.clone(), slate, tx_proof).map_err(|_| ErrorKind::GrinWalletFinalizeError)?;
+
         if should_post {
-            controller::owner_single_use(wallet.clone(), |api| {
-                api.post_tx(&slate.tx, false)?;
-                Ok(())
-            })
-            .map_err(|_| ErrorKind::GrinWalletPostError)?;
+            api::post_tx( wallet, &slate.tx, false).map_err(|_| ErrorKind::GrinWalletPostError)?;
         }
         Ok(())
     }
 
-    pub fn retrieve_summary_info(&self, refresh: bool, height: Option<u64>, accumulator: Option<Vec<Output>>) -> Result<WalletInfo> {
+    // Participant ID is different, that is why we have different routine.
+    pub fn finalize_invoice_slate(&self, slate: &mut Slate) -> Result<(), Error> {
         let wallet = self.get_wallet_instance()?;
-        let mut info = None;
-        controller::owner_single_use(wallet.clone(), |api| {
-            let (_, i) = api.retrieve_summary_info(refresh, 10, height, accumulator)?;
-            info = Some(i);
-            Ok(())
-        })?;
-        Ok(info.unwrap())
+        api::verify_slate_messages(&slate).map_err(|_| ErrorKind::GrinWalletVerifySlateMessagesError)?;
+
+        let should_post = api::finalize_invoice_tx(wallet.clone(), slate).map_err(|_| ErrorKind::GrinWalletFinalizeError)?;
+
+        if should_post {
+            api::post_tx(wallet, &slate.tx, false).map_err(|_| ErrorKind::GrinWalletPostError)?;
+        }
+        Ok(())
+    }
+
+    pub fn retrieve_summary_info(&self, refresh: bool, confirmations: u64) -> Result<WalletInfo, Error> {
+        let (_, wallet_info) = api::retrieve_summary_info(self.get_wallet_instance()?,refresh,  confirmations)?;
+        Ok(wallet_info)
     }
 
     pub fn retrieve_outputs(
@@ -580,13 +506,8 @@ impl Wallet {
         include_spent: bool,
         refresh_from_node: bool,
         tx_id: Option<u32>,
-    ) -> Result<(bool, Vec<(OutputData, pedersen::Commitment)>)> {
-        let wallet = self.get_wallet_instance()?;
-        let mut result = (false, vec![]);
-        controller::owner_single_use(wallet.clone(), |api| {
-            result = api.retrieve_outputs(include_spent, refresh_from_node, tx_id, 0, 0)?;
-            Ok(())
-        })?;
+    ) -> Result<(bool, Vec<OutputCommitMapping>), Error> {
+        let result = api::retrieve_outputs(self.get_wallet_instance()?,include_spent, refresh_from_node, tx_id, None, None)?;
         Ok(result)
     }
 
@@ -595,65 +516,41 @@ impl Wallet {
         refresh_from_node: bool,
         tx_id: Option<u32>,
         tx_slate_id: Option<Uuid>,
-    ) -> Result<(bool, Vec<TxLogEntry>)> {
-        let wallet = self.get_wallet_instance()?;
-        let mut result = (false, vec![]);
-        controller::owner_single_use(wallet.clone(), |api| {
-            result = api.retrieve_txs(refresh_from_node, tx_id, tx_slate_id)?;
-            Ok(())
-        })?;
+    ) -> Result<(bool, Vec<TxLogEntry>), Error> {
+        let result = api::retrieve_txs(self.get_wallet_instance()?, refresh_from_node, tx_id, tx_slate_id)?;
         Ok(result)
     }
 
-    pub fn get_stored_tx(&self, uuid: &str) -> Result<Transaction> {
-        let wallet = self.get_wallet_instance()?;
-        let mut result = Transaction::default();
-        controller::owner_single_use(wallet.clone(), |api| {
-            result = api.get_stored_tx(uuid)?;
-            Ok(())
-        })?;
+    pub fn get_stored_tx(&self, uuid: &str) -> Result<Transaction, Error> {
+        let result = api::get_stored_tx(self.get_wallet_instance()?,uuid)?;
         Ok(result)
     }
 
-    pub fn post_tx(&self, tx: &Transaction, fluff: bool) -> Result<()> {
-        let wallet = self.get_wallet_instance()?;
-        controller::owner_single_use(wallet.clone(), |api| {
-            api.post_tx(tx, fluff)?;
-            Ok(())
-        })?;
+    pub fn post_tx(&self, tx: &Transaction, fluff: bool) -> Result<(), Error> {
+        api::post_tx(self.get_wallet_instance()?, tx, fluff)?;
         Ok(())
     }
 
-    pub fn _node_height(&self) -> Result<(u64, bool)> {
-        let wallet = self.get_wallet_instance()?;
-        let mut result = (0, false);
-        controller::owner_single_use(wallet.clone(), |api| {
-            result = api.node_height()?;
-            Ok(())
-        })?;
+    pub fn node_height(&self) -> Result<(u64, bool), Error> {
+        let result = api::node_height(self.get_wallet_instance()?)?;
         Ok(result)
     }
 
-    pub fn derive_address_key(&self, index: u32) -> Result<SecretKey> {
-        let wallet = self.get_wallet_instance()?;
-        let mut w = wallet.lock();
-        w.open_with_credentials()?;
-        derive_address_key(w.keychain(), index).map_err(|e| e.into())
+    pub fn derive_address_key(&self, index: u32) -> Result<SecretKey, Error> {
+        let res = api::derive_address_key(self.get_wallet_instance()?, index)?;
+        Ok(res)
     }
 
-    pub fn get_tx_proof(&self, id: u32) -> Result<TxProof> {
-        let wallet = self.get_wallet_instance()?;
-        let mut api = Wallet713OwnerAPI::new(wallet.clone());
-        api.get_stored_tx_proof(id)
+    pub fn get_tx_proof(&self, id: u32) -> Result<TxProof, Error> {
+        let res = api::get_stored_tx_proof(self.get_wallet_instance()?, id)?;
+        Ok(res)
     }
 
     pub fn verify_tx_proof(
         &self,
         tx_proof: &TxProof,
-    ) -> Result<(Option<String>, String, u64, Vec<String>, String)> {
-        let wallet = self.get_wallet_instance()?;
-        let mut api = Wallet713OwnerAPI::new(wallet.clone());
-        let (sender, receiver, amount, outputs, excess_sum) = api.verify_tx_proof(tx_proof)?;
+    ) -> Result<(Option<String>, String, u64, Vec<String>, String), Error> {
+        let (sender, receiver, amount, outputs, excess_sum) = api::verify_tx_proof(tx_proof)?;
 
         let outputs = outputs
             .iter()
@@ -671,19 +568,20 @@ impl Wallet {
 
     fn init_seed(
         &self,
-        wallet_config: &WalletConfig,
-        passphrase: &str,
+        config: &Wallet713Config,
+        passphrase: grin_util::ZeroingString,
         create_new: bool,
         create_file: bool,
         seed: Option<WalletSeed>,
-    ) -> Result<WalletSeed> {
-        let result = WalletSeed::from_file(&wallet_config.data_file_dir, passphrase);
+    ) -> Result<WalletSeed, Error> {
+        let data_file_dir = config.get_data_path_str()?;
+        let result = WalletSeed::from_file( &data_file_dir, passphrase.clone());
         let seed = match result {
             Ok(seed) => seed,
             Err(_) => {
                 // could not load from file, let's create a new one
                 if create_new {
-                    WalletSeed::init_file_impl(&wallet_config.data_file_dir, 32, None, passphrase, create_file,!create_file, seed)?
+                    WalletSeed::init_file_impl(&data_file_dir, 32, None, passphrase, create_file,!create_file, seed)?
                 } else {
                     return Err(ErrorKind::WalletSeedCouldNotBeOpened.into());
                 }
@@ -692,9 +590,14 @@ impl Wallet {
         Ok(seed)
     }
 
+    // has full type because we don't want to deal with types inference.
     pub fn get_wallet_instance(
         &self,
-    ) -> Result<Arc<Mutex<dyn WalletInst<impl NodeClient + 'static, ExtKeychain>>>> {
+    ) -> Result< Arc<Mutex<Box<dyn WalletInst<'static,
+        DefaultLCProvider<'static, HTTPNodeClient, ExtKeychain>,
+        HTTPNodeClient,
+        ExtKeychain>>>>, Error>
+    {
         if let Some(ref backend) = self.backend {
             Ok(backend.clone())
         } else {
@@ -706,31 +609,83 @@ impl Wallet {
         &mut self,
         config: &Wallet713Config,
         account: &str,
-        passphrase: &str,
-    ) -> Result<()> {
-        let wallet_config = config.as_wallet_config()?;
+        passphrase: grin_util::ZeroingString,
+    ) -> Result<(), Error> {
+        TxProof::init_proof_backend(config.get_data_path_str()?.as_str() )?;
+
         let node_client = HTTPNodeClient::new(
-            &wallet_config.check_node_api_http_addr,
-            config.mwc_node_secret().clone(),
+            &config.mwc_node_uri(),
+            config.mwc_node_secret(),
         );
-        let _ = WalletSeed::from_file(&wallet_config.data_file_dir, passphrase)?;
-        let mut db_wallet = Backend::new(&wallet_config, passphrase, node_client)?;
-        db_wallet.set_parent_key_id_by_name(account)?;
-        self.backend = Some(Arc::new(Mutex::new(db_wallet)));
+
+        let _ = WalletSeed::from_file(&config.get_data_path_str()?, passphrase.clone())?;
+
+        let mut wallet = Box::new(
+            DefaultWalletImpl::<'static, HTTPNodeClient>::new(node_client.clone()).unwrap(),
+        )as Box<
+            dyn WalletInst<
+                'static,
+                DefaultLCProvider<HTTPNodeClient, ExtKeychain>,
+                HTTPNodeClient,
+                ExtKeychain,
+            >,
+        >;
+        let lc = wallet.lc_provider().unwrap();
+        lc.set_top_level_directory( config.get_top_level_directory()?.as_str() )?;
+        lc.open_wallet(None, passphrase, false, false, Some(config.get_wallet_data_directory()?.as_str()) )?;
+        let wallet_inst = lc.wallet_inst()?;
+        wallet_inst.set_parent_key_id_by_name(account)?;
+        self.backend = Some(Arc::new(Mutex::new(wallet)));
+
+        match config.wallet_updater_frequency_sec {
+            Some(freq) => {
+                let handler = self.start_updater(None, Duration::from_secs(freq as u64))?;
+                self.updater_handler = Some(handler);
+            },
+            _ => (),
+        }
+
+
         Ok(())
     }
 
-    fn init_backend(
+    fn start_updater(
         &self,
-        wallet_config: &WalletConfig,
-        wallet713_config: &Wallet713Config,
-        passphrase: &str,
-    ) -> Result<Backend<HTTPNodeClient, ExtKeychain>> {
-        let node_api_client = HTTPNodeClient::new(
-            &wallet_config.check_node_api_http_addr,
-            wallet713_config.mwc_node_secret().clone(),
+        keychain_mask: Option<&SecretKey>,
+        frequency: Duration,
+    ) -> Result<JoinHandle<()>, Error> {
+
+        self.updater_running.store(true, Ordering::Relaxed);
+
+        let updater = owner_updater::Updater::new(
+            self.get_wallet_instance()?,
+            self.updater_running.clone(),
         );
-        let backend = Backend::new(wallet_config, passphrase, node_api_client)?;
-        Ok(backend)
+
+        let keychain_mask = match keychain_mask {
+            Some(m) => Some(m.clone()),
+            None => None,
+        };
+
+        let tx_inner = None;
+        /* Uncomment it if you want to see progress in the output.
+           It is commented because output distract only and will not make user happy.
+
+        use std::sync::mpsc::channel;
+
+        let (tx, rx) = channel();
+        grin_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(rx)?;
+
+        let tx_inner = Some(tx);*/
+
+        let thread = thread::Builder::new()
+            .name("wallet-updater".to_string())
+            .spawn(move || {
+                if let Err(e) = updater.run(frequency, keychain_mask, &tx_inner ) {
+                    error!("Wallet state updater failed with error: {:?}", e);
+                }
+            })?;
+        Ok(thread)
     }
+
 }
