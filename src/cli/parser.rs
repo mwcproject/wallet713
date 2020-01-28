@@ -168,6 +168,9 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("[length] -l, --length=<length> 'the number of txs to display'")
                     )
+                    .arg(
+                        Arg::from_usage("[full] -f, --show-full 'display extended information about transaction'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("output_count")

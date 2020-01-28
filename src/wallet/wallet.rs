@@ -240,17 +240,32 @@ impl Wallet {
         Ok(txs.len())
     }
 
-    pub fn txs(&self, pagination_start: Option<u32>, pagination_length: Option<u32>) -> Result<(), Error> {
-        let (height, _) = api::node_height(self.get_wallet_instance()?)?;
-        let (validated, txs) = api::retrieve_txs_with_proof_flag(self.get_wallet_instance()?, true, None, None, pagination_start, pagination_length)?;
+    pub fn txs(&self, show_full_info: bool, pagination_start: Option<u32>, pagination_length: Option<u32>) -> Result<(), Error> {
+        let wallet_inst = self.get_wallet_instance()?;
+        let (height, _) = api::node_height(wallet_inst.clone())?;
+        let (validated, txs) = api::retrieve_txs_with_proof_flag(wallet_inst.clone(), true, None, None, pagination_start, pagination_length)?;
         let txs = txs.iter().map(|tpl| tpl.0.clone()).collect::<Vec<TxLogEntry>>();
+
+        let data_dir = {
+            wallet_lock!(wallet_inst, w);
+            String::from(w.get_data_file_dir())
+        };
+
         display::txs(
             &self.active_account,
             height,
             validated,
             &txs,
             true,
-            true
+            true,
+            show_full_info,
+            move |tx: &TxLogEntry| {
+                let slate_id = match tx.tx_slate_id {
+                    Some(m) => format!("{}", m),
+                    None => return false
+                };
+                TxProof::has_stored_tx_proof( &data_dir, &slate_id ).unwrap_or(false)
+            },
         )?;
         Ok(())
     }
