@@ -1385,6 +1385,7 @@ fn do_command(
             // get pagination parameters default is to not do pagination when length == 0.
             let pagination_length = args.value_of("length").unwrap_or("0");
             let pagination_start = args.value_of("offset").unwrap_or("0");
+            let show_full_info = args.is_present("full");
 
             let pagination_length = u32::from_str_radix(pagination_length, 10)
                 .map_err(|_| ErrorKind::InvalidPaginationLength(pagination_length.to_string()))?;
@@ -1406,7 +1407,7 @@ fn do_command(
                 None
             };
 
-            wallet.lock().txs( pagination_start, pagination_length)?;
+            wallet.lock().txs( show_full_info, pagination_start, pagination_length)?;
         }
         Some("contacts") => {
             let arg_matches = matches.subcommand_matches("contacts").unwrap();
