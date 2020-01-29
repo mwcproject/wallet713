@@ -39,12 +39,8 @@ struct SlateResp {
     result: SlateResult,
 }
 
-pub fn retrieve_outputs(state: State) -> (State, Response<Body>) {
-    let res = match handle_retrieve_outputs(&state) {
-        Ok(res) => res,
-        Err(e) => ApiError::new(e).into_handler_error().into_response(&state),
-    };
-    (state, res)
+pub fn retrieve_outputs(state: State) -> Box<HandlerFuture> {
+    Box::new(super::executor::RunHandlerInThread::new(state, handle_retrieve_outputs ) )
 }
 
 #[derive(Deserialize, StateData, StaticResponseExtender)]
@@ -54,7 +50,7 @@ pub struct RetrieveOutputsQueryParams {
     tx_id: Option<u32>,
 }
 
-fn handle_retrieve_outputs(state: &State) -> Result<Response<Body>, Error> {
+fn handle_retrieve_outputs(state: &State, _body: &Chunk) -> Result<Response<Body>, Error> {
     trace_state(state);
     let &RetrieveOutputsQueryParams {
         refresh,
@@ -63,7 +59,7 @@ fn handle_retrieve_outputs(state: &State) -> Result<Response<Body>, Error> {
     } = RetrieveOutputsQueryParams::borrow_from(&state);
     let wallet = WalletContainer::borrow_from(&state).lock()?;
     let response =
-        wallet.retrieve_outputs(show_spent.unwrap_or(false), refresh.unwrap_or(false), tx_id)?;
+        wallet.retrieve_outputs(show_spent.unwrap_or(false), refresh.unwrap_or(true), tx_id)?;
     Ok(trace_create_response(
         &state,
         StatusCode::OK,
