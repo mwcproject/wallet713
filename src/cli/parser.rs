@@ -163,6 +163,9 @@ impl<'a, 'b> Parser {
                 SubCommand::with_name("txs")
                     .about("displays transactions")
                     .arg(
+                        Arg::from_usage("[no-refresh] -n, --no-refresh 'do not contact full node to refresh outputs'")
+                    )
+                    .arg(
                         Arg::from_usage("[offset] -o, --offset=<offset> 'the offset of the first tx to display'")
                     )
                     .arg(
@@ -182,6 +185,9 @@ impl<'a, 'b> Parser {
             .subcommand(
                 SubCommand::with_name("outputs")
                     .about("displays outputs")
+                    .arg(
+                        Arg::from_usage("[no-refresh] -n, --no-refresh 'do not contact full node to refresh outputs'")
+                    )
                     .arg(
                         Arg::from_usage("[show-spent] -s, --show-spent 'show spent outputs'")
                     )
@@ -417,6 +423,13 @@ impl<'a, 'b> Parser {
                     )
                     .arg(
                         Arg::from_usage("[password] -p, --password=<password> 'the password for this account'")
+                    )
+            )
+            .subcommand(
+                SubCommand::with_name("sync")
+                    .about("quick update of the wallet state. First call might take some time")
+                    .arg(
+                        Arg::from_usage("[update_all] -a, --all 'update status for all outputs'")
                     )
             )
     }

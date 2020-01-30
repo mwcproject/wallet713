@@ -224,7 +224,7 @@ impl Wallet {
             self.get_wallet_instance()?, refresh,
             confirmations)?;
         if !refresh { validated = true; }
-        display::info(&self.active_account, &wallet_info, validated, true);
+        display::info(&self.active_account, &wallet_info, !refresh || validated, true);
         Ok(())
     }
 
@@ -236,14 +236,25 @@ impl Wallet {
     }
 
     pub fn txs_count(&self) -> Result<usize, Error> {
-        let (_, txs) = api::retrieve_txs_with_proof_flag(self.get_wallet_instance()?, true, None, None, None, None)?;
+        let (_, txs) = api::retrieve_txs_with_proof_flag(self.get_wallet_instance()?, false, None, None, None, None)?;
         Ok(txs.len())
     }
 
-    pub fn txs(&self, show_full_info: bool, pagination_start: Option<u32>, pagination_length: Option<u32>) -> Result<(), Error> {
+    pub fn txs(&self, refresh_from_node: bool, show_full_info: bool, pagination_start: Option<u32>, pagination_length: Option<u32>) -> Result<(), Error> {
         let wallet_inst = self.get_wallet_instance()?;
-        let (height, _) = api::node_height(wallet_inst.clone())?;
-        let (validated, txs) = api::retrieve_txs_with_proof_flag(wallet_inst.clone(), true, None, None, pagination_start, pagination_length)?;
+
+        let height = if refresh_from_node {
+            let (h, _) = api::node_height(wallet_inst.clone())?;
+            h
+        }
+        else {
+            wallet_lock!(wallet_inst, w);
+            w.last_confirmed_height()?
+        };
+
+        let (validated, txs) = api::retrieve_txs_with_proof_flag(
+                wallet_inst.clone(), refresh_from_node, None,
+                None, pagination_start, pagination_length)?;
         let txs = txs.iter().map(|tpl| tpl.0.clone()).collect::<Vec<TxLogEntry>>();
 
         let data_dir = {
@@ -254,7 +265,7 @@ impl Wallet {
         display::txs(
             &self.active_account,
             height,
-            validated,
+            !refresh_from_node || validated,
             &txs,
             true,
             true,
@@ -270,12 +281,12 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn total_value(&self, minimum_confirmations: u64, output_list: Option<Vec<&str>>) -> Result<u64, Error> {
+    pub fn total_value(&self, refresh_from_node: bool, minimum_confirmations: u64, output_list: Option<Vec<&str>>) -> Result<u64, Error> {
         let mut value = 0;
         let w = self.get_wallet_instance()?;
 
         let (height, _) = api::node_height(w.clone())?;
-        let (_validated, outputs) = api::retrieve_outputs(w.clone(), false, true, None, None, None)?;
+        let (_validated, outputs) = api::retrieve_outputs(w.clone(), false, refresh_from_node, None, None, None)?;
 
         if output_list.is_some() {
             let ol = output_list.clone().unwrap();
@@ -299,17 +310,19 @@ impl Wallet {
     }
 
     pub fn all_output_count(&self, show_spent: bool) -> Result<usize, Error> {
-        let (_, outputs) = api::retrieve_outputs(self.get_wallet_instance()?,show_spent, true, None, None, None)?;
+        let (_, outputs) = api::retrieve_outputs(self.get_wallet_instance()?,show_spent, false, None, None, None)?;
         Ok(outputs.len())
     }
 
-    pub fn output_count(&self, minimum_confirmations: u64, output_list: Option<Vec<&str>>) -> Result<usize, Error> {
+    pub fn output_count(&self, refresh_from_node: bool, minimum_confirmations: u64, output_list: Option<Vec<&str>>) -> Result<usize, Error> {
         let wallet = self.get_wallet_instance()?;
 
         let mut count = 0;
 
         let (height, _) = api::node_height(wallet.clone())?;
-        let (_validated, outputs) = api::retrieve_outputs(wallet.clone(),false, true, None, None, None)?;
+        let (_validated, outputs) = api::retrieve_outputs(
+                    wallet.clone(),false, refresh_from_node,
+                    None, None, None)?;
 
         if output_list.is_some() {
             let ol = output_list.clone().unwrap();
@@ -332,11 +345,20 @@ impl Wallet {
         Ok(count)
     }
 
-    pub fn outputs(&self, show_spent: bool, pagination_start: Option<u32>, pagination_length: Option<u32>) -> Result<(), Error> {
+    pub fn outputs(&self, refresh_from_node: bool, show_spent: bool, pagination_start: Option<u32>, pagination_length: Option<u32>) -> Result<(), Error> {
         let wallet = self.get_wallet_instance()?;
-        let (height, _) = api::node_height(wallet.clone())?;
-        let (validated, outputs) = api::retrieve_outputs(wallet, show_spent, true, None, pagination_start, pagination_length)?;
-        display::outputs(&self.active_account, height, validated, outputs, true)?;
+
+        let height = if refresh_from_node {
+            let (h, _) = api::node_height(wallet.clone())?;
+            h
+        }
+        else {
+            wallet_lock!(wallet, w);
+            w.last_confirmed_height()?
+        };
+
+        let (validated, outputs) = api::retrieve_outputs(wallet, show_spent, refresh_from_node, None, pagination_start, pagination_length)?;
+        display::outputs(&self.active_account, height, !refresh_from_node || validated, outputs, true)?;
         Ok(())
     }
 
@@ -419,6 +441,11 @@ impl Wallet {
 
     pub fn check_repair(&self, delete_unconfirmed: bool) -> Result<(), Error> {
         api::check_repair(self.get_wallet_instance()?, delete_unconfirmed)?;
+        Ok(())
+    }
+
+    pub fn sync(&self, update_all: bool) -> Result<(), Error> {
+        api::sync(self.get_wallet_instance()?, update_all, true)?;
         Ok(())
     }
 
