@@ -319,7 +319,7 @@ impl Handler for GrinboxClient {
         let response = match serde_json::from_str::<ProtocolResponse>(&msg.to_string()) {
             Ok(x) => x,
             Err(_) => {
-                cli_message!("could not parse response");
+                cli_message!("Error: could not parse response");
                 return Ok(());
             }
         };
@@ -346,7 +346,7 @@ impl Handler for GrinboxClient {
                 ) {
                     Ok(x) => x,
                     Err(err) => {
-                        cli_message!("{}", err);
+                        cli_message!("Error: {}", err);
                         return Ok(());
                     }
                 };
@@ -360,7 +360,7 @@ impl Handler for GrinboxClient {
                 kind: _,
                 description: _,
             } => {
-                cli_message!("{}", response);
+                cli_message!("Error: {}", response);
             }
             _ => {}
         }

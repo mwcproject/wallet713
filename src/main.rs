@@ -391,7 +391,7 @@ impl SubscriptionHandler for Controller {
 
         match result {
             Ok(()) => {}
-            Err(e) => cli_message!("{}", e),
+            Err(e) => cli_message!("Error: {}", e),
         }
     }
 
@@ -1007,7 +1007,7 @@ fn main() {
                 );
 
                 if let Err(err) = result {
-                    cli_message!("{}", err);
+                    cli_message!("Error: {}", err);
                 }
 
                 if out_is_safe {

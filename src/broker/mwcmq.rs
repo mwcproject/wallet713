@@ -657,7 +657,7 @@ impl MWCMQSBroker {
                                 ) {
                                     Ok(x) => x,
                                     Err(err) => {
-                                        cli_message!("{}", err);
+                                        cli_message!("Error: {}", err);
                                         continue;
                                     }
                                 };
