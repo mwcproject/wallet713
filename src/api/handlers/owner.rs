@@ -212,10 +212,12 @@ pub fn handler_cancel_tx(state: &State, _body: &Chunk) -> Result<Response<Body>,
     let ret =
         if response.is_err() {
             let full = format!("error = {:?}", response);
-            if full.contains("TransactionDoesntExist") {
+            // Transaction {} doesn't exist
+            if full.contains("Transaction ") && full.contains(" doesn't exist") {
                 format!("{{\"error\": \"TransactionDoesntExist\"}}")
             }
-            else if full.contains("TransactionNotCancellable") {
+            // Transaction {} cannot be cancelled
+            else if full.contains("Transaction ") && full.contains(" cannot be cancelled") {
                 format!("{{\"error\": \"TransactionNotCancellable\"}}")
             } else {
                 println!("Unknown error = {:?}", response);
