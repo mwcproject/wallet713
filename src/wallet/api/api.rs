@@ -13,8 +13,7 @@ use crate::contacts::GrinboxAddress;
 
 //use super::keys;
 use super::types::TxProof;
-use grin_wallet_libwallet::{AcctPathMapping, BlockFees, CbData, NodeClient, Slate, TxLogEntry,
-                            TxWrapper, WalletInfo, WalletBackend, OutputCommitMapping, WalletInst, WalletLCProvider};
+use grin_wallet_libwallet::{AcctPathMapping, BlockFees, CbData, NodeClient, Slate, TxLogEntry, TxWrapper, WalletInfo, WalletBackend, OutputCommitMapping, WalletInst, WalletLCProvider, StatusMessage};
 use grin_core::core::Transaction;
 use grin_keychain::{Identifier, Keychain};
 use grin_util::secp::key::{ PublicKey };
@@ -24,6 +23,7 @@ use grin_keychain::{SwitchCommitmentType, ExtKeychainPath};
 use grin_wallet_libwallet::internal::{updater,keys};
 use std::sync::mpsc;
 use crate::common::hasher;
+use std::sync::mpsc::Sender;
 
 // struct for sending back node information
 pub struct NodeInfo
@@ -631,6 +631,35 @@ pub fn invoice_tx<'a, L, C, K>(
                       &tx,
         )?;
         Ok(())
+    }
+
+    pub fn sync<'a, L, C, K>(
+        wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
+        update_all: bool,
+        print_progress: bool,
+    ) -> Result<bool, Error>
+        where
+            L: WalletLCProvider<'a, C, K>,
+            C: NodeClient + 'a,
+            K: Keychain + 'a,
+    {
+        let mut status_send_channel: Option<Sender<StatusMessage>> = None;
+
+        if print_progress {
+            let (tx, rx) = mpsc::channel();
+            // Starting printing to console thread.
+            grin_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(rx)?;
+            status_send_channel = Some(tx);
+        }
+
+        let res = grin_wallet_libwallet::owner::update_wallet_state(
+            wallet_inst,
+            None,
+            &status_send_channel,
+            update_all,
+        )?;
+
+        Ok(res)
     }
 
     pub fn scan_outputs<'a, L, C, K>(

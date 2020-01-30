@@ -1386,6 +1386,7 @@ fn do_command(
             let pagination_length = args.value_of("length").unwrap_or("0");
             let pagination_start = args.value_of("offset").unwrap_or("0");
             let show_full_info = args.is_present("full");
+            let no_refresh = args.is_present("no-refresh");
 
             let pagination_length = u32::from_str_radix(pagination_length, 10)
                 .map_err(|_| ErrorKind::InvalidPaginationLength(pagination_length.to_string()))?;
@@ -1407,7 +1408,7 @@ fn do_command(
                 None
             };
 
-            wallet.lock().txs( show_full_info, pagination_start, pagination_length)?;
+            wallet.lock().txs(!no_refresh, show_full_info, pagination_start, pagination_length )?;
         }
         Some("contacts") => {
             let arg_matches = matches.subcommand_matches("contacts").unwrap();
@@ -1425,6 +1426,7 @@ fn do_command(
             // get pagination parameters default is to not do pagination when length == 0.
             let pagination_length = args.value_of("length").unwrap_or("0");
             let pagination_start = args.value_of("offset").unwrap_or("0");
+            let no_refresh = args.is_present("no-refresh");
 
             let pagination_length = u32::from_str_radix(pagination_length, 10)
                 .map_err(|_| ErrorKind::InvalidPaginationLength(pagination_length.to_string()))?;
@@ -1447,7 +1449,7 @@ fn do_command(
             };
 
             let show_spent = args.is_present("show-spent");
-            wallet.lock().outputs(show_spent, pagination_start, pagination_length)?;
+            wallet.lock().outputs(!no_refresh, show_spent, pagination_start, pagination_length)?;
         }
         Some("repost") => {
             let args = matches.subcommand_matches("repost").unwrap();
@@ -1618,8 +1620,9 @@ fn do_command(
             let amount = args.value_of("amount").unwrap();
             let mut ntotal = 0;
             if amount == "ALL" {
-                let max_available = wallet.lock().output_count(confirmations, output_list.clone())?;
-                let total_value = wallet.lock().total_value(confirmations, output_list.clone())?;
+                // Update from the node once. No reasons to do that twice in tthe row
+                let max_available = wallet.lock().output_count(true, confirmations, output_list.clone())?;
+                let total_value = wallet.lock().total_value(false, confirmations, output_list.clone())?;
                 let fee = tx_fee(max_available, 1, 1, None);
                 ntotal = if total_value >= fee { total_value - fee } else { 0 };
             }
@@ -1947,6 +1950,11 @@ fn do_command(
             let wallet = wallet.lock();
             wallet.check_repair(!args.is_present("--no-delete_unconfirmed"))?;
             cli_message!("check and repair done!");
+        }
+        Some("sync") => {
+            let args = matches.subcommand_matches("sync").unwrap();
+            let update_all = args.is_present("update_all");
+            wallet.lock().sync(update_all)?;
         }
         Some("set-recv") => {
             let args = matches.subcommand_matches("set-recv").unwrap();
