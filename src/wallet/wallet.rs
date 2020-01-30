@@ -110,7 +110,7 @@ impl Wallet {
         let ni = api::node_info(self.get_wallet_instance()?)?;
         // this is an error condition
         if ni.height == 0 && ni.total_difficulty == 0 {
-            cli_message!("Error occured trying to contact node!");
+            cli_message!("Error: Error occured trying to contact node!");
         } else {
             // otherwise it worked, print it out here.
             cli_message!("Node Info:");
