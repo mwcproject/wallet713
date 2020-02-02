@@ -24,6 +24,8 @@ use grin_wallet_libwallet::internal::{updater,keys};
 use std::sync::mpsc;
 use crate::common::hasher;
 use std::sync::mpsc::Sender;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::thread::JoinHandle;
 
 // struct for sending back node information
 pub struct NodeInfo
@@ -372,7 +374,8 @@ pub fn invoice_tx<'a, L, C, K>(
     {
         let (tx, rx) = mpsc::channel();
         // Starting printing to console thread.
-        grin_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(rx)?;
+        let running = Arc::new( AtomicBool::new(true) );
+        let updater = grin_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(rx, running.clone())?;
         let tx = Some(tx);
 
         let res = grin_wallet_libwallet::owner::retrieve_summary_info(wallet_inst,
@@ -381,6 +384,9 @@ pub fn invoice_tx<'a, L, C, K>(
                                                                 refresh_from_node,
                                                                 minimum_confirmations,
         )?;
+
+        running.store(false, Ordering::Relaxed);
+        let _ = updater.join();
 
         Ok(res)
     }
@@ -521,10 +527,14 @@ pub fn invoice_tx<'a, L, C, K>(
     {
         let (tx, rx) = mpsc::channel();
         // Starting printing to console thread.
-        grin_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(rx)?;
+        let running = Arc::new( AtomicBool::new(true) );
+        let updater = grin_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(rx, running.clone())?;
 
         let tx = Some(tx);
         grin_wallet_libwallet::owner::cancel_tx( wallet_inst.clone(), None, &tx, tx_id, tx_slate_id )?;
+
+        running.store(false, Ordering::Relaxed);
+        let _ = updater.join();
 
         Ok(())
     }
@@ -621,7 +631,8 @@ pub fn invoice_tx<'a, L, C, K>(
     {
         let (tx, rx) = mpsc::channel();
         // Starting printing to console thread.
-        grin_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(rx)?;
+        let running = Arc::new( AtomicBool::new(true) );
+        let updater = grin_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(rx, running.clone())?;
 
         let tx = Some(tx);
         grin_wallet_libwallet::owner::scan( wallet_inst.clone(),
@@ -630,6 +641,10 @@ pub fn invoice_tx<'a, L, C, K>(
                        delete_unconfirmed,
                       &tx,
         )?;
+
+        running.store(false, Ordering::Relaxed);
+        let _ = updater.join();
+
         Ok(())
     }
 
@@ -645,10 +660,13 @@ pub fn invoice_tx<'a, L, C, K>(
     {
         let mut status_send_channel: Option<Sender<StatusMessage>> = None;
 
+        let running = Arc::new( AtomicBool::new(true) );
+        let mut updater : Option<JoinHandle<()>> = None;
+
         if print_progress {
             let (tx, rx) = mpsc::channel();
             // Starting printing to console thread.
-            grin_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(rx)?;
+            updater = Some(grin_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(rx, running.clone())?);
             status_send_channel = Some(tx);
         }
 
@@ -658,6 +676,11 @@ pub fn invoice_tx<'a, L, C, K>(
             &status_send_channel,
             update_all,
         )?;
+
+        running.store(false, Ordering::Relaxed);
+        if updater.is_some() {
+            let _ = updater.unwrap().join();
+        }
 
         Ok(res)
     }

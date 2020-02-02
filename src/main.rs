@@ -286,10 +286,14 @@ impl Controller {
                 let old_account = w.active_account.clone();
 
                 unsafe {
+                    let mut dest_acct_name : Option<String> = dest_acct_name.map(|s| String::from(s));
                     if config.is_some() && RECV_ACCOUNT.is_some() {
-                        w.unlock(&config.clone().unwrap(), &RECV_ACCOUNT.clone().unwrap(), RECV_PASS.clone().unwrap_or_else(|| grin_util::ZeroingString::from("")) )?;
+                        let dst_account = RECV_ACCOUNT.clone().unwrap();
+                        w.unlock(&config.clone().unwrap(), &dst_account, RECV_PASS.clone().unwrap_or_else(|| grin_util::ZeroingString::from("")) )?;
+                        dest_acct_name = Some(dst_account);
                     }
-                    w.process_sender_initiated_slate(address, slate, None, None, dest_acct_name)?;
+
+                    w.process_sender_initiated_slate(address, slate, None, None, dest_acct_name.as_deref() )?;
 
                     if config.is_some() && RECV_ACCOUNT.is_some() {
                         w.unlock(&config.unwrap(), &old_account, RECV_PASS.clone().unwrap_or_else(|| grin_util::ZeroingString::from("")))?;
@@ -1517,8 +1521,23 @@ fn do_command(
                 None
             };
 
-            let w = wallet.lock();
-            w.process_sender_initiated_slate(Some(String::from("file")), &mut slate, key_id, output_amounts, Some(&w.active_account) )?;
+            let mut w = wallet.lock();
+            let old_account = w.active_account.clone();
+
+            unsafe {
+                let mut dest_acct_name : Option<String> = Some(w.active_account.clone());
+                if RECV_ACCOUNT.is_some() {
+                    let dst_account = RECV_ACCOUNT.clone().unwrap();
+                    w.unlock(&config, &dst_account, RECV_PASS.clone().unwrap_or_else(|| grin_util::ZeroingString::from("")) )?;
+                    dest_acct_name = Some(dst_account);
+                }
+
+                w.process_sender_initiated_slate(Some(String::from("file")), &mut slate, key_id, output_amounts, dest_acct_name.as_deref() )?;
+
+                if RECV_ACCOUNT.is_some() {
+                    w.unlock(&config, &old_account, RECV_PASS.clone().unwrap_or_else(|| grin_util::ZeroingString::from("")))?;
+                }
+            }
 
 
             let message = &slate.participant_data[0].message;
