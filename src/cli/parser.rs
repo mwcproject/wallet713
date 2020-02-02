@@ -429,7 +429,7 @@ impl<'a, 'b> Parser {
                 SubCommand::with_name("sync")
                     .about("quick update of the wallet state. First call might take some time")
                     .arg(
-                        Arg::from_usage("[update_all] -a, --all 'update status for all outputs'")
+                        Arg::from_usage("[update_all] -a, --all 'update status for all outputs. By default update outstanding only'")
                     )
             )
     }
