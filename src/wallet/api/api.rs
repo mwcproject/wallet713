@@ -675,6 +675,7 @@ pub fn invoice_tx<'a, L, C, K>(
             None,
             &status_send_channel,
             update_all,
+            None, // Need Update for all accounts
         )?;
 
         running.store(false, Ordering::Relaxed);
@@ -732,8 +733,8 @@ pub fn invoice_tx<'a, L, C, K>(
             C: NodeClient + 'a,
             K: Keychain + 'a,
     {
-        let parent_key_id = wallet.parent_key_id();
-        match updater::refresh_outputs(wallet, None, &parent_key_id, update_all, height, accumulator) {
+        // Updating outptus for all accounts
+        match updater::refresh_outputs(wallet, None, None, update_all, height, accumulator) {
             Ok(_) => true,
             Err(_) => false,
         }
