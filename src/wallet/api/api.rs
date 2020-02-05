@@ -640,6 +640,7 @@ pub fn invoice_tx<'a, L, C, K>(
                       None,
                        delete_unconfirmed,
                       &tx,
+                      None,
         )?;
 
         running.store(false, Ordering::Relaxed);
