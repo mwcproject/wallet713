@@ -139,6 +139,7 @@ fn do_config(
         config = Wallet713Config::from_file(config_path, chain)?;
     } else {
         config = Wallet713Config::default(chain);
+        any_matches = true;
     }
 
     if let Some(data_path) = args.value_of("data-path") {
@@ -172,7 +173,9 @@ fn do_config(
         any_matches = true;
     }
 
-    config.to_file(config_path)?;
+    if any_matches {
+        config.to_file(config_path)?;
+    }
 
     if !any_matches && !silent {
         cli_message!("{}", config);
@@ -853,6 +856,12 @@ fn main() {
                         "WARNING".bright_yellow() );
             None
         };
+
+        // With SSL/TLS both owner and foreign APIs are not working.
+        if config.owner_api.clone().unwrap_or(false) && config.foreign_api.clone().unwrap_or(false) {
+            panic!("mwc713 unable to run foreign and ownder api at different ports. If you need to run both APIs please consider to use 'owner_api' with 'owner_api_include_foreign' flag");
+        }
+
 
         owner_api_handle = match config.owner_api {
             Some(true) => {
