@@ -17,6 +17,20 @@ In order to activate the secure connection you have to specify certificates stor
 | tls_certificate_file | path of TLS certificate file, self-signed certificates are not supported  |
 | tls_certificate_key  | private key for the TLS certificate |
  
+### Running both APIs
+
+In order to run both API you have to use 'owner_api_include_foreign' flag, for your config will looks like:
+```
+chain = "Floonet"
+wallet713_data_path = "wallet713_data"
+default_keybase_ttl = "24h"
+owner_api = true
+owner_api_address = "0.0.0.0:13415"
+owner_api_secret = "password"
+owner_api_include_foreign = true
+```
+
+
 ### Owner API Documentation
 
 The owner API must be configured on startup. The parameters which go into your mwc713.toml configuration file are as follows:
