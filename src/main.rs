@@ -859,7 +859,9 @@ fn main() {
 
         // With SSL/TLS both owner and foreign APIs are not working.
         if config.owner_api.clone().unwrap_or(false) && config.foreign_api.clone().unwrap_or(false) {
-            panic!("mwc713 unable to run foreign and ownder api at different ports. If you need to run both APIs please consider to use 'owner_api' with 'owner_api_include_foreign' flag");
+            if config.tls_certificate_key.is_some() && config.tls_certificate_file.is_some() {
+                panic!("mwc713 unable to run foreign and ownder api at different ports with TSL. If you need to run both APIs with TLS please consider to use 'owner_api' with 'owner_api_include_foreign' flag");
+            }
         }
 
 

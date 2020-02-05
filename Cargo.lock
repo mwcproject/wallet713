@@ -8,9 +8,9 @@ checksum = "5d2e7343e7fc9de883d1b0341e0b13970f764c14101234857d2ddafa1cb1cac2"
 
 [[package]]
 name = "aho-corasick"
-version = "0.7.7"
+version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f56c476256dc249def911d6f7580b5fc7e875895b5d7ee88f5d602208035744"
+checksum = "743ad5a418686aad3b87fd14c43badd828cf26e214a00f92a384291cf22e1811"
 dependencies = [
  "memchr 2.3.0",
 ]
@@ -484,7 +484,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3aa945d63861bfe624b55d153a39684da1e8c0bc8fba932f7ee3a3c16cea3ca"
 dependencies = [
  "crossbeam-epoch",
- "crossbeam-utils 0.7.0",
+ "crossbeam-utils",
 ]
 
 [[package]]
@@ -495,19 +495,10 @@ checksum = "5064ebdbf05ce3cb95e45c8b086f72263f4166b29b97f6baff7ef7fe047b55ac"
 dependencies = [
  "autocfg 0.1.7",
  "cfg-if",
- "crossbeam-utils 0.7.0",
+ "crossbeam-utils",
  "lazy_static",
  "memoffset",
  "scopeguard 1.0.0",
-]
-
-[[package]]
-name = "crossbeam-queue"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7c979cd6cfe72335896575c6b5688da489e420d36a27a0b9eb0c73db574b4a4b"
-dependencies = [
- "crossbeam-utils 0.6.6",
 ]
 
 [[package]]
@@ -517,17 +508,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c695eeca1e7173472a32221542ae469b3e9aac3a4fc81f7696bcad82029493db"
 dependencies = [
  "cfg-if",
- "crossbeam-utils 0.7.0",
-]
-
-[[package]]
-name = "crossbeam-utils"
-version = "0.6.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04973fa96e96579258a5091af6003abde64af786b860f18622b82e026cca60e6"
-dependencies = [
- "cfg-if",
- "lazy_static",
+ "crossbeam-utils",
 ]
 
 [[package]]
@@ -1259,7 +1240,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#4b27e21a37d2365fb71cd7aa19579d313838f05a"
+source = "git+https://github.com/mwcproject/mwc-wallet#41e0e3b339187481ec94372de56261c5fca134d7"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1283,7 +1264,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#4b27e21a37d2365fb71cd7aa19579d313838f05a"
+source = "git+https://github.com/mwcproject/mwc-wallet#41e0e3b339187481ec94372de56261c5fca134d7"
 dependencies = [
  "dirs 1.0.5",
  "grin_wallet_util",
@@ -1296,7 +1277,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#4b27e21a37d2365fb71cd7aa19579d313838f05a"
+source = "git+https://github.com/mwcproject/mwc-wallet#41e0e3b339187481ec94372de56261c5fca134d7"
 dependencies = [
  "chrono",
  "colored",
@@ -1328,7 +1309,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#4b27e21a37d2365fb71cd7aa19579d313838f05a"
+source = "git+https://github.com/mwcproject/mwc-wallet#41e0e3b339187481ec94372de56261c5fca134d7"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1367,7 +1348,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#4b27e21a37d2365fb71cd7aa19579d313838f05a"
+source = "git+https://github.com/mwcproject/mwc-wallet#41e0e3b339187481ec94372de56261c5fca134d7"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1395,7 +1376,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#4b27e21a37d2365fb71cd7aa19579d313838f05a"
+source = "git+https://github.com/mwcproject/mwc-wallet#41e0e3b339187481ec94372de56261c5fca134d7"
 dependencies = [
  "dirs 1.0.5",
  "grin_api",
@@ -1599,9 +1580,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "1.3.1"
+version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b54058f0a6ff80b6803da8faf8997cde53872b38f4023728f6830b06cd3c0dc"
+checksum = "076f042c5b7b98f31d205f1249267e12a6518c1481e9dae9764af19b707d2292"
 dependencies = [
  "autocfg 1.0.0",
 ]
@@ -2185,9 +2166,9 @@ checksum = "2839e79665f131bdb5782e51f2c6c9599c133c6098982a54c794358bf432529c"
 
 [[package]]
 name = "openssl"
-version = "0.10.27"
+version = "0.10.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e176a45fedd4c990e26580847a525e39e16ec32ac78957dbf62ded31b3abfd6f"
+checksum = "973293749822d7dd6370d6da1e523b0d1db19f06c459134c658b2a4261378b52"
 dependencies = [
  "bitflags 1.2.1",
  "cfg-if",
@@ -2632,8 +2613,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08a89b46efaf957e52b18062fb2f4660f8b8a4dde1807ca002690868ef2c85a9"
 dependencies = [
  "crossbeam-deque",
- "crossbeam-queue 0.2.1",
- "crossbeam-utils 0.7.0",
+ "crossbeam-queue",
+ "crossbeam-utils",
  "lazy_static",
  "num_cpus",
 ]
@@ -2770,7 +2751,7 @@ dependencies = [
  "base64 0.11.0",
  "blake2b_simd",
  "constant_time_eq",
- "crossbeam-utils 0.7.0",
+ "crossbeam-utils",
 ]
 
 [[package]]
@@ -2849,9 +2830,9 @@ dependencies = [
 
 [[package]]
 name = "schannel"
-version = "0.1.16"
+version = "0.1.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87f550b06b6cba9c8b8be3ee73f391990116bf527450d2556e9b9ce263b9a021"
+checksum = "507a9e6e8ffe0a4e0ebb9a10293e62fdf7657c06f1b8bb07a8fcf697d2abf295"
 dependencies = [
  "lazy_static",
  "winapi 0.3.8",
@@ -3334,9 +3315,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-codec"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c501eceaf96f0e1793cf26beb63da3d11c738c4a943fdf3746d81d64684c39f"
+checksum = "25b2998660ba0e70d18684de5d06b70b70a3a747469af9dea7618cc59e75976b"
 dependencies = [
  "bytes",
  "futures",
@@ -3364,9 +3345,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-current-thread"
-version = "0.1.6"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d16217cad7f1b840c5a97dfb3c43b0c871fef423a6e8d2118c604e843662a443"
+checksum = "b1de0e32a83f131e002238d7ccde18211c0a5397f60cbfffcb112868c2e0e20e"
 dependencies = [
  "futures",
  "tokio-executor",
@@ -3374,19 +3355,19 @@ dependencies = [
 
 [[package]]
 name = "tokio-executor"
-version = "0.1.9"
+version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca6df436c42b0c3330a82d855d2ef017cd793090ad550a6bc2184f4b933532ab"
+checksum = "fb2d1b8f4548dbf5e1f7818512e9c406860678f29c300cdf0ebac72d1a3a1671"
 dependencies = [
- "crossbeam-utils 0.6.6",
+ "crossbeam-utils",
  "futures",
 ]
 
 [[package]]
 name = "tokio-fs"
-version = "0.1.6"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3fe6dc22b08d6993916647d108a1a7d15b9cd29c4f4496c62b92c45b5041b7af"
+checksum = "297a1206e0ca6302a0eed35b700d292b275256f596e2f3fea7729d5e629b6ff4"
 dependencies = [
  "futures",
  "tokio-io",
@@ -3395,9 +3376,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-io"
-version = "0.1.12"
+version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5090db468dad16e1a7a54c8c67280c5e4b544f3d3e018f0b913b400261f85926"
+checksum = "57fc868aae093479e3131e3d165c93b1c7474109d13c90ec0dda2a1bbfff0674"
 dependencies = [
  "bytes",
  "futures",
@@ -3418,11 +3399,11 @@ dependencies = [
 
 [[package]]
 name = "tokio-reactor"
-version = "0.1.11"
+version = "0.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6732fe6b53c8d11178dcb77ac6d9682af27fc6d4cb87789449152e5377377146"
+checksum = "09bc590ec4ba8ba87652da2068d150dcada2cfa2e07faae270a5e0409aa51351"
 dependencies = [
- "crossbeam-utils 0.6.6",
+ "crossbeam-utils",
  "futures",
  "lazy_static",
  "log",
@@ -3469,9 +3450,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-sync"
-version = "0.1.7"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d06554cce1ae4a50f42fba8023918afa931413aded705b560e29600ccf7c6d76"
+checksum = "edfe50152bc8164fcc456dab7891fa9bf8beaf01c5ee7e1dd43a397c3cf87dee"
 dependencies = [
  "fnv",
  "futures",
@@ -3479,9 +3460,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-tcp"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d14b10654be682ac43efee27401d792507e30fd8d26389e1da3b185de2e4119"
+checksum = "98df18ed66e3b72e742f185882a9e201892407957e45fbff8da17ae7a7c51f72"
 dependencies = [
  "bytes",
  "futures",
@@ -3493,13 +3474,13 @@ dependencies = [
 
 [[package]]
 name = "tokio-threadpool"
-version = "0.1.17"
+version = "0.1.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0c32ffea4827978e9aa392d2f743d973c1dfa3730a2ed3f22ce1e6984da848c"
+checksum = "df720b6581784c118f0eb4310796b12b1d242a7eb95f716a8367855325c25f89"
 dependencies = [
  "crossbeam-deque",
- "crossbeam-queue 0.1.2",
- "crossbeam-utils 0.6.6",
+ "crossbeam-queue",
+ "crossbeam-utils",
  "futures",
  "lazy_static",
  "log",
@@ -3510,11 +3491,11 @@ dependencies = [
 
 [[package]]
 name = "tokio-timer"
-version = "0.2.12"
+version = "0.2.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1739638e364e558128461fc1ad84d997702c8e31c2e6b18fb99842268199e827"
+checksum = "93044f2d313c95ff1cb7809ce9a7a05735b012288a888b62d4434fd58c94f296"
 dependencies = [
- "crossbeam-utils 0.6.6",
+ "crossbeam-utils",
  "futures",
  "slab",
  "tokio-executor",
@@ -3522,9 +3503,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-udp"
-version = "0.1.5"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f02298505547f73e60f568359ef0d016d5acd6e830ab9bc7c4a5b3403440121b"
+checksum = "e2a0b10e610b39c38b031a2fcab08e4b82f16ece36504988dcbd81dbba650d82"
 dependencies = [
  "bytes",
  "futures",
@@ -3537,9 +3518,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-uds"
-version = "0.2.5"
+version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "037ffc3ba0e12a0ab4aca92e5234e0dedeb48fddf6ccd260f1f150a36a9f2445"
+checksum = "5076db410d6fdc6523df7595447629099a1fdc47b3d9f896220780fa48faf798"
 dependencies = [
  "bytes",
  "futures",
