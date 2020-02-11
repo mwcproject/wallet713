@@ -649,7 +649,35 @@ pub fn invoice_tx<'a, L, C, K>(
         Ok(())
     }
 
-    pub fn sync<'a, L, C, K>(
+    pub fn dump_wallet_data<'a, L, C, K>(
+        wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
+        file_name: Option<String>,
+    ) -> Result<(), Error>
+        where
+            L: WalletLCProvider<'a, C, K>,
+            C: NodeClient + 'a,
+            K: Keychain + 'a,
+    {
+
+        // Starting printing to console thread.
+        let running = Arc::new( AtomicBool::new(true) );
+        let (tx, rx) = mpsc::channel();
+        let updater = grin_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(rx, running.clone())?;
+
+        grin_wallet_libwallet::owner::dump_wallet_data(
+            wallet_inst,
+            &tx,
+            file_name,
+        )?;
+
+        running.store(false, Ordering::Relaxed);
+        let _ = updater.join();
+
+        Ok(())
+    }
+
+
+pub fn sync<'a, L, C, K>(
         wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
         update_all: bool,
         print_progress: bool,

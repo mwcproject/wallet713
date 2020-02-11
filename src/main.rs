@@ -1978,6 +1978,11 @@ fn do_command(
             let update_all = args.is_present("update_all");
             wallet.lock().sync(update_all)?;
         }
+        Some("dump-wallet-data") => {
+            let args = matches.subcommand_matches("dump-wallet-data").unwrap();
+            let file_name = args.value_of("file").map(|input| input.replace("~", &home_dir));
+            wallet.lock().dump_wallet_data(file_name)?;
+        }
         Some("set-recv") => {
             let args = matches.subcommand_matches("set-recv").unwrap();
             let account = args.value_of("account").unwrap();
