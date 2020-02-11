@@ -668,7 +668,7 @@ impl Wallet {
         let _ = WalletSeed::from_file(&config.get_data_path_str()?, passphrase.clone())?;
 
         let mut wallet = Box::new(
-            DefaultWalletImpl::<'static, HTTPNodeClient>::new(node_client.clone()).unwrap(),
+            DefaultWalletImpl::<'static, HTTPNodeClient>::new(config.get_max_reorg_len(), node_client.clone()).unwrap(),
         )as Box<
             dyn WalletInst<
                 'static,
@@ -691,7 +691,6 @@ impl Wallet {
             },
             _ => (),
         }
-
 
         Ok(())
     }
