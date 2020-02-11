@@ -449,6 +449,11 @@ impl Wallet {
         Ok(())
     }
 
+    pub fn dump_wallet_data(&self, file_name: Option<String>) -> Result<(), Error> {
+        api::dump_wallet_data(self.get_wallet_instance()?, file_name)?;
+        Ok(())
+    }
+
     pub fn build_coinbase(&self, block_fees: &BlockFees) -> Result<CbData, Error> {
         let cb_data = api::build_coinbase(self.get_wallet_instance()?, block_fees)?;
         Ok(cb_data)

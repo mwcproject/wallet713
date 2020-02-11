@@ -432,5 +432,12 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("[update_all] -a, --all 'update status for all outputs. By default update outstanding only'")
                     )
             )
+            .subcommand(
+                SubCommand::with_name("dump-wallet-data")
+                    .about("print dump with wallet internal data for troubleshouting")
+                    .arg(
+                        Arg::from_usage("[file] -f, --file=<file> 'write dump to the file instead of console'")
+                    )
+            )
     }
 }
