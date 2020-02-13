@@ -1965,12 +1965,16 @@ fn do_command(
         Some("check") => {
             let args = matches.subcommand_matches("check").unwrap();
 
+            let start_height = args.value_of("start_height").unwrap_or("1");
+            let start_height = u64::from_str_radix(start_height, 10)
+                .map_err(|_| ErrorKind::InvalidNumOutputs(start_height.to_string()))?;
+
             if keybase_broker.is_some() || grinbox_broker.is_some() || mwcmqs_broker.is_some() {
                 return Err(ErrorKind::HasListener.into());
             }
             println!("checking and repairing... please wait as this could take a few minutes to complete.");
             let wallet = wallet.lock();
-            wallet.check_repair(!args.is_present("--no-delete_unconfirmed"))?;
+            wallet.check_repair( start_height, !args.is_present("--no-delete_unconfirmed"))?;
             cli_message!("check and repair done!");
         }
         Some("sync") => {

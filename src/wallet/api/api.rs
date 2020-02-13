@@ -617,11 +617,12 @@ pub fn invoice_tx<'a, L, C, K>(
             C: NodeClient + 'a,
             K: Keychain + 'a,
     {
-        check_repair(wallet_inst, true)
+        check_repair(wallet_inst, 1, true)
     }
 
     pub fn check_repair<'a, L, C, K>(
         wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
+        start_height: u64,
         delete_unconfirmed: bool
     ) -> Result<(), Error>
         where
@@ -637,7 +638,7 @@ pub fn invoice_tx<'a, L, C, K>(
         let tx = Some(tx);
         grin_wallet_libwallet::owner::scan( wallet_inst.clone(),
                       None,
-                      None,
+                      Some(start_height),
                        delete_unconfirmed,
                       &tx,
                       None,
@@ -677,7 +678,7 @@ pub fn invoice_tx<'a, L, C, K>(
     }
 
 
-pub fn sync<'a, L, C, K>(
+    pub fn sync<'a, L, C, K>(
         wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
         update_all: bool,
         print_progress: bool,

@@ -1240,7 +1240,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#77a5cf05bf14282f382090a80a1e98c667f1a34d"
+source = "git+https://github.com/mwcproject/mwc-wallet#724130c342be6b2179bd4d3414eed0a946c4af46"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1264,7 +1264,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#77a5cf05bf14282f382090a80a1e98c667f1a34d"
+source = "git+https://github.com/mwcproject/mwc-wallet#724130c342be6b2179bd4d3414eed0a946c4af46"
 dependencies = [
  "dirs 1.0.5",
  "grin_wallet_util",
@@ -1277,7 +1277,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#77a5cf05bf14282f382090a80a1e98c667f1a34d"
+source = "git+https://github.com/mwcproject/mwc-wallet#724130c342be6b2179bd4d3414eed0a946c4af46"
 dependencies = [
  "chrono",
  "colored",
@@ -1309,7 +1309,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#77a5cf05bf14282f382090a80a1e98c667f1a34d"
+source = "git+https://github.com/mwcproject/mwc-wallet#724130c342be6b2179bd4d3414eed0a946c4af46"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1348,7 +1348,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#77a5cf05bf14282f382090a80a1e98c667f1a34d"
+source = "git+https://github.com/mwcproject/mwc-wallet#724130c342be6b2179bd4d3414eed0a946c4af46"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1377,7 +1377,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#77a5cf05bf14282f382090a80a1e98c667f1a34d"
+source = "git+https://github.com/mwcproject/mwc-wallet#724130c342be6b2179bd4d3414eed0a946c4af46"
 dependencies = [
  "dirs 1.0.5",
  "grin_api",

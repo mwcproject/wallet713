@@ -439,8 +439,8 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn check_repair(&self, delete_unconfirmed: bool) -> Result<(), Error> {
-        api::check_repair(self.get_wallet_instance()?, delete_unconfirmed)?;
+    pub fn check_repair(&self, start_height: u64, delete_unconfirmed: bool) -> Result<(), Error> {
+        api::check_repair(self.get_wallet_instance()?, start_height, delete_unconfirmed)?;
         Ok(())
     }
 
