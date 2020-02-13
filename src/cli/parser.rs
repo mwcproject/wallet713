@@ -389,10 +389,13 @@ impl<'a, 'b> Parser {
             )
             .subcommand(
                 SubCommand::with_name("check")
-                    .subcommand(SubCommand::with_name("--no-delete_unconfirmed")
-                        .about("do not delete unconfirmed transactions.")
-                    )
                     .about("checks a wallet's outputs against a live node, repairing and restoring missing outputs if required")
+                    .arg(
+                        Arg::from_usage("[no-delete_unconfirmed] -n, --no-delete_unconfirmed 'do not delete unconfirmed transactions.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[start_height] -h, --start_height=<start_height> 'If given, the first block from which to start the scan (default 1)'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("export-proof")
