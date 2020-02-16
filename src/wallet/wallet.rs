@@ -281,6 +281,12 @@ impl Wallet {
         Ok(())
     }
 
+    pub fn txs_bulk_validate(&self, kernels_fn: &str, result_fn: &str )  -> Result<(), Error> {
+        api::txs_bulk_validate(self.get_wallet_instance()?, kernels_fn, result_fn )?;
+        Ok(())
+    }
+
+
     pub fn total_value(&self, refresh_from_node: bool, minimum_confirmations: u64, output_list: Option<Vec<&str>>) -> Result<u64, Error> {
         let mut value = 0;
         let w = self.get_wallet_instance()?;

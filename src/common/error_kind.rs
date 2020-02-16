@@ -164,6 +164,8 @@ pub enum ErrorKind {
     FileNotFound(String),
     #[fail(display = "unable to delete the file '{}'", 0)]
     FileUnableToDelete(String),
+    #[fail(display = "unable to create the file '{}'", 0)]
+    FileUnableToCreate(String),
 
     #[fail(display = "Tx Proof unable to parse address '{}'", 0)]
     TxProofParseAddress(String),
