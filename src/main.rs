@@ -1417,6 +1417,17 @@ fn do_command(
 
             wallet.lock().txs(!no_refresh, show_full_info, pagination_start, pagination_length )?;
         }
+        Some("txs-bulk-validate") => {
+            let args = matches.subcommand_matches("txs-bulk-validate").unwrap();
+
+            let kernels_fn = args.value_of("kernels").unwrap();
+            let result_fn = args.value_of("result").unwrap();
+
+            wallet.lock().txs_bulk_validate(kernels_fn, result_fn )?;
+
+            cli_message!("Please check results in CSV format at {}", result_fn);
+
+        }
         Some("contacts") => {
             let arg_matches = matches.subcommand_matches("contacts").unwrap();
             do_contacts(&arg_matches, address_book.clone())?;

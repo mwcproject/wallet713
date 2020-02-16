@@ -442,5 +442,15 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("[file] -f, --file=<file> 'write dump to the file instead of console'")
                     )
             )
+            .subcommand(
+                SubCommand::with_name("txs-bulk-validate")
+                    .about("validate current account transactions against the full node data dump. In order to do that you should get a kernels dump frm the full node (regular node can't be used for that). If you have few transactions you can validate transaction proofs manually.")
+                    .arg(
+                        Arg::from_usage("[kernels] -k, --kernels=<file> 'file name with transaction kernels from the full node'")
+                    )
+                    .arg(
+                        Arg::from_usage("[result] -r, --result=<file> 'resulting file with transactions in CVS format. Last column the result of validation'")
+                    )
+            )
     }
 }

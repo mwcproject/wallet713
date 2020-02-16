@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use uuid::Uuid;
 
 pub use grin_util::secp::{Message};
@@ -13,7 +13,7 @@ use crate::contacts::GrinboxAddress;
 
 //use super::keys;
 use super::types::TxProof;
-use grin_wallet_libwallet::{AcctPathMapping, BlockFees, CbData, NodeClient, Slate, TxLogEntry, TxWrapper, WalletInfo, WalletBackend, OutputCommitMapping, WalletInst, WalletLCProvider, StatusMessage};
+use grin_wallet_libwallet::{AcctPathMapping, BlockFees, CbData, NodeClient, Slate, TxLogEntry, TxWrapper, WalletInfo, WalletBackend, OutputCommitMapping, WalletInst, WalletLCProvider, StatusMessage, TxLogEntryType};
 use grin_core::core::Transaction;
 use grin_keychain::{Identifier, Keychain};
 use grin_util::secp::key::{ PublicKey };
@@ -26,6 +26,8 @@ use crate::common::hasher;
 use std::sync::mpsc::Sender;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::JoinHandle;
+use std::fs::File;
+use std::io::{Write, BufReader, BufRead};
 
 // struct for sending back node information
 pub struct NodeInfo
@@ -360,6 +362,128 @@ pub fn invoice_tx<'a, L, C, K>(
 
         //w.close()?;
         res
+    }
+
+    struct TransactionInfo {
+        tx_log: TxLogEntry,
+        tx_commits: Vec<String>,  // pedersen::Commitment as strings
+        validated: bool,
+    }
+
+    impl TransactionInfo {
+        fn new(tx_log: TxLogEntry) -> Self {
+            TransactionInfo {
+                tx_log,
+                tx_commits: Vec::new(),
+                validated: false,
+            }
+        }
+    }
+
+    /// Validate transactions as bulk against full node kernels dump
+    pub fn txs_bulk_validate<'a, L, C, K>(
+        wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
+        kernels_fn: &str, // file with kernels dump. One line per kernel
+        result_fn: &str,  // Resulting file
+    ) -> Result<(), Error>
+        where
+            L: WalletLCProvider<'a, C, K>,
+            C: NodeClient + 'a,
+            K: Keychain + 'a,
+    {
+        wallet_lock!(wallet_inst, w);
+
+        let parent_key_id = w.parent_key_id();
+
+        // Natural wallet's order should be good for us. Otherwise need to sort by tx_log.id
+        let mut txs : Vec< TransactionInfo > = Vec::new();
+        // Key: commit.  Value: index at txs
+        let mut commit_to_tx: HashMap< String, usize > = HashMap::new();
+
+        //
+        for tx in w.tx_log_iter() {
+            if tx.parent_key_id != parent_key_id {
+                continue;
+            }
+
+            let mut tx_info = TransactionInfo::new(tx.clone());
+
+            if let Some(uuid_str) = tx.tx_slate_id {
+                if let Ok(transaction) = w.get_stored_tx_by_uuid(&uuid_str.to_string()) {
+                    tx_info.tx_commits = transaction.body.kernels.iter().map(|k| grin_util::to_hex(k.excess.0.to_vec()) ).collect();
+                };
+            }
+
+            if let Some(kernel) = tx.kernel_excess {
+                tx_info.tx_commits.push( grin_util::to_hex(kernel.0.to_vec()) );
+            }
+
+            for commit in &tx_info.tx_commits {
+                commit_to_tx.insert( commit.clone(), txs.len() );
+            }
+
+            txs.push(tx_info);
+        };
+
+        // Transactions are prepared. Now need to validate them.
+        // Scanning node dump line by line and updating the valiated flag.
+        // Normally there is a single kernel in tx. If any of kernels found - will make all transaction valid.
+
+        let file = File::open(kernels_fn).map_err(|_| ErrorKind::FileNotFound(String::from(kernels_fn)))?;
+        let reader = BufReader::new(file);
+
+        // Read the file line by line using the lines() iterator from std::io::BufRead.
+        for line in reader.lines() {
+            let line = line.unwrap();
+
+            if let Some(tx_idx) = commit_to_tx.get( &line ) {
+                txs[*tx_idx].validated = true;
+            }
+        }
+
+        // Done, now let's do a reporting
+        let mut res_file = File::create(result_fn).map_err(|_| ErrorKind::FileUnableToCreate(String::from(result_fn)))?;
+
+        write!(res_file, "id;uuid;type;address;create time;height;amount;fee;messages;node_validated\n" )?;
+
+        for t in &txs {
+            let amount = if t.tx_log.amount_credited >= t.tx_log.amount_debited {
+                grin_core::core::amount_to_hr_string(t.tx_log.amount_credited - t.tx_log.amount_debited, true)
+            } else {
+                format!("-{}", grin_core::core::amount_to_hr_string(t.tx_log.amount_debited - t.tx_log.amount_credited, true))
+            };
+
+            let report_str = format!("{};{};{};{};{};{};{};{};{};{}\n",
+                                         t.tx_log.id,
+                                         t.tx_log.tx_slate_id.map(|uuid| uuid.to_string()).unwrap_or("None".to_string()),
+                                         match t.tx_log.tx_type { // TxLogEntryType print doesn't work for us
+                                                TxLogEntryType::ConfirmedCoinbase => "Coinbase",
+                                                TxLogEntryType::TxReceived => "Received",
+                                                TxLogEntryType::TxSent => "Sent",
+                                                TxLogEntryType::TxReceivedCancelled => "Received,Cancelled",
+                                                TxLogEntryType::TxSentCancelled => "Sent,Cancelled",
+                                         },
+                                         t.tx_log.address.clone().unwrap_or("None".to_string()),
+                                         t.tx_log.creation_ts.format("%Y-%m-%d %H:%M:%S"),
+                                         t.tx_log.output_height,
+                                         amount,
+                                         t.tx_log.fee.map(|fee| fee.to_string()).unwrap_or("Unknown".to_string()),
+                                         t.tx_log.messages.clone().map(|msg| {
+                                             let msgs: Vec<String> = msg.messages.iter().filter_map(|m| m.message.clone()).collect();
+                                             msgs.join(",")
+                                         }).unwrap_or(String::new()),
+                                         if t.tx_commits.is_empty() {
+                                             "Transaction data not complete"
+                                         } else if t.validated {
+                                             "true"
+                                         } else {
+                                             "false"
+                                         }
+            );
+            write!(res_file, "{}", report_str )?;
+        }
+
+        Ok(())
     }
 
     pub fn retrieve_summary_info<'a, L, C, K>(
