@@ -444,7 +444,7 @@ pub fn invoice_tx<'a, L, C, K>(
         // Done, now let's do a reporting
         let mut res_file = File::create(result_fn).map_err(|_| ErrorKind::FileUnableToCreate(String::from(result_fn)))?;
 
-        write!(res_file, "id;uuid;type;address;create time;height;amount;fee;messages;node_validated\n" )?;
+        write!(res_file, "id,uuid,type,address,create time,height,amount,fee,messages,node_validated\n" )?;
 
         for t in &txs {
             let amount = if t.tx_log.amount_credited >= t.tx_log.amount_debited {
@@ -453,7 +453,7 @@ pub fn invoice_tx<'a, L, C, K>(
                 format!("-{}", grin_core::core::amount_to_hr_string(t.tx_log.amount_debited - t.tx_log.amount_credited, true))
             };
 
-            let report_str = format!("{};{};{};{};{};{};{};{};{};{}\n",
+            let report_str = format!("{},{},{},\"{}\",{},{},{},{},\"{}\",{}\n",
                                          t.tx_log.id,
                                          t.tx_log.tx_slate_id.map(|uuid| uuid.to_string()).unwrap_or("None".to_string()),
                                          match t.tx_log.tx_type { // TxLogEntryType print doesn't work for us
@@ -467,10 +467,10 @@ pub fn invoice_tx<'a, L, C, K>(
                                          t.tx_log.creation_ts.format("%Y-%m-%d %H:%M:%S"),
                                          t.tx_log.output_height,
                                          amount,
-                                         t.tx_log.fee.map(|fee| fee.to_string()).unwrap_or("Unknown".to_string()),
+                                         t.tx_log.fee.map(|fee| grin_core::core::amount_to_hr_string(fee, true) ).unwrap_or("Unknown".to_string()),
                                          t.tx_log.messages.clone().map(|msg| {
                                              let msgs: Vec<String> = msg.messages.iter().filter_map(|m| m.message.clone()).collect();
-                                             msgs.join(",")
+                                             msgs.join(",").replace('"', "\"\"")
                                          }).unwrap_or(String::new()),
                                          if t.tx_commits.is_empty() {
                                              "Transaction data not complete"
