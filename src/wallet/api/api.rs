@@ -444,7 +444,7 @@ pub fn invoice_tx<'a, L, C, K>(
         // Done, now let's do a reporting
         let mut res_file = File::create(result_fn).map_err(|_| ErrorKind::FileUnableToCreate(String::from(result_fn)))?;
 
-        write!(res_file, "id,uuid,type,address,create time,height,amount,fee,messages,node_validated\n" )?;
+        write!(res_file, "id,uuid,type,address,create time,height,amount,fee,messages,node validation\n" )?;
 
         for t in &txs {
             let amount = if t.tx_log.amount_credited >= t.tx_log.amount_debited {
@@ -460,8 +460,8 @@ pub fn invoice_tx<'a, L, C, K>(
                                                 TxLogEntryType::ConfirmedCoinbase => "Coinbase",
                                                 TxLogEntryType::TxReceived => "Received",
                                                 TxLogEntryType::TxSent => "Sent",
-                                                TxLogEntryType::TxReceivedCancelled => "Received,Cancelled",
-                                                TxLogEntryType::TxSentCancelled => "Sent,Cancelled",
+                                                TxLogEntryType::TxReceivedCancelled => "ReceivedCancelled",
+                                                TxLogEntryType::TxSentCancelled => "SentCancelled",
                                          },
                                          t.tx_log.address.clone().unwrap_or("None".to_string()),
                                          t.tx_log.creation_ts.format("%Y-%m-%d %H:%M:%S"),
