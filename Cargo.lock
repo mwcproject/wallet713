@@ -12,7 +12,7 @@ version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "743ad5a418686aad3b87fd14c43badd828cf26e214a00f92a384291cf22e1811"
 dependencies = [
- "memchr 2.3.0",
+ "memchr 2.3.2",
 ]
 
 [[package]]
@@ -498,7 +498,7 @@ dependencies = [
  "crossbeam-utils",
  "lazy_static",
  "memoffset",
- "scopeguard 1.0.0",
+ "scopeguard 1.1.0",
 ]
 
 [[package]]
@@ -1240,7 +1240,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#724130c342be6b2179bd4d3414eed0a946c4af46"
+source = "git+https://github.com/mwcproject/mwc-wallet#ea88ff501ec3687cc50f8f5c21df1cd78d14a3cd"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1264,7 +1264,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#724130c342be6b2179bd4d3414eed0a946c4af46"
+source = "git+https://github.com/mwcproject/mwc-wallet#ea88ff501ec3687cc50f8f5c21df1cd78d14a3cd"
 dependencies = [
  "dirs 1.0.5",
  "grin_wallet_util",
@@ -1277,7 +1277,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#724130c342be6b2179bd4d3414eed0a946c4af46"
+source = "git+https://github.com/mwcproject/mwc-wallet#ea88ff501ec3687cc50f8f5c21df1cd78d14a3cd"
 dependencies = [
  "chrono",
  "colored",
@@ -1309,7 +1309,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#724130c342be6b2179bd4d3414eed0a946c4af46"
+source = "git+https://github.com/mwcproject/mwc-wallet#ea88ff501ec3687cc50f8f5c21df1cd78d14a3cd"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1348,7 +1348,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#724130c342be6b2179bd4d3414eed0a946c4af46"
+source = "git+https://github.com/mwcproject/mwc-wallet#ea88ff501ec3687cc50f8f5c21df1cd78d14a3cd"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1377,7 +1377,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#724130c342be6b2179bd4d3414eed0a946c4af46"
+source = "git+https://github.com/mwcproject/mwc-wallet#ea88ff501ec3687cc50f8f5c21df1cd78d14a3cd"
 dependencies = [
  "dirs 1.0.5",
  "grin_api",
@@ -1704,7 +1704,7 @@ version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "79b2de95ecb4691949fea4716ca53cdbcfccb2c612e19644a8bad05edcf9f47b"
 dependencies = [
- "scopeguard 1.0.0",
+ "scopeguard 1.1.0",
 ]
 
 [[package]]
@@ -1780,9 +1780,9 @@ dependencies = [
 
 [[package]]
 name = "memchr"
-version = "2.3.0"
+version = "2.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3197e20c7edb283f87c071ddfc7a2cca8f8e0b888c242959846a6fce03c72223"
+checksum = "53445de381a1f436797497c61d851644d0e8e88e6140f22872ad33a704933978"
 
 [[package]]
 name = "memmap"
@@ -2653,7 +2653,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "322cf97724bea3ee221b78fe25ac9c46114ebb51747ad5babd51a2fc6a8235a8"
 dependencies = [
  "aho-corasick",
- "memchr 2.3.0",
+ "memchr 2.3.2",
  "regex-syntax",
  "thread_local",
 ]
@@ -2800,7 +2800,7 @@ dependencies = [
  "dirs 2.0.2",
  "libc",
  "log",
- "memchr 2.3.0",
+ "memchr 2.3.2",
  "nix",
  "unicode-segmentation",
  "unicode-width",
@@ -2853,9 +2853,9 @@ checksum = "94258f53601af11e6a49f722422f6e3425c52b06245a5cf9bc09908b174f5e27"
 
 [[package]]
 name = "scopeguard"
-version = "1.0.0"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b42e15e59b18a828bbf5c58ea01debb36b9b096346de35d941dcb89009f24a0d"
+checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 
 [[package]]
 name = "sct"
@@ -2936,9 +2936,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.47"
+version = "1.0.48"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "15913895b61e0be854afd32fd4163fcd2a3df34142cf2cb961b310ce694cbf90"
+checksum = "9371ade75d4c2d6cb154141b9752cf3781ec9c05e0e5cf35060e1e70ee7b9c25"
 dependencies = [
  "itoa",
  "ryu",
