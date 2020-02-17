@@ -28,6 +28,8 @@ Files formal is a plain text. Every line contain the single kernel.
 
 ### Validate transactions
 
+Please note that the following command is only available as of mwc713 3.0.0-beta.1: https://github.com/mwcproject/mwc713/releases/tag/3.0.0-beta.1
+
 To validate transactions please use the command
 
 ```
