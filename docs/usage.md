@@ -439,3 +439,7 @@ For help about a specific command `<command>`:
 ```
 wallet713> $ <command> --help
 ```
+
+## Note about proofs:
+
+When using the export-proof command, the Qt wallet will expect that your proof file ends in ".proof". mwc713 will let you use other extensions, but it is advisable to use .proof as the extension if you want to be interoperable.
