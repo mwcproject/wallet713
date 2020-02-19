@@ -196,7 +196,7 @@ In the below example,
    ```
    The transaction in question should show a `yes` in the `proof` column. Example output:
    ```
-    23  Sent Tx      4b6ede9f  mwcmq://xmiUWCTh4Rpme5hbZJhNUFAWGLMgXTvS2pqWk6yNZv8fhV1PyHmQ                 2019-01-27 20:45:01  yes         2019-01-31 01:02:18  -0.234232      yes 
+    23  Sent Tx      4b6ede9f  mwcmqs://xmiUWCTh4Rpme5hbZJhNUFAWGLMgXTvS2pqWk6yNZv8fhV1PyHmQ                 2019-01-27 20:45:01  yes         2019-01-31 01:02:18  -0.234232      yes 
    ```
 
 1. Alice now generates a proof for this transaction:
@@ -254,7 +254,7 @@ To make it easier to transact with parties without having to deal with their gri
 
 To add the grinbox address `xmiUWCTh4Rpme5hbZJhNUFAWGLMgXTvS2pqWk6yNZv8fhV1PyHmQ` to your contacts as `faucet`:
 ```
-wallet713> $ contacts add faucet mwcmq://xmiUWCTh4Rpme5hbZJhNUFAWGLMgXTvS2pqWk6yNZv8fhV1PyHmQ
+wallet713> $ contacts add faucet mwcmqs://xmiUWCTh4Rpme5hbZJhNUFAWGLMgXTvS2pqWk6yNZv8fhV1PyHmQ
 ```
 
 Similarly, to add the keybase address `keybase://ignotus` to your contacts as `igno`:
@@ -409,7 +409,7 @@ The following transaction addresses are currently supported.
 
 ### MWCMQ
 Assigned to you when you run the wallet for the first time. The address is derived from your seed. Mainnet grinbox addresses begin with `g`, floonet addresses begin with `x`.
-Typical address format: `mwcmq://geWzjc7jqGFx6hZAEFbBrVpSQBiG4keieUvpsrKJZ71ero5w6KQu`
+Typical address format: `mwcmqs://geWzjc7jqGFx6hZAEFbBrVpSQBiG4keieUvpsrKJZ71ero5w6KQu`
 
 ####  Address derivation
 Addresses are derived from your wallet seed. A single seed can generate up to `2^32` different addresses. Each of your addresses is specified by an index, which defaults to 0.
