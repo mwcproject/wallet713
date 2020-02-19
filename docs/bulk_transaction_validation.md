@@ -43,6 +43,7 @@ USAGE:
 
 OPTIONS:
     -k, --kernels <file>    file name with transaction kernels from the full node
+    -o, --outputs <file>    file name with all output commitments from the full node
     -r, --result <file>     resulting file with transactions in CVS format. Last column the result of validation
 ```
 
@@ -54,7 +55,7 @@ OPTIONS:
 3. Run the command:
 
 ```
-txs-bulk-validate -k /Users/bay/Downloads/kernel_dumps/kerneldump_floonet.txt -r /tmp/transactions.txt
+txs-bulk-validate -k /Users/bay/floo_kernels.txt -o /Users/bay/floo_outputs.txt -r /tmp/res.txt
 Please check results in CSV format at /tmp/transactions.txt
 ``` 
 
@@ -72,3 +73,5 @@ Please check results in CSV format at /tmp/transactions.txt
  * Fee  - Fee amount if known.
  * Message - Messages that transaction parties put there.
  * node validation - Result of validation with the node. True if transaction was saved at the blockchain. False if transaction was not saved at the network.
+ * validation flags - Flags that show how transaction was validted. K - by the kernel, O - by the output, S - by spending.
+ * validation warnings - Some warning messages related to this transaction

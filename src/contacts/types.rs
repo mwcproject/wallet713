@@ -9,7 +9,7 @@ use common::crypto::{
 };
 use common::{ErrorKind, Error};
 
-const ADDRESS_REGEX: &str = r"^((?P<address_type>keybase|mwcmq|mwcmqs|https)://).+$";
+const ADDRESS_REGEX: &str = r"^((?P<address_type>keybase|mwcmq|mwcmqs|https|http)://).+$";
 const GRINBOX_ADDRESS_REGEX: &str = r"^(mwcmq://)?(?P<public_key>[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{52})(@(?P<domain>[a-zA-Z0-9\.]+)(:(?P<port>[0-9]*))?)?$";
 const MWCMQ_ADDRESS_REGEX: &str = r"^(mwcmqs://)?(?P<public_key>[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{52})(@(?P<domain>[a-zA-Z0-9\.]+)(:(?P<port>[0-9]*))?)?$";
 const KEYBASE_ADDRESS_REGEX: &str = r"^(keybase://)?(?P<username>[0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_]{1,16})(:(?P<topic>[a-zA-Z0-9_-]+))?$";
@@ -54,6 +54,7 @@ impl dyn Address {
             "mwcmqs" => Box::new(MWCMQSAddress::from_str(address)?),
             "mwcmq" => Box::new(GrinboxAddress::from_str(address)?),
             "https" => Box::new(HttpsAddress::from_str(address)?),
+            "http" => Box::new(HttpsAddress::from_str(address)?),
             x => Err(ErrorKind::UnknownAddressType(x.to_string()))?,
         };
         Ok(address)

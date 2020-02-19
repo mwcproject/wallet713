@@ -449,6 +449,9 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("-k, --kernels=<file> 'file name with transaction kernels from the full node'")
                     )
                     .arg(
+                        Arg::from_usage("-o, --outputs=<file> 'file name with all output commitments from the full node'")
+                    )
+                    .arg(
                         Arg::from_usage("-r, --result=<file> 'resulting file with transactions in CVS format. Last column the result of validation'")
                     )
             )
