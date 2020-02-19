@@ -36,9 +36,9 @@ Their mwc713 instance will automatically be able to compute the correct address 
 
 # Listening and sending
 
-mwcmq addresses look like this: mwcmq://xmg2TtJjkiwh5i699kCXq2MBHYdiTdQ5UNWx8ksD5Q7zCG5zCZtP for testnet and
-mwcmq://q5ZwKof1p2UneCJwka66ERDCaxASec79vfSFmk4hYNyDufSuNnyu for mainnet. Since mwcmq:// is the default address type, if the
-mwcmq:// is not specified, it is assumed, so both mwcmq://xmg2TtJjkiwh5i699kCXq2MBHYdiTdQ5UNWx8ksD5Q7zCG5zCZtP and
+mwcmq addresses look like this: mwcmqs://xmg2TtJjkiwh5i699kCXq2MBHYdiTdQ5UNWx8ksD5Q7zCG5zCZtP for testnet and
+mwcmqs://q5ZwKof1p2UneCJwka66ERDCaxASec79vfSFmk4hYNyDufSuNnyu for mainnet. Since mwcmqs:// is the default address type, if the
+mwcmqs:// is not specified, it is assumed, so both mwcmqs://xmg2TtJjkiwh5i699kCXq2MBHYdiTdQ5UNWx8ksD5Q7zCG5zCZtP and
 xmg2TtJjkiwh5i699kCXq2MBHYdiTdQ5UNWx8ksD5Q7zCG5zCZtP refer to the same address. When mwc713 starts up, it listens to a mwcmq
 address. An index parameter can be specified either on startup or after startup to start listening to a new address.
 As stated in the overview, with the v2 address format implementation mwcmq would remain backwards compatible,
