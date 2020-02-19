@@ -2,16 +2,16 @@
 
 # Overview
 
-Normally transactions that was made through MWC MQS can be validated manually on the MWC blockchain through the block explorer. However, for users with many transactions, it may be time consuming to validate many transactions manually.
+Normally transactions that are made through MWC MQS can be validated manually on the MWC blockchain through the block explorer; however, for users with many transactions, it may be time consuming to validate so many transactions manually.
 
-This feature allows one to validate all input/outputs transactions by checking if this transaction was delivered to the blockchain in bulk.
+This feature allows one to validate all the input/outputs of transactions by checking if this transaction was delivered to the blockchain in bulk.
 
-Currently this method is not designed for everyday usage, because kernels snapshot made manually by request. But this can be done by users through data available in the full node if desired.
+Currently this method is not designed for everyday usage because the kernels snapshot is made manually by request. But this can be done by users through data available in the full node if desired.
 
 # How it works
 
-Every transaction has kernel that has to be written into the blockchain even if all transaction input/output commits was cut through.
-In order to validate transaction we need check if the kernel exist at the block chain at the **FULL** node.
+Every transaction has a kernel that has to be written into the blockchain even if all of the transaction input/output commits were cut through.
+In order to validate the transaction we need check if the kernel exist at the block chain at the **FULL** node.
 
 # Workflow
 
