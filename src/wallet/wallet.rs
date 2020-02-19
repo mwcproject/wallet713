@@ -281,8 +281,8 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn txs_bulk_validate(&self, kernels_fn: &str, result_fn: &str )  -> Result<(), Error> {
-        api::txs_bulk_validate(self.get_wallet_instance()?, kernels_fn, result_fn )?;
+    pub fn txs_bulk_validate(&self, kernels_fn: &str, outputs_fn: &str, result_fn: &str )  -> Result<(), Error> {
+        api::txs_bulk_validate(self.get_wallet_instance()?, kernels_fn, outputs_fn, result_fn )?;
         Ok(())
     }
 

@@ -1,4 +1,4 @@
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashSet, HashMap, VecDeque};
 use uuid::Uuid;
 
 pub use grin_util::secp::{Message};
@@ -13,7 +13,9 @@ use crate::contacts::GrinboxAddress;
 
 //use super::keys;
 use super::types::TxProof;
-use grin_wallet_libwallet::{AcctPathMapping, BlockFees, CbData, NodeClient, Slate, TxLogEntry, TxWrapper, WalletInfo, WalletBackend, OutputCommitMapping, WalletInst, WalletLCProvider, StatusMessage, TxLogEntryType};
+use grin_wallet_libwallet::{AcctPathMapping, BlockFees, CbData, NodeClient, Slate, TxLogEntry, TxWrapper,
+                            WalletInfo, WalletBackend, OutputCommitMapping, WalletInst, WalletLCProvider,
+                            StatusMessage, TxLogEntryType, OutputData};
 use grin_core::core::Transaction;
 use grin_keychain::{Identifier, Keychain};
 use grin_util::secp::key::{ PublicKey };
@@ -366,24 +368,104 @@ pub fn invoice_tx<'a, L, C, K>(
 
     struct TransactionInfo {
         tx_log: TxLogEntry,
-        tx_commits: Vec<String>,  // pedersen::Commitment as strings
+        tx_kernels: Vec<String>,  // pedersen::Commitment as strings.  tx kernel, that can be used to validate send transactions
+        tx_outputs: Vec<OutputData>, // Output data from transaction.
         validated: bool,
+        validation_flags: String,
+        warnings: Vec<String>,
     }
 
     impl TransactionInfo {
         fn new(tx_log: TxLogEntry) -> Self {
             TransactionInfo {
                 tx_log,
-                tx_commits: Vec::new(),
+                tx_kernels: Vec::new(),
+                tx_outputs: Vec::new(),
                 validated: false,
+                validation_flags: String::new(),
+                warnings: Vec::new(),
             }
         }
+    }
+
+    fn calc_best_merge(
+        outputs : &mut VecDeque<OutputData>,
+        transactions: &mut VecDeque<TxLogEntry>,
+    ) -> (Vec<(TxLogEntry, Vec<OutputData>, bool)>, // Tx to output mapping
+          Vec<OutputData>) // Outstanding outputs
+    {
+        let mut res : Vec<(TxLogEntry,Vec<OutputData>, bool)> = Vec::new();
+
+        let mut next_canlelled = true;
+
+        while let Some(tx) = transactions.pop_front() {
+            if outputs.is_empty() { // failed to find the outputs
+                res.push( (tx.clone(), vec![], false) );
+                continue;
+            }
+
+            if tx.num_outputs==0 {
+                res.push( (tx.clone(), vec![], true) );
+                continue;
+            }
+
+            if tx.is_cancelled() {
+                if res.is_empty() { // first is cancelled. Edge case. Let's get transaction is possible
+                    next_canlelled = tx.amount_credited != outputs.front().unwrap().value;
+                }
+
+                if next_canlelled {
+                    // normally output is deleted form the DB. But there might be exceptions.
+                    res.push((tx.clone(), vec![], true));
+                    continue;
+                }
+            }
+
+
+            assert!(tx.num_outputs>0);
+
+            // Don't do much. Just chck the current ones.
+            if tx.num_outputs <= outputs.len() {
+                let mut found = false;
+
+                for i in 0..(outputs.len()-(tx.num_outputs-1)) {
+                    let mut amount: u64 = 0;
+                    for k in 0..tx.num_outputs {
+                        amount += outputs[k+i].value;
+                    }
+
+                    if amount == tx.amount_credited {
+                        let mut res_outs: Vec<OutputData> = Vec::new();
+                        for _ in 0..tx.num_outputs {
+                            res_outs.push( outputs.remove(i).unwrap() );
+                        }
+                        found = true;
+
+                        if let Some(o2) = outputs.get(i) {
+                            next_canlelled = o2.n_child - res_outs.last().unwrap().n_child > 1; // normally it is 1
+                        }
+                        else {
+                            next_canlelled = true;
+                        }
+
+                        res.push((tx.clone(), res_outs, true));
+                        break;
+                    }
+                }
+                if !found {
+                    res.push( (tx.clone(), vec![], false) );
+                }
+            }
+        }
+
+        ( res, outputs.iter().map(|o| o.clone()).collect::<Vec<OutputData>>() )
     }
 
     /// Validate transactions as bulk against full node kernels dump
     pub fn txs_bulk_validate<'a, L, C, K>(
         wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
         kernels_fn: &str, // file with kernels dump. One line per kernel
+        outputs_fn: &str, // file with outputs dump. One line per output
         result_fn: &str,  // Resulting file
     ) -> Result<(), Error>
         where
@@ -395,56 +477,187 @@ pub fn invoice_tx<'a, L, C, K>(
 
         let parent_key_id = w.parent_key_id();
 
+        // Validation will be processed for all transactions...
+
         // Natural wallet's order should be good for us. Otherwise need to sort by tx_log.id
-        let mut txs : Vec< TransactionInfo > = Vec::new();
+        let mut txs : Vec<TransactionInfo> = Vec::new();
         // Key: commit.  Value: index at txs
-        let mut commit_to_tx: HashMap< String, usize > = HashMap::new();
+        let mut kernel_to_tx: HashMap< String, usize > = HashMap::new();
+        let mut output_to_tx: HashMap< String, usize > = HashMap::new();
+        let mut tx_id_to_tx: HashMap< u32, usize > = HashMap::new();
 
-        //
-        for tx in w.tx_log_iter() {
-            if tx.parent_key_id != parent_key_id {
-                continue;
-            }
+        // Scanning both transactions and outputs. Doing that for all accounts. Filtering will be later
+        // Outputs don't have to start from the n_child  and they don't have to go in the order because of possible race condition at recovery steps
+        let mut wallet_outputs : VecDeque<OutputData> = w.iter()
+            .filter(|o| o.root_key_id == parent_key_id && o.commit.is_some() )
+            .collect();
 
+        let mut wallet_transactions: VecDeque<TxLogEntry> = w.tx_log_iter()
+            .filter(|t| t.parent_key_id == parent_key_id )
+            .collect();
+
+        let wallet_outputs_len = wallet_outputs.len();
+
+        let (
+            tx_to_output,
+            outstanding_outputs,
+        ) = calc_best_merge( &mut wallet_outputs, &mut wallet_transactions );
+
+        for ( tx, outputs, success ) in tx_to_output {
             let mut tx_info = TransactionInfo::new(tx.clone());
 
-            if let Some(uuid_str) = tx.tx_slate_id {
-                if let Ok(transaction) = w.get_stored_tx_by_uuid(&uuid_str.to_string()) {
-                    tx_info.tx_commits = transaction.body.kernels.iter().map(|k| grin_util::to_hex(k.excess.0.to_vec()) ).collect();
-                };
+            tx_info.tx_outputs = outputs;
+
+            if !success {
+                tx_info.warnings.push("Failed to descover outputs".to_string());
             }
 
-            if let Some(kernel) = tx.kernel_excess {
-                tx_info.tx_commits.push( grin_util::to_hex(kernel.0.to_vec()) );
+            if tx.tx_type == TxLogEntryType::ConfirmedCoinbase || tx.tx_type == TxLogEntryType::TxReceived {
+                if tx_info.tx_log.num_outputs == 0 {
+                    tx_info.warnings.push("Tx Has no outputs".to_string());
+                    println!("WARNING: Recieve transaction id {} doesn't have any outputs. Please check why it is happaning. {:?}", tx.id, tx);
+                }
             }
 
-            for commit in &tx_info.tx_commits {
-                commit_to_tx.insert( commit.clone(), txs.len() );
+            ///////////////////////////////////////////////////////////
+            // Taking case about Send type of transactions. Sends are expected to have slate with a kernel
+            // Note, output with change is a secondary source of verification because of cut through.
+
+            if tx.tx_type == TxLogEntryType::TxSent {
+                if tx.tx_slate_id.is_none() && tx.kernel_excess.is_none() {
+                    tx_info.warnings.push("Transaction doesn't have UUID".to_string());
+                    println!("WARNING: Sent trasaction id {} doesn't have uuid or kernel data", tx.id );
+                }
             }
+
+            if tx.tx_type != TxLogEntryType::TxReceived && tx.tx_type != TxLogEntryType::TxReceivedCancelled {
+                if let Some(uuid_str) = tx.tx_slate_id {
+                    if let Ok(transaction) = w.get_stored_tx_by_uuid(&uuid_str.to_string()) {
+                        tx_info.tx_kernels = transaction.body.kernels.iter().map(|k| grin_util::to_hex(k.excess.0.to_vec())).collect();
+                    } else {
+                        if tx.tx_type == TxLogEntryType::TxSent {
+                            tx_info.warnings.push("Transaction slate not found".to_string());
+                            println!("INFO: Not found slate data for id {} and uuid {}. Might be recoverable issue", tx.id, uuid_str);
+                        }
+                    }
+                }
+                if let Some(kernel) = tx.kernel_excess {
+                    tx_info.tx_kernels.push(grin_util::to_hex(kernel.0.to_vec()));
+                }
+            }
+
+            if tx.tx_type == TxLogEntryType::TxSent {
+                if tx_info.tx_kernels.is_empty() {
+                    tx_info.warnings.push("No Kernels found".to_string());
+                    if tx_info.tx_outputs.is_empty() {
+                        println!("WARNING: For send transaction id {} we not found any kernels and no change outputs was found. We will not be able to validate it.", tx.id );
+                    }
+                    else {
+                        println!("WARNING: For send transaction id {} we not found any kernels, but {} outputs exist. Outputs might not exist because of cut though.", tx.id, tx_info.tx_outputs.len() );
+                    }
+                }
+            }
+
+            // Data is ready, let's collect it
+            let tx_idx = txs.len();
+            for kernel in &tx_info.tx_kernels {
+                kernel_to_tx.insert(kernel.clone(), tx_idx);
+            }
+
+            for out in &tx_info.tx_outputs {
+                if let Some(commit) = &out.commit {
+                    output_to_tx.insert(commit.clone(), tx_idx);
+                }
+                else {
+                    tx_info.warnings.push("Has Output without commit record".to_string());
+                    println!("WARNING: Transaction id {} has broken Output without commit record. It can't be used for validation. This Transaction has outpts number: {}. Output data: {:?}", tx.id, tx_info.tx_outputs.len(), out);
+                }
+            }
+
+            tx_id_to_tx.insert( tx.id, tx_idx );
 
             txs.push(tx_info);
-        };
+        }
 
         // Transactions are prepared. Now need to validate them.
         // Scanning node dump line by line and updating the valiated flag.
+
+
+        // ------------ Send processing first because sends are end points for Recieved Outputs. ---------------------
+        // If receive outputs is not in the chain but end point send was delivered - mean that it was a cut through and transaction is valid
         // Normally there is a single kernel in tx. If any of kernels found - will make all transaction valid.
+        {
+            let file = File::open(kernels_fn).map_err(|_| ErrorKind::FileNotFound(String::from(kernels_fn)))?;
+            let reader = BufReader::new(file);
 
-        let file = File::open(kernels_fn).map_err(|_| ErrorKind::FileNotFound(String::from(kernels_fn)))?;
-        let reader = BufReader::new(file);
+            // Read the file line by line using the lines() iterator from std::io::BufRead.
+            for line in reader.lines() {
+                let line = line.unwrap();
 
-        // Read the file line by line using the lines() iterator from std::io::BufRead.
-        for line in reader.lines() {
-            let line = line.unwrap();
+                if let Some(tx_idx) = kernel_to_tx.get(&line) {
+                    txs[*tx_idx].validated = true;
+                    txs[*tx_idx].validation_flags += "K";
+                }
+            }
 
-            if let Some(tx_idx) = commit_to_tx.get( &line ) {
-                txs[*tx_idx].validated = true;
+        }
+
+        // ---------- Processing Outputs. Targeting 'receive' and partly 'send' -----------------
+        {
+            {
+                let file = File::open(outputs_fn).map_err(|_| ErrorKind::FileNotFound(String::from(outputs_fn)))?;
+                let reader = BufReader::new(file);
+
+                // Read the file line by line using the lines() iterator from std::io::BufRead.
+                for output in reader.lines() {
+                    let output = output.unwrap();
+
+                    if let Some(tx_idx) = output_to_tx.get(&output) {
+                        txs[*tx_idx].validated = true;
+                        txs[*tx_idx].validation_flags += "O";
+                    }
+                }
+            }
+        }
+
+        // Processing outputs by Send target - it is a Cut through Case.
+        // Do that for Recieve transactions without confirmations
+        {
+            for i in 0..txs.len() {
+                let t = &txs[i];
+
+                if t.validated {
+                    continue;
+                }
+
+                let mut validated = false;
+
+                for out in &t.tx_outputs {
+                    if let Some(tx_log_entry) = out.tx_log_entry {
+                        if let Some(tx_idx) = tx_id_to_tx.get(&tx_log_entry) {
+                            let tx_info = &txs[*tx_idx];
+                            if (tx_info.tx_log.tx_type == TxLogEntryType::TxSent || tx_info.tx_log.tx_type == TxLogEntryType::TxSentCancelled)
+                                && tx_info.validated {
+                                // We can validate this transaction because output was spent sucessfully
+                                validated = true;
+                            }
+                        }
+                    }
+                }
+
+                drop(t);
+
+                if validated {
+                    txs[i].validated = true;
+                    txs[i].validation_flags += "S";
+                }
             }
         }
 
         // Done, now let's do a reporting
         let mut res_file = File::create(result_fn).map_err(|_| ErrorKind::FileUnableToCreate(String::from(result_fn)))?;
 
-        write!(res_file, "id,uuid,type,address,create time,height,amount,fee,messages,node validation\n" )?;
+        write!(res_file, "id,uuid,type,address,create time,height,amount,fee,messages,node validation,validation flags,validation warnings\n" )?;
 
         for t in &txs {
             let amount = if t.tx_log.amount_credited >= t.tx_log.amount_debited {
@@ -453,7 +666,7 @@ pub fn invoice_tx<'a, L, C, K>(
                 format!("-{}", grin_core::core::amount_to_hr_string(t.tx_log.amount_debited - t.tx_log.amount_credited, true))
             };
 
-            let report_str = format!("{},{},{},\"{}\",{},{},{},{},\"{}\",{}\n",
+            let report_str = format!("{},{},{},\"{}\",{},{},{},{},\"{}\",{},{},\"{}\"\n",
                                          t.tx_log.id,
                                          t.tx_log.tx_slate_id.map(|uuid| uuid.to_string()).unwrap_or("None".to_string()),
                                          match t.tx_log.tx_type { // TxLogEntryType print doesn't work for us
@@ -472,15 +685,22 @@ pub fn invoice_tx<'a, L, C, K>(
                                              let msgs: Vec<String> = msg.messages.iter().filter_map(|m| m.message.clone()).collect();
                                              msgs.join(",").replace('"', "\"\"")
                                          }).unwrap_or(String::new()),
-                                         if t.tx_commits.is_empty() {
-                                             "Transaction data not complete"
-                                         } else if t.validated {
+                                         if t.validated {
                                              "true"
                                          } else {
                                              "false"
-                                         }
+                                         },
+                                         t.validation_flags,
+                                         t.warnings.join("; "),
             );
             write!(res_file, "{}", report_str )?;
+        }
+
+        if !outstanding_outputs.is_empty() {
+
+
+
+            println!("WARNING: There are {} from {} outstanding outputs that wasn't used. That affect accuracy of results!!!", outstanding_outputs.len(), wallet_outputs_len );
         }
 
         Ok(())
