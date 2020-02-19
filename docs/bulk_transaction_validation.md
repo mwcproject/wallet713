@@ -4,7 +4,7 @@
 
 Normally transactions that are made through MWC MQS can be validated manually on the MWC blockchain through the block explorer; however, for users with many transactions, it may be time consuming to validate so many transactions manually.
 
-This feature allows one to validate all the input/outputs of transactions by checking if this transaction was delivered to the blockchain in bulk.
+This feature allows one to validate all the input/outputs of transactions by checking if this transaction was delivered to the blockchain, in bulk.
 
 Currently this method is not designed for everyday usage because the kernels snapshot is made manually by request. But this can be done by users through data available in the full node if desired.
 
@@ -19,11 +19,11 @@ In order to validate the transaction we need check if the kernel exist at the bl
 
 Kernels data is normally available at http://ftp.mwc.mw/kernel_dumps.tar.gz
 
-But please undersatnd that it is updated by request only. In case if you need to validate all your transactions, please ask developers for a fresh snapshot.
+But please undersatnd that it is updated by request only. In case you need to validate all your transactions, please ask developers for a fresh snapshot.
 
-Please download the data from that link, unzip the files. You should be able to see two files inside: kerneldump.txt for mainnet and kerneldump_floonet.txt for floonet.
+Please download the data from the link above, unzip the files. You should be able to see two files inside: kerneldump.txt for mainnet and kerneldump_floonet.txt for floonet.
 
-Files formal is a plain text. Every line contain the single kernel.
+The file format is a plain text. Every line contains a single kernel.
 
 
 ### Validate transactions
