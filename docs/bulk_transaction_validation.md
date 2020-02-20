@@ -19,7 +19,7 @@ In order to validate the transaction we need check if the kernel exist at the bl
 
 Kernels data is normally available at http://ftp.mwc.mw/kernel_dumps.tar.gz
 
-But please undersatnd that it is updated by request only. In case you need to validate all your transactions, please ask developers for a fresh snapshot.
+But please understand that it is updated by request only. In case you need to validate all your transactions, please ask developers for a fresh snapshot.
 
 Please download the data from the link above, unzip the files. You should be able to see two files inside: kerneldump.txt for mainnet and kerneldump_floonet.txt for floonet.
 
