@@ -163,7 +163,7 @@ dependencies = [
  "lazycell",
  "log",
  "peeking_take_while",
- "proc-macro2 1.0.8",
+ "proc-macro2 1.0.9",
  "quote 1.0.2",
  "regex",
  "rustc-hash",
@@ -386,9 +386,9 @@ dependencies = [
 
 [[package]]
 name = "colored"
-version = "1.9.2"
+version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8815e2ab78f3a59928fc32e141fbeece88320a240e43f47b2fd64ea3a88a5b3d"
+checksum = "f4ffc801dacf156c5854b9df4f425a626539c3a6ef7893cc0c5084a23f0b6c59"
 dependencies = [
  "atty",
  "lazy_static",
@@ -881,9 +881,9 @@ version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0bc225b78e0391e4b8683440bf2e63c2deeeb2ce5189eab46e2b68c6d3725d08"
 dependencies = [
- "proc-macro2 1.0.8",
+ "proc-macro2 1.0.9",
  "quote 1.0.2",
- "syn 1.0.15",
+ "syn 1.0.16",
  "synstructure 0.12.3",
 ]
 
@@ -1058,7 +1058,7 @@ dependencies = [
 [[package]]
 name = "grin_api"
 version = "3.0.0"
-source = "git+https://github.com/mwcproject/mwc-node#c5ca6c64cdeb7cf9d1cc3826cb5934a3ca5dc9e3"
+source = "git+https://github.com/mwcproject/mwc-node#e1b8f7cd0bf9500995e6fa9a19bf363ff6bdc2f4"
 dependencies = [
  "easy-jsonrpc-mw",
  "failure",
@@ -1092,7 +1092,7 @@ dependencies = [
 [[package]]
 name = "grin_chain"
 version = "3.0.0"
-source = "git+https://github.com/mwcproject/mwc-node#c5ca6c64cdeb7cf9d1cc3826cb5934a3ca5dc9e3"
+source = "git+https://github.com/mwcproject/mwc-node#e1b8f7cd0bf9500995e6fa9a19bf363ff6bdc2f4"
 dependencies = [
  "bit-vec",
  "bitflags 1.2.1",
@@ -1116,7 +1116,7 @@ dependencies = [
 [[package]]
 name = "grin_core"
 version = "3.0.0"
-source = "git+https://github.com/mwcproject/mwc-node#c5ca6c64cdeb7cf9d1cc3826cb5934a3ca5dc9e3"
+source = "git+https://github.com/mwcproject/mwc-node#e1b8f7cd0bf9500995e6fa9a19bf363ff6bdc2f4"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1143,7 +1143,7 @@ dependencies = [
 [[package]]
 name = "grin_keychain"
 version = "3.0.0"
-source = "git+https://github.com/mwcproject/mwc-node#c5ca6c64cdeb7cf9d1cc3826cb5934a3ca5dc9e3"
+source = "git+https://github.com/mwcproject/mwc-node#e1b8f7cd0bf9500995e6fa9a19bf363ff6bdc2f4"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1166,7 +1166,7 @@ dependencies = [
 [[package]]
 name = "grin_p2p"
 version = "3.0.0"
-source = "git+https://github.com/mwcproject/mwc-node#c5ca6c64cdeb7cf9d1cc3826cb5934a3ca5dc9e3"
+source = "git+https://github.com/mwcproject/mwc-node#e1b8f7cd0bf9500995e6fa9a19bf363ff6bdc2f4"
 dependencies = [
  "bitflags 1.2.1",
  "bytes",
@@ -1189,7 +1189,7 @@ dependencies = [
 [[package]]
 name = "grin_pool"
 version = "3.0.0"
-source = "git+https://github.com/mwcproject/mwc-node#c5ca6c64cdeb7cf9d1cc3826cb5934a3ca5dc9e3"
+source = "git+https://github.com/mwcproject/mwc-node#e1b8f7cd0bf9500995e6fa9a19bf363ff6bdc2f4"
 dependencies = [
  "blake2-rfc",
  "chrono",
@@ -1224,7 +1224,7 @@ dependencies = [
 [[package]]
 name = "grin_store"
 version = "3.0.0"
-source = "git+https://github.com/mwcproject/mwc-node#c5ca6c64cdeb7cf9d1cc3826cb5934a3ca5dc9e3"
+source = "git+https://github.com/mwcproject/mwc-node#e1b8f7cd0bf9500995e6fa9a19bf363ff6bdc2f4"
 dependencies = [
  "bit-vec",
  "byteorder",
@@ -1246,7 +1246,7 @@ dependencies = [
 [[package]]
 name = "grin_util"
 version = "3.0.0"
-source = "git+https://github.com/mwcproject/mwc-node#c5ca6c64cdeb7cf9d1cc3826cb5934a3ca5dc9e3"
+source = "git+https://github.com/mwcproject/mwc-node#e1b8f7cd0bf9500995e6fa9a19bf363ff6bdc2f4"
 dependencies = [
  "backtrace",
  "base64 0.9.3",
@@ -1267,7 +1267,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#920321b571de9436382650e4c3049d6b5f99782e"
+source = "git+https://github.com/mwcproject/mwc-wallet#4b69661dabfded59a4e88248640cc908dd3dfc40"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1291,7 +1291,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#920321b571de9436382650e4c3049d6b5f99782e"
+source = "git+https://github.com/mwcproject/mwc-wallet#4b69661dabfded59a4e88248640cc908dd3dfc40"
 dependencies = [
  "dirs 1.0.5",
  "grin_wallet_util",
@@ -1304,7 +1304,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#920321b571de9436382650e4c3049d6b5f99782e"
+source = "git+https://github.com/mwcproject/mwc-wallet#4b69661dabfded59a4e88248640cc908dd3dfc40"
 dependencies = [
  "chrono",
  "colored",
@@ -1336,7 +1336,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#920321b571de9436382650e4c3049d6b5f99782e"
+source = "git+https://github.com/mwcproject/mwc-wallet#4b69661dabfded59a4e88248640cc908dd3dfc40"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1346,6 +1346,7 @@ dependencies = [
  "failure",
  "failure_derive",
  "futures",
+ "grin_core",
  "grin_p2p",
  "grin_wallet_config",
  "grin_wallet_libwallet",
@@ -1375,7 +1376,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#920321b571de9436382650e4c3049d6b5f99782e"
+source = "git+https://github.com/mwcproject/mwc-wallet#4b69661dabfded59a4e88248640cc908dd3dfc40"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1404,7 +1405,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#920321b571de9436382650e4c3049d6b5f99782e"
+source = "git+https://github.com/mwcproject/mwc-wallet#4b69661dabfded59a4e88248640cc908dd3dfc40"
 dependencies = [
  "dirs 1.0.5",
  "grin_api",
@@ -1448,9 +1449,9 @@ dependencies = [
 
 [[package]]
 name = "hermit-abi"
-version = "0.1.7"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2c55f143919fbc0bc77e427fe2d74cf23786d7c1875666f2fde3ac3c659bb67"
+checksum = "1010591b26bbfe835e9faeabeb11866061cc7dcebffd56ad7d0942d0e61aefd8"
 dependencies = [
  "libc",
 ]
@@ -2380,9 +2381,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.8"
+version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3acb317c6ff86a4e579dfa00fc5e6cca91ecbb4e7eb2df0468805b674eb88548"
+checksum = "6c09721c6781493a2a492a96b5a5bf19b65917fe6728884e7c44dd0c60ca3435"
 dependencies = [
  "unicode-xid 0.2.0",
 ]
@@ -2430,7 +2431,7 @@ version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "053a8c8bcc71fcce321828dc897a98ab9760bef03a4fc36693c231e5b3216cfe"
 dependencies = [
- "proc-macro2 1.0.8",
+ "proc-macro2 1.0.9",
 ]
 
 [[package]]
@@ -2945,9 +2946,9 @@ version = "1.0.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "128f9e303a5a29922045a830221b8f78ec74a5f544944f3d5984f8ec3895ef64"
 dependencies = [
- "proc-macro2 1.0.8",
+ "proc-macro2 1.0.9",
  "quote 1.0.2",
- "syn 1.0.15",
+ "syn 1.0.16",
 ]
 
 [[package]]
@@ -3153,11 +3154,11 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.15"
+version = "1.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a0294dc449adc58bb6592fff1a23d3e5e6e235afc6a0ffca2657d19e7bbffe5"
+checksum = "123bd9499cfb380418d509322d7a6d52e5315f064fe4b3ad18a53d6b92c07859"
 dependencies = [
- "proc-macro2 1.0.8",
+ "proc-macro2 1.0.9",
  "quote 1.0.2",
  "unicode-xid 0.2.0",
 ]
@@ -3180,9 +3181,9 @@ version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67656ea1dc1b41b1451851562ea232ec2e5a80242139f7e679ceccfb5d61f545"
 dependencies = [
- "proc-macro2 1.0.8",
+ "proc-macro2 1.0.9",
  "quote 1.0.2",
- "syn 1.0.15",
+ "syn 1.0.16",
  "unicode-xid 0.2.0",
 ]
 

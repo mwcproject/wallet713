@@ -1990,9 +1990,12 @@ fn do_command(
             cli_message!("check and repair done!");
         }
         Some("sync") => {
-            let args = matches.subcommand_matches("sync").unwrap();
-            let update_all = args.is_present("update_all");
-            wallet.lock().sync(update_all)?;
+            if wallet.lock().sync()? {
+                cli_message!("Your wallet data successfully synchronized with a node");
+            }
+            else {
+                cli_message!("Warning: Unable to sync wallet with a node");
+            }
         }
         Some("dump-wallet-data") => {
             let args = matches.subcommand_matches("dump-wallet-data").unwrap();

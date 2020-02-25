@@ -55,9 +55,6 @@ pub struct Wallet713Config {
 
     // Wallet state update frequency. In none, no updates will be run in the background.
     pub wallet_updater_frequency_sec: Option<u32>,
-
-    /// Maximum expected size of reorg. Default is 100 blocks
-    pub max_reorg_len: Option<u64>,
 }
 
 pub const WALLET713_CONFIG_HELP: &str =
@@ -150,9 +147,6 @@ pub const WALLET713_CONFIG_HELP: &str =
 # If will be set, will run 'sync' command with defined time interval
 # wallet_updater_frequency_sec =
 
-# Length of maximum expected reorg length
-# max_reorg_len = 100
-
 ";
 
 
@@ -194,7 +188,6 @@ impl Wallet713Config {
             config_home: None,
             grinbox_address_key: None,
             wallet_updater_frequency_sec: None,
-            max_reorg_len: None,
         }
     }
 
@@ -402,10 +395,6 @@ impl Wallet713Config {
   /// TLS certificate file
     pub fn is_tls_enabled(&self) -> bool {
         self.tls_certificate_file.is_some() && self.tls_certificate_key.is_some()
-    }
-
-    pub fn get_max_reorg_len(&self) -> u64 {
-        self.max_reorg_len.clone().unwrap_or(100)
     }
 }
 
