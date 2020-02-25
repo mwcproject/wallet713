@@ -128,7 +128,7 @@ pub const WALLET713_CONFIG_HELP: &str =
 
 # Foreign API listening address. If you want accept connections from
 # the Internet, please make it \"0.0.0.0:13416\"
-# foreign_api_address =  = \"127.0.0.1:13416\"
+# foreign_api_address = \"127.0.0.1:13416\"
 
 # Foreign API secret. REST API call required basic authorization with this secret (user: mwc).
 # foreign_api_secret = \"my_secret_password\"
