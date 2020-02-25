@@ -14,7 +14,7 @@ use crate::contacts::GrinboxAddress;
 //use super::keys;
 use super::types::TxProof;
 use grin_wallet_libwallet::{AcctPathMapping, BlockFees, CbData, NodeClient, Slate, TxLogEntry, TxWrapper,
-                            WalletInfo, WalletBackend, OutputCommitMapping, WalletInst, WalletLCProvider,
+                            WalletInfo, OutputCommitMapping, WalletInst, WalletLCProvider,
                             StatusMessage, TxLogEntryType, OutputData};
 use grin_core::core::Transaction;
 use grin_keychain::{Identifier, Keychain};
@@ -251,13 +251,16 @@ pub fn invoice_tx<'a, L, C, K>(
             C: NodeClient + 'a,
             K: Keychain + 'a,
     {
-        wallet_lock!(wallet_inst, w);
-        let parent_key_id = w.parent_key_id();
-
         let mut validated = false;
         if refresh_from_node {
-            validated = update_outputs(&mut **w, false, None, None);
+            validated = sync(
+                wallet_inst.clone(),
+                true,
+            )?;
         }
+
+        wallet_lock!(wallet_inst, w);
+        let parent_key_id = w.parent_key_id();
 
         let res = Ok((
             validated,
@@ -270,7 +273,6 @@ pub fn invoice_tx<'a, L, C, K>(
                                       pagination_len)?,
         ));
 
-        //w.close()?;
         res
     }
 
@@ -290,7 +292,7 @@ pub fn invoice_tx<'a, L, C, K>(
 
         let mut validated = false;
         if refresh_from_node {
-            validated = update_outputs(&mut **w, false, None, None);
+            validated = sync( wallet_inst.clone(), true )?;
         }
 
         let res = Ok((
@@ -315,38 +317,24 @@ pub fn invoice_tx<'a, L, C, K>(
             C: NodeClient + 'a,
             K: Keychain + 'a,
     {
+        let mut validated = false;
+        if refresh_from_node {
+            validated = sync( wallet_inst.clone(), true )?;
+        }
+
         wallet_lock!(wallet_inst, w);
         let parent_key_id = w.parent_key_id();
 
-        let mut validated = false;
-        let mut output_list = None;
-        if refresh_from_node {
-            validated = update_outputs(&mut **w, false, None, None);
-
-            // we need to check outputs for confirmations of ALL
-            output_list = Some((
-            validated,
-            // OutputCommitMap Array to array of (OutputData, pedersen::Commitment)
-            updater::retrieve_outputs(&mut **w,
-                                      None,
-                                      false,
-                                      None,
-                                      Some(&parent_key_id),
-                                      None, None)?
-                .iter().map(|ocm| (ocm.output.clone(), ocm.commit.clone())).collect()
-            ));
-        }
-
         let txs: Vec<TxLogEntry> =
-            updater::retrieve_txs_with_outputs(&mut **w,
+            updater::retrieve_txs(&mut **w,
                                                None,
                                                tx_id,
                                                tx_slate_id,
                                                Some(&parent_key_id),
                                                false,
                                                pagination_start,
-                                               pagination_length,
-                                               output_list)?;
+                                               pagination_length)?;
+
         let txs = txs
             .into_iter()
             .map(|t| {
@@ -362,7 +350,6 @@ pub fn invoice_tx<'a, L, C, K>(
 
         let res = Ok((validated, txs));
 
-        //w.close()?;
         res
     }
 
@@ -984,8 +971,7 @@ pub fn invoice_tx<'a, L, C, K>(
                       None,
                       Some(start_height),
                        delete_unconfirmed,
-                      &tx,
-                      None,
+                      &tx
         )?;
 
         running.store(false, Ordering::Relaxed);
@@ -1024,7 +1010,6 @@ pub fn invoice_tx<'a, L, C, K>(
 
     pub fn sync<'a, L, C, K>(
         wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
-        update_all: bool,
         print_progress: bool,
     ) -> Result<bool, Error>
         where
@@ -1048,7 +1033,6 @@ pub fn invoice_tx<'a, L, C, K>(
             wallet_inst,
             None,
             &status_send_channel,
-            update_all,
             None, // Need Update for all accounts
         )?;
 
@@ -1071,7 +1055,6 @@ pub fn invoice_tx<'a, L, C, K>(
             K: Keychain + 'a,
     {
         wallet_lock!(wallet_inst, w);
-        update_outputs(&mut **w, true, None, None);
         crate::wallet::api::restore::scan_outputs(&mut **w, pub_keys, output_fn)?;
         Ok(())
     }
@@ -1098,19 +1081,6 @@ pub fn invoice_tx<'a, L, C, K>(
                 };
                 Ok((height, false))
             }
-        }
-    }
-
-    fn update_outputs<'a, T: ?Sized, C, K>(wallet: &mut T, update_all: bool, height: Option<u64>, accumulator: Option<Vec<grin_api::Output>>) -> bool
-        where
-            T: WalletBackend<'a, C, K>,
-            C: NodeClient + 'a,
-            K: Keychain + 'a,
-    {
-        // Updating outptus for all accounts
-        match updater::refresh_outputs(wallet, None, None, update_all, height, accumulator) {
-            Ok(_) => true,
-            Err(_) => false,
         }
     }
 
