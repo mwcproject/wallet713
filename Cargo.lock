@@ -1267,7 +1267,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#1d59504381e5dc8e6bc568078fca5fe9e3d9323a"
+source = "git+https://github.com/mwcproject/mwc-wallet#3bd7184eb4d2afa9cecfaa1e31c93767aedc3e03"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1291,7 +1291,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#1d59504381e5dc8e6bc568078fca5fe9e3d9323a"
+source = "git+https://github.com/mwcproject/mwc-wallet#3bd7184eb4d2afa9cecfaa1e31c93767aedc3e03"
 dependencies = [
  "dirs 1.0.5",
  "grin_wallet_util",
@@ -1304,7 +1304,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#1d59504381e5dc8e6bc568078fca5fe9e3d9323a"
+source = "git+https://github.com/mwcproject/mwc-wallet#3bd7184eb4d2afa9cecfaa1e31c93767aedc3e03"
 dependencies = [
  "chrono",
  "colored",
@@ -1336,7 +1336,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#1d59504381e5dc8e6bc568078fca5fe9e3d9323a"
+source = "git+https://github.com/mwcproject/mwc-wallet#3bd7184eb4d2afa9cecfaa1e31c93767aedc3e03"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1376,7 +1376,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#1d59504381e5dc8e6bc568078fca5fe9e3d9323a"
+source = "git+https://github.com/mwcproject/mwc-wallet#3bd7184eb4d2afa9cecfaa1e31c93767aedc3e03"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1405,7 +1405,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "3.0.0-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#1d59504381e5dc8e6bc568078fca5fe9e3d9323a"
+source = "git+https://github.com/mwcproject/mwc-wallet#3bd7184eb4d2afa9cecfaa1e31c93767aedc3e03"
 dependencies = [
  "dirs 1.0.5",
  "grin_api",
@@ -2248,9 +2248,9 @@ dependencies = [
 
 [[package]]
 name = "owning_ref"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49a4b8ea2179e6a2e27411d3bca09ca6dd630821cf6894c6c7c8467a8ee7ef13"
+checksum = "6ff55baddef9e4ad00f88b6c743a2a8062d4c6ade126c2a528644b8e444d52ce"
 dependencies = [
  "stable_deref_trait",
 ]
