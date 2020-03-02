@@ -163,6 +163,12 @@ impl<'a, 'b> Parser {
                 SubCommand::with_name("txs")
                     .about("displays transactions")
                     .arg(
+                        Arg::from_usage("[id] -i, --id=<id> 'If specified, display transaction with given Id and all associated Inputs/Outputs'")
+                    )
+                    .arg(
+                        Arg::from_usage("[txid] -t, --txid=<uuid> 'If specified, display transaction with given TxID UUID and all associated Inputs/Outputs'")
+                    )
+                    .arg(
                         Arg::from_usage("[no-refresh] -n, --no-refresh 'do not contact full node to refresh outputs'")
                     )
                     .arg(

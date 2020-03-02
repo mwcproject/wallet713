@@ -4,7 +4,7 @@ use colored::Colorize;
 use std::io::Write;
 use url::Url;
 use grin_api::client::post;
-use grin_wallet_libwallet::{VersionedSlate, SlateVersion};
+use grin_wallet_libwallet::{VersionedSlate, SlateVersion, TxLogEntry};
 use std::fs::File;
 use std::clone::Clone;
 use serde_json::Value;
@@ -58,8 +58,20 @@ fn handle_retrieve_outputs(state: &State, _body: &Chunk) -> Result<Response<Body
         tx_id,
     } = RetrieveOutputsQueryParams::borrow_from(&state);
     let wallet = WalletContainer::borrow_from(&state).lock()?;
+
+    let mut tx : Option<TxLogEntry> = None;
+
+    if tx_id.is_some() {
+        let (_, mut txs) = wallet.retrieve_txs(false,
+                                           tx_id, None)?;
+        if !txs.is_empty() {
+            tx = Some(txs.remove(0));
+        }
+    }
+
     let response =
-        wallet.retrieve_outputs(show_spent.unwrap_or(false), refresh.unwrap_or(true), tx_id)?;
+        wallet.retrieve_outputs(show_spent.unwrap_or(false), refresh.unwrap_or(true), tx.as_ref())?;
+
     Ok(trace_create_response(
         &state,
         StatusCode::OK,
