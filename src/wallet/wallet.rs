@@ -240,7 +240,14 @@ impl Wallet {
         Ok(txs.len())
     }
 
-    pub fn txs(&self, refresh_from_node: bool, show_full_info: bool, pagination_start: Option<u32>, pagination_length: Option<u32>) -> Result<(), Error> {
+    pub fn txs(&self,
+               refresh_from_node: bool,
+               show_full_info: bool,
+               pagination_start: Option<u32>,
+               pagination_length: Option<u32>,
+               tx_id: Option<u32>, // display single tx with all details
+               tx_slate_id: Option<Uuid>,
+    ) -> Result<(), Error> {
         let wallet_inst = self.get_wallet_instance()?;
 
         let height = if refresh_from_node {
@@ -253,13 +260,28 @@ impl Wallet {
         };
 
         let (validated, txs) = api::retrieve_txs_with_proof_flag(
-                wallet_inst.clone(), refresh_from_node, None,
-                None, pagination_start, pagination_length)?;
+                wallet_inst.clone(), refresh_from_node, tx_id.clone(),
+                tx_slate_id.clone(), pagination_start, pagination_length)?;
         let txs = txs.iter().map(|tpl| tpl.0.clone()).collect::<Vec<TxLogEntry>>();
 
         let data_dir = {
             wallet_lock!(wallet_inst, w);
             String::from(w.get_data_file_dir())
+        };
+
+        // if given a particular transaction id or uuid, also get and display associated
+        // inputs/outputs and messages
+        let id = if tx_id.is_some() {
+            tx_id
+        } else if tx_slate_id.is_some() {
+            if let Some(tx) = txs.iter().find(|t| t.tx_slate_id == tx_slate_id) {
+                Some(tx.id)
+            } else {
+                println!("Could not find a transaction matching given tx Uuid.\n");
+                None
+            }
+        } else {
+            None
         };
 
         display::txs(
@@ -269,7 +291,7 @@ impl Wallet {
             &txs,
             true,
             true,
-            show_full_info,
+            show_full_info || id.is_some(),
             move |tx: &TxLogEntry| {
                 let slate_id = match tx.tx_slate_id {
                     Some(m) => format!("{}", m),
@@ -278,6 +300,23 @@ impl Wallet {
                 TxProof::has_stored_tx_proof( &data_dir, &slate_id ).unwrap_or(false)
             },
         )?;
+
+        if txs.len()!=1 {
+            return Ok(());
+        }
+
+
+        if id.is_some() {
+            let (_, outputs) = self.retrieve_outputs(true, false, Some(&txs[0]))?;
+            display::outputs(&self.active_account, height, validated, outputs, true)?;
+            debug_assert!(txs.len()==1);
+            // should only be one here, but just in case
+            for tx in txs {
+                display::tx_messages(&tx, true)?;
+                display::payment_proof(&tx)?;
+            }
+        }
+
         Ok(())
     }
 
@@ -558,9 +597,9 @@ impl Wallet {
         &self,
         include_spent: bool,
         refresh_from_node: bool,
-        tx_id: Option<u32>,
+        tx: Option<&TxLogEntry>,
     ) -> Result<(bool, Vec<OutputCommitMapping>), Error> {
-        let result = api::retrieve_outputs(self.get_wallet_instance()?,include_spent, refresh_from_node, tx_id, None, None)?;
+        let result = api::retrieve_outputs(self.get_wallet_instance()?,include_spent, refresh_from_node, tx, None, None)?;
         Ok(result)
     }
 

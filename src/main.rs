@@ -249,6 +249,7 @@ use broker::{
     Publisher, Subscriber, SubscriptionHandler,
 };
 use std::borrow::Borrow;
+use uuid::Uuid;
 
 struct Controller {
     name: String,
@@ -1395,6 +1396,15 @@ fn do_command(
             let show_full_info = args.is_present("full");
             let no_refresh = args.is_present("no-refresh");
 
+            let tx_id: Option<u32> = match args.value_of("id") {
+                Some(s) => Some(u32::from_str_radix(s, 10).map_err(|_| ErrorKind::InvalidTxIdNumber(s.to_string()))?),
+                _ => None,
+            };
+            let tx_slate_id: Option<Uuid> = match args.value_of("txid") {
+                Some(s) => Some( Uuid::parse_str(s).map_err(|_| ErrorKind::InvalidTxUuid(s.to_string()))?),
+                _ => None
+            };
+
             let pagination_length = u32::from_str_radix(pagination_length, 10)
                 .map_err(|_| ErrorKind::InvalidPaginationLength(pagination_length.to_string()))?;
 
@@ -1415,7 +1425,7 @@ fn do_command(
                 None
             };
 
-            wallet.lock().txs(!no_refresh, show_full_info, pagination_start, pagination_length )?;
+            wallet.lock().txs(!no_refresh, show_full_info, pagination_start, pagination_length, tx_id, tx_slate_id )?;
         }
         Some("txs-bulk-validate") => {
             let args = matches.subcommand_matches("txs-bulk-validate").unwrap();

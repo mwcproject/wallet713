@@ -242,7 +242,7 @@ pub fn invoice_tx<'a, L, C, K>(
         wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
         include_spent: bool,
         refresh_from_node: bool,
-        tx_id: Option<u32>,
+        tx: Option<&TxLogEntry>,
         pagination_start: Option<u32>,
         pagination_len:   Option<u32>,
     ) -> Result<(bool, Vec<OutputCommitMapping>), Error>
@@ -267,7 +267,7 @@ pub fn invoice_tx<'a, L, C, K>(
             updater::retrieve_outputs(&mut **w,
                                       None,
                                       include_spent,
-                                      tx_id,
+                                      tx,
                                       Some(&parent_key_id),
                                       pagination_start,
                                       pagination_len)?,

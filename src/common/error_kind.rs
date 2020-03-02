@@ -40,6 +40,16 @@ pub enum ErrorKind {
     )]
     InvalidPaginationLength(String),
     #[fail(
+    display = "invalid transaction id number: `{}`",
+    0
+    )]
+    InvalidTxIdNumber(String),
+    #[fail(
+    display = "invalid transaction UUID: `{}`",
+    0
+    )]
+    InvalidTxUuid(String),
+    #[fail(
         display = "invalid pagination start: `{}`", 
         0
     )]
