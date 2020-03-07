@@ -26,41 +26,66 @@ fn handle_v2foreign(state: &State, body: &Chunk) -> Result<Response<Body>, Error
             println!("{}", report);
         }
 
-        let slate_value = res["params"][0].clone();
-        
-        let mut slate = Slate::deserialize_upgrade(&serde_json::to_string(&slate_value).unwrap())?;
-        let id;
+        if res["method"] == "check_version" {
 
-        if slate.num_participants > slate.participant_data.len() {
-            let message = &slate.participant_data[0].message;
-            let display_from = "https listener";
-            if message.is_some() {
-                id = message.clone().unwrap();
-                cli_message!(
-                "slate [{}] received from [{}] for [{}] MWCs. Message: [\"{}\"]",
-                slate.id.to_string().bright_green(),
-                display_from.bright_green(),
-                core::amount_to_hr_string(slate.amount, false).bright_green(),
-                id.bright_green()
-                );
+            let slate_resp = json!({
+                "id": 1,
+                "jsonrpc": "2.0",
+                "result": {
+                        "Ok": { 
+                                "foreign_api_version": 2,
+                                "supported_slate_versions": [
+                                        "V3",
+                                        "V2"
+                                ]
+                        }
+                }
+            });
+
+
+            Ok(trace_create_response(
+                &state,
+                StatusCode::OK,
+                mime::APPLICATION_JSON,
+                serde_json::to_string(&slate_resp)?,
+            ))
+        } else {
+
+            let slate_value = res["params"][0].clone();
+        
+            let mut slate = Slate::deserialize_upgrade(&serde_json::to_string(&slate_value).unwrap())?;
+            let id;
+
+            if slate.num_participants > slate.participant_data.len() {
+                let message = &slate.participant_data[0].message;
+                let display_from = "https listener";
+                if message.is_some() {
+                    id = message.clone().unwrap();
+                    cli_message!(
+                    "slate [{}] received from [{}] for [{}] MWCs. Message: [\"{}\"]",
+                    slate.id.to_string().bright_green(),
+                    display_from.bright_green(),
+                    core::amount_to_hr_string(slate.amount, false).bright_green(),
+                    id.bright_green()
+                    );
+                } else {
+                    id = "".to_string();
+                    cli_message!(
+                    "slate [{}] received from [{}] for [{}] MWCs.",
+                    slate.id.to_string().bright_green(),
+                    display_from.bright_green(),
+                    core::amount_to_hr_string(slate.amount, false).bright_green()
+                    );
+                }
             } else {
                 id = "".to_string();
-                cli_message!(
-                "slate [{}] received from [{}] for [{}] MWCs.",
-                slate.id.to_string().bright_green(),
-                display_from.bright_green(),
-                core::amount_to_hr_string(slate.amount, false).bright_green()
-                );
             }
-        } else {
-            id = "".to_string();
-        }
 
-        let wallet = WalletContainer::borrow_from(&state).lock()?;
-        wallet.process_sender_initiated_slate(Some(format!("https://{}", id)), &mut slate, None,
+            let wallet = WalletContainer::borrow_from(&state).lock()?;
+            wallet.process_sender_initiated_slate(Some(format!("https://{}", id)), &mut slate, None,
                                               None, Some( &wallet.active_account ) )?;
 
-        let slate_resp = json!({
+            let slate_resp = json!({
                                    "id": 1,
                                    "jsonrpc": "2.0",
                                    "result": {             
@@ -69,12 +94,13 @@ fn handle_v2foreign(state: &State, body: &Chunk) -> Result<Response<Body>, Error
                                });
 
 
-        Ok(trace_create_response(
-        &state,
-        StatusCode::OK,
-        mime::APPLICATION_JSON,
-        serde_json::to_string(&slate_resp)?,
-        ))
+            Ok(trace_create_response(
+            &state,
+            StatusCode::OK,
+            mime::APPLICATION_JSON,
+            serde_json::to_string(&slate_resp)?,
+            ))
+        }
 
 }
 
