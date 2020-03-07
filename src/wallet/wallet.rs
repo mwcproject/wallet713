@@ -308,7 +308,7 @@ impl Wallet {
 
         if id.is_some() {
             let (_, outputs) = self.retrieve_outputs(true, false, Some(&txs[0]))?;
-            display::outputs(&self.active_account, height, validated, outputs, true)?;
+            display::outputs(&self.active_account, height, !refresh_from_node || validated, outputs, true)?;
             debug_assert!(txs.len()==1);
             // should only be one here, but just in case
             for tx in txs {
