@@ -58,7 +58,7 @@ fn handle_v2foreign(state: &State, body: &Chunk) -> Result<Response<Body>, Error
 
             if slate.num_participants > slate.participant_data.len() {
                 let message = &slate.participant_data[0].message;
-                let display_from = "https listener";
+                let display_from = "http(s) listener";
                 if message.is_some() {
                     id = message.clone().unwrap();
                     cli_message!(
