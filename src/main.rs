@@ -40,6 +40,9 @@ extern crate ws;
 extern crate semver;
 extern crate commands;
 extern crate enquote;
+extern crate grinswap;
+extern crate bitcoin;
+#[macro_use]
 
 extern crate grin_api;
 extern crate grin_core;
@@ -48,11 +51,14 @@ extern crate grin_store;
 extern crate grin_util;
 extern crate grin_p2p;
 extern crate grin_wallet_impls;
+extern crate grin_wallet_config;
+extern crate blake2_rfc as blake2;
 #[macro_use]
 extern crate grin_wallet_libwallet;
 extern crate grin_wallet_controller;
 
 use serde_json::Value;
+use grin_wallet_config::WalletConfig;
 use std::{env, thread};
 #[cfg(not(target_os = "android"))]
 use std::borrow::Cow::{self, Borrowed, Owned};
@@ -63,10 +69,25 @@ use std::io::{Read, Write, BufReader};
 use std::path::Path;
 use grin_core::core::Transaction;
 use grin_core::ser;
+//use blake2_rfc::blake2b::blake2b;
 
 use grin_util::from_hex;
 use grin_util::ZeroingString;
 
+use grinswap::{Message};
+use grinswap::{Swap, Currency, Action, Status, SwapApi, BuyApi, SellApi};
+use grinswap::swap::types::{ SecondaryBuyerContext, BuyerContext };
+use grinswap::swap::bitcoin::{BtcSwapApi, ElectrumNodeClient, BtcNodeClient, TestBtcNodeClient, BtcSellerContext, BtcBuyerContext };
+use crate::bitcoin::util::key::PublicKey as BtcPublicKey;
+use bitcoin::network::constants::Network as BtcNetwork;
+use grinswap::swap::types::{
+    RoleContext,
+    SellerContext,
+    SecondarySellerContext
+};
+use grin_keychain::{Keychain, Identifier, ExtKeychain, SwitchCommitmentType};
+use grin_wallet_impls::adapters::types::ContextHolderType;
+use grin_wallet_impls::node_clients::HTTPNodeClient;
 
 use clap::{App, Arg, ArgMatches, SubCommand};
 use colored::*;
@@ -99,16 +120,19 @@ mod wallet;
 use api::router::{build_foreign_api_router, build_owner_api_router};
 use cli::Parser;
 use common::config::Wallet713Config;
+
 use common::{ErrorKind, Error, RuntimeMode, COLORED_PROMPT, post, Arc, Mutex};
 #[cfg(not(target_os = "android"))]
 use common::PROMPT;
+use wallet::api::swap::ContextHolder;
+
 use wallet::Wallet;
 use contacts::DEFAULT_MWCMQS_PORT;
 use contacts::DEFAULT_MWCMQS_DOMAIN;
 
 use grin_wallet_libwallet::proof::tx_proof::TxProof;
 use grin_wallet_libwallet::Slate;
-use grin_util::secp::key::PublicKey;
+use grin_util::secp::key::{PublicKey, SecretKey};
 use grin_wallet_impls:: {
     MWCMQPublisher, MWCMQSubscriber, MWCMQSAddress, Publisher, Subscriber, SubscriptionHandler, Address, AddressType,
     CloseReason, KeybaseAddress,
@@ -123,11 +147,11 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 
 #[cfg(not(target_os = "android"))]
+
 const CLI_HISTORY_PATH: &str = ".history";
 static mut RECV_ACCOUNT: Option<String> = None;
 static mut RECV_PASS: Option<grin_util::ZeroingString> = None;
 
-// Slates that are scheduled to flaff instead of dandelion
 lazy_static! {
     static ref FLUFFED_SLATES: RwLock<HashSet<String>> = RwLock::new(HashSet::new());
 }
@@ -200,6 +224,16 @@ fn do_config(
 
     if let Some(node_secret) = args.value_of("node-secret") {
         config.mwc_node_secret = Some(node_secret.to_string());
+        any_matches = true;
+    }
+
+    if let Some(mwc_node_client) = args.value_of("mwd_node_client") {
+        config.mwc_node_client = Some(mwc_node_client.to_string());
+        any_matches = true;
+    }
+
+    if let Some(electrum_node_client) = args.value_of("electrum_node_client") {
+        config.electrum_node_client = Some(electrum_node_client.to_string());
         any_matches = true;
     }
 
@@ -439,6 +473,16 @@ impl SubscriptionHandler for Controller {
                 Ok(())
             });
 
+        match result {
+            Ok(()) => {}
+            Err(e) => cli_message!("Error: {}", e),
+        }
+    }
+
+    fn on_message(&mut self, from: &dyn Address, message: Message, config: &WalletConfig) {
+        let publ = self.publisher.as_mut();
+        let conf = Wallet713Config::default(&config.chain_type.as_ref().unwrap());
+        let result = self.wallet.lock().process_message(from, message, &conf, publ);
         match result {
             Ok(()) => {}
             Err(e) => cli_message!("Error: {}", e),
@@ -1610,6 +1654,103 @@ fn do_command(
         }
         Some("nodeinfo") => {
             wallet.lock().node_info()?;
+        }
+        Some("swap") => {
+            let args = matches.subcommand_matches("swap").unwrap();
+            let make = args.is_present("make");
+            let take = args.is_present("take");
+            let buy = args.is_present("buy");
+            let sell = args.is_present("sell");
+            let rate = args.value_of("rate");
+            let qty = args.value_of("quantity");
+            let address = args.value_of("address");
+            let btc_redeem = args.value_of("btc_redeem");
+
+            let mut is_error = false;
+            let is_make = if make && !take {
+                true
+            } else if take && !make {
+                false
+            } else {
+                is_error = true;
+                cli_message!("{} Either --make or --take and not both must be specified.", "Error:".bright_red());
+                false
+            };
+
+            let is_buy = if buy && !sell {
+                true
+            } else if sell && !buy {
+                false
+            } else {
+                if !is_error {
+                    is_error = true;
+                    cli_message!("{} Either --buy or --sell and not both must be specified.", "Error:".bright_red());
+                }
+                false
+            };
+
+            let pair = args.value_of("pair");
+            let pair = if pair.is_some() {
+                pair.unwrap()
+            } else {
+                "mwc:btc"
+            };
+
+            if !is_error {
+                if !rate.is_some() {
+                    is_error = true;
+                    cli_message!("{} --rate must be specified.", "Error:".bright_red());
+                } else if !qty.is_some() {
+                    is_error = true;
+                    cli_message!("{} --quantity must be specified.", "Error:".bright_red());
+                } else if pair != "mwc:btc" {
+                    is_error = true;
+                    cli_message!("{} Only mwcbtc pair is supported.", "Error:".bright_red());
+                } else if !is_make && address.is_none() {
+                    is_error = true;
+                    cli_message!("{} --address must be specified with --take.", "Error:".bright_red());
+                } else if !is_make.to_owned() {
+                    let ret = Address::parse(address.unwrap())?;
+                    if ret.address_type() != AddressType::MWCMQS {
+                        is_error = true;
+                        cli_message!("{} --address must be an mwcmqs address.", "Error:".bright_red());
+                    }
+                } else if !is_buy && btc_redeem.is_none() {
+                    is_error = true;
+                    cli_message!("{} --btc_redeem must be specified when `--sell` option is specified.", "Error:".bright_red());
+                } else if is_buy.to_owned() && btc_redeem.is_some() {
+                    is_error = true;
+                    cli_message!("{} --btc_redeem may not be specified when `--buy` option is specified.", "Error:".bright_red());
+                }
+            }
+
+            if !is_error {
+                let rate = rate.unwrap();
+                let qty = qty.unwrap();
+                let rate = core::amount_from_hr_string(rate)
+                    .map_err(|e| {
+                        ErrorKind::InvalidAmount(format!("Rate entered is invalid, {}", e))
+                    })?;
+                let qty = core::amount_from_hr_string(qty)
+                    .map_err(|e| {
+                        ErrorKind::InvalidAmount(format!("Quantity entered is invalid, {}", e))
+                    })?;
+
+                if !is_error {
+                    if let Some((publisher, _)) = mwcmqs_broker {
+                        wallet.lock().swap(pair,
+                                           is_make.to_owned(),
+                                           is_buy.to_owned(),
+                                           rate,
+                                           qty,
+                                           address,
+                                           publisher,
+                                           btc_redeem,
+                                           &config,
+                                           )?;
+                    }
+                }
+            }
         }
         Some("send") => {
             let args = matches.subcommand_matches("send").unwrap();

@@ -145,4 +145,14 @@ pub enum ErrorKind {
 
     #[fail(display = "uanble to get public key")]
     GetPublicKey,
+
+    #[fail(display = "Tx Proof unable to build a slate from the message, {}", _0)]
+    TxProofParseSlate(String),
+
+    #[fail(display = "Electrum node info is missing from config file")]
+    ElectrumNodeInfo,
+
+    #[fail(display = "Unknown error occurred during swap processing")]
+    SwapMessageError,
+
 }

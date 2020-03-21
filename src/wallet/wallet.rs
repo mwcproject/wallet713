@@ -9,16 +9,21 @@ use grin_core::core::Transaction;
 use grin_util::secp::key::{ SecretKey, PublicKey };
 use grin_wallet_impls::node_clients::HTTPNodeClient;
 use grin_keychain::keychain::ExtKeychain;
+use grinswap::Message;
 use crate::common::{Arc, Mutex};
 
 use grin_wallet_libwallet::proof::crypto::Hex;
 use grin_wallet_libwallet::proof::tx_proof::TxProof;
 use crate::wallet::api::api;
+use grin_wallet_impls::adapters::mwcmq::MWCMQPublisher;
+use grin_wallet_impls::adapters::types::Publisher;
+use grin_wallet_impls:: Address;
 use grin_util::ZeroingString;
 use grin_wallet_impls::{DefaultWalletImpl, DefaultLCProvider};
-use grin_wallet_controller::display;
+use grin_wallet_controller::{ display };
 use std::sync::atomic::{AtomicBool, Ordering};
 use grin_wallet_libwallet::api_impl::owner_updater;
+use grin_wallet_config::WalletConfig;
 use std::time::Duration;
 use std::thread;
 use std::thread::JoinHandle;
@@ -139,7 +144,7 @@ impl Wallet {
         }
         Ok(ret)
     }
-    
+
 
     pub fn show_mnemonic(&self, config: &Wallet713Config, passphrase: ZeroingString) -> Result<(), Error> {
         let seed = WalletSeed::from_file( &config.get_data_path_str()?, passphrase)?;
@@ -373,6 +378,33 @@ impl Wallet {
     pub fn all_output_count(&self, show_spent: bool) -> Result<usize, Error> {
         let (_, outputs) = api::retrieve_outputs(self.get_wallet_instance()?,show_spent, false, None, None, None)?;
         Ok(outputs.len())
+    }
+
+    pub fn process_message(&mut self,
+                           from: &dyn Address,
+                           message: Message,
+                           config: &Wallet713Config,
+                           publisher: &mut Publisher
+    ) -> Result<(), Error> {
+        let wallet = self.get_wallet_instance()?;
+        api::process_swap_message(wallet,from, message, config, publisher)?;
+        Ok(())
+    }
+
+    pub fn swap(&self,
+                pair: &str,
+                is_make: bool,
+                is_buy: bool,
+                rate: u64,
+                qty: u64,
+                address: Option<&str>,
+                publisher: &mut MWCMQPublisher,
+                btc_redeem: Option<&str>,
+                config: &Wallet713Config,
+        ) -> Result<(), Error> {
+            let wallet = self.get_wallet_instance()?;
+            api::swap(wallet, pair, is_make, is_buy, rate, qty, address, publisher, btc_redeem, config)?;
+            Ok(())
     }
 
     pub fn output_count(&self, refresh_from_node: bool, minimum_confirmations: u64, output_list: Option<Vec<&str>>) -> Result<usize, Error> {

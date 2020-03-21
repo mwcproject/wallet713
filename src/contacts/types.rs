@@ -10,7 +10,7 @@ pub const DEFAULT_MWCMQS_PORT: u16 = 443;
 pub const DEFAULT_GRINBOX_PORT: u16 = 443;
 #[cfg(windows)]
 pub const DEFAULT_GRINBOX_PORT: u16 = 80;
-use grin_wallet_impls:: Address;
+pub use grin_wallet_impls:: Address;
 
 pub trait AddressBookBackend {
     fn get_contact(&mut self, name: &[u8]) -> Result<Contact, Error>;

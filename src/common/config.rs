@@ -32,6 +32,8 @@ pub struct Wallet713Config {
     pub grinbox_address_index: Option<u32>,
     pub mwc_node_uri: Option<String>,
     pub mwc_node_secret: Option<String>,
+    pub mwc_node_client: Option<String>,
+    pub electrum_node_client: Option<String>,
     pub grinbox_listener_auto_start: Option<bool>,
     pub keybase_listener_auto_start: Option<bool>,
     pub max_auto_accept_invoice: Option<u64>,
@@ -95,6 +97,12 @@ pub const WALLET713_CONFIG_HELP: &str =
 
 # MWC node secret
 # mwc_node_secret = \"11ne3EAUtOXVKwhxm84U\"
+
+# MWC Swap Node Client
+# mwc_node_client = \"http://localhost:13413\"
+
+# BTC Electrum Node Client
+# electrum_node_client = \"3.92.132.156:8000\"
 
 # Start Message Queue listener automatically if wallet password was provided at start.
 # grinbox_listener_auto_start = true
@@ -174,6 +182,8 @@ impl Wallet713Config {
             grinbox_address_index: None,
             mwc_node_uri: None,
             mwc_node_secret: None,
+            mwc_node_client: None,
+            electrum_node_client: None,
             grinbox_listener_auto_start: None,
             keybase_listener_auto_start: None,
             max_auto_accept_invoice: None,
@@ -346,6 +356,19 @@ impl Wallet713Config {
                 _ => Some(String::from("11ne3EAUtOXVKwhxm84U")),
             },
         }
+    }
+
+    pub fn mwc_node_client(&self) -> String {
+        let chain_type = self.chain.clone();
+        self.mwc_node_client.clone().unwrap_or(match chain_type {
+            ChainTypes::Mainnet => String::from("http://localhost:13413"),
+            _ => String::from("http://localhost:13413"),
+        })
+    }
+
+    pub fn electrum_node_client(&self) -> Result<String, Error> {
+        self.electrum_node_client.clone()
+            .ok_or_else(|| ErrorKind::ElectrumNodeInfo.into())
     }
 
     pub fn grinbox_listener_auto_start(&self) -> bool {

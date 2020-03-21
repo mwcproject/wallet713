@@ -218,6 +218,37 @@ impl<'a, 'b> Parser {
                     )
             )
             .subcommand(
+                SubCommand::with_name("swap")
+                    .about("swap mwc for other currency pairs. Currently only BTC is supported.")
+                    .arg(
+                        Arg::from_usage("[pair] -p, --pair=<pair> 'The currency pair to trade. Currently only mwc:btc is supported.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[make] -m, --make 'Make the trade. Either --make or --take must be specified.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[take] -t, --take 'Take the trade. Either --make or --take must be specified.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[buy] -b, --buy 'Buy first part of pair (i.e. mwc) Either --buy or --sell must be specified.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[sell] -s, --sell 'Sell first part of pair (i.e. mwc) Either --buy or --sell must be specified.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[address] -a, --address=<address> 'Address to trade with. --address must be specified with --take.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[rate] -r, --rate=<rate> 'Rate to trade at. Specified in unit of Satosh for 1 MWC. (i.e. satosh / mwc).'")
+                    )
+                    .arg(
+                        Arg::from_usage("[quantity] -q, --quantity=<quantity> 'Quantity to trade. Your counterpart must specify the same amount.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[btc_redeem] -x, --btc_redeem=<btc_redeem> 'BTC address funds will be redeemed to. Required for sell.'")
+                    )
+            )
+            .subcommand(
                 SubCommand::with_name("stop")
                     .about("stops the slate listener")
                     .arg(
