@@ -55,6 +55,9 @@ pub fn invoice_tx<'a, L, C, K>(
         C: NodeClient + 'a,
         K: Keychain + 'a,
 {
+        // Caller is responsible for refresh call
+        grin_wallet_libwallet::owner::update_wallet_state(wallet_inst.clone(), None, &None )?;
+
         wallet_lock!(wallet_inst, w);
 
         let params = grin_wallet_libwallet::InitTxArgs {
@@ -741,6 +744,9 @@ pub fn invoice_tx<'a, L, C, K>(
             C: NodeClient + 'a,
             K: Keychain + 'a,
     {
+        // Caller is responsible for refresh call
+        grin_wallet_libwallet::owner::update_wallet_state(wallet_inst.clone(), None, &None )?;
+
         wallet_lock!(wallet_inst, w);
 
         let params = grin_wallet_libwallet::InitTxArgs {
@@ -971,7 +977,8 @@ pub fn invoice_tx<'a, L, C, K>(
                       None,
                       Some(start_height),
                        delete_unconfirmed,
-                      &tx
+                      &tx,
+                      true,
         )?;
 
         running.store(false, Ordering::Relaxed);
@@ -1032,8 +1039,7 @@ pub fn invoice_tx<'a, L, C, K>(
         let res = grin_wallet_libwallet::owner::update_wallet_state(
             wallet_inst,
             None,
-            &status_send_channel,
-            None, // Need Update for all accounts
+            &status_send_channel
         )?;
 
         running.store(false, Ordering::Relaxed);
