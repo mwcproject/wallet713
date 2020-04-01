@@ -1197,9 +1197,13 @@ fn do_command(
             io::stdout().flush().unwrap();
             io::stdin().read_line(&mut line).unwrap();
 
-            wallet.lock().complete(seed, config, "default", passphrase, true)?;
-
+            {
+                let mut wallet_inst = wallet.lock();
+                wallet_inst.complete(seed, config, "default", passphrase, true)?;
+                wallet_inst.update_tip_as_last_scanned()?;
+            }
             derive_address_key(config, wallet, grinbox_broker)?;
+
             return Ok(());
         }
         Some("lock") => {
@@ -1918,6 +1922,7 @@ fn do_command(
                 let seed = w.init(config, passphrase.clone(), false)?;
                 w.complete(seed, config, "default", passphrase.clone(), true)?;
                 w.restore_state()?;
+                w.update_tip_as_last_scanned()?;
             }
 
             derive_address_key(config, wallet, grinbox_broker)?;
