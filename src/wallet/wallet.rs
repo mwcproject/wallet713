@@ -2,7 +2,8 @@ use uuid::Uuid;
 use common::config::Wallet713Config;
 use common::{ErrorKind, Error};
 
-use grin_wallet_libwallet::{BlockFees, Slate, TxLogEntry, WalletInfo, CbData, WalletInst, OutputCommitMapping};
+use grin_wallet_libwallet::{BlockFees, Slate, TxLogEntry, WalletInfo, CbData, WalletInst,
+                            OutputCommitMapping, ScannedBlockInfo, NodeClient};
 use grin_wallet_impls::lifecycle::WalletSeed;
 use grin_core::core::Transaction;
 use grin_util::secp::key::{ SecretKey, PublicKey };
@@ -202,6 +203,17 @@ impl Wallet {
                                         passphrase)?;
         Ok(())
     }
+
+    pub fn update_tip_as_last_scanned(&self) -> Result<(), Error> {
+        let wallet_inst = self.get_wallet_instance()?;
+        wallet_lock!(wallet_inst, w);
+        let (tip_height, tip_hash, _) = w.w2n_client().get_chain_tip()?;
+        let mut batch = w.batch(None)?;
+        batch.save_last_scanned_blocks(0, &vec![ScannedBlockInfo::new(tip_height, tip_hash.clone())] )?;
+        batch.commit()?;
+        Ok(())
+    }
+
 
     pub fn list_accounts(&self) -> Result<(), Error> {
         let acct_mappings = api::accounts(self.get_wallet_instance()?)?;
