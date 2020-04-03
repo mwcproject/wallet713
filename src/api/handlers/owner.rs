@@ -362,6 +362,7 @@ pub fn process_handle_issue_send_tx(container: &WalletContainer, body: &Chunk) -
                                 None,
                                 body.version,
                                 1,
+                                &None,
                             );
 
                             if slate.is_ok() {
@@ -413,6 +414,7 @@ pub fn process_handle_issue_send_tx(container: &WalletContainer, body: &Chunk) -
                                 None,
                                 body.version,
                                 1,
+                                &None,
                             );
 
                             if slate.is_ok() {
@@ -448,7 +450,7 @@ pub fn process_handle_issue_send_tx(container: &WalletContainer, body: &Chunk) -
                      let destination = body.dest.unwrap();
 
                      let mut file = File::create(destination.clone())?;
-                     let slate = wallet.initiate_send_tx(Some(destination.clone()), body.amount, body.minimum_confirmations, selection_strategy, body.num_change_outputs, body.max_outputs, body.message, None, body.version, 1);
+                     let slate = wallet.initiate_send_tx(Some(destination.clone()), body.amount, body.minimum_confirmations, selection_strategy, body.num_change_outputs, body.max_outputs, body.message, None, body.version, 1, &None);
                      if slate.is_ok() {
                          let slate = slate.unwrap();
                          let versioned_slate = VersionedSlate::into_version(slate.clone(), SlateVersion::V2);
@@ -484,6 +486,7 @@ pub fn process_handle_issue_send_tx(container: &WalletContainer, body: &Chunk) -
                                 None,
                                 body.version,
                                 1,
+                                &None,
                          );
 
                          if slate.is_ok() {

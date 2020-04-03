@@ -103,6 +103,10 @@ use contacts::{Address, AddressBook, AddressType, Backend, Contact, GrinboxAddre
 
 use common::crypto::Hex;
 
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc;
+
+
 const CLI_HISTORY_PATH: &str = ".history";
 static mut RECV_ACCOUNT: Option<String> = None;
 static mut RECV_PASS: Option<grin_util::ZeroingString> = None;
@@ -1680,6 +1684,13 @@ fn do_command(
                 false => core::amount_from_hr_string(amount).map_err(|_| ErrorKind::InvalidAmount(amount.to_string()))?,
             };
 
+            // Preparign for sync update progress printing
+            let running = Arc::new( AtomicBool::new(true) );
+            let (tx, rx) = mpsc::channel();
+            // Starting printing to console thread.
+            let updater = grin_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(rx, running.clone())?;
+            let status_send_channel = Some(tx);
+
             // Store slate in a file
             if let Some(input) = input {
                 let mut file = File::create(input.replace("~", &home_dir))?;
@@ -1696,6 +1707,7 @@ fn do_command(
                     output_list,
                     version,
                     routputs,
+                    &status_send_channel,
                 )?;
 
                 file.write_all(serde_json::to_string(&slate)?.as_bytes())?;
@@ -1744,7 +1756,13 @@ fn do_command(
                 output_list,
                 version,
                 1,
+                &status_send_channel,
             )?;
+
+            // Stopping updater, sync should be done by now
+            running.store(false, Ordering::Relaxed);
+            let _ = updater.join();
+
 
             match to.address_type() {
                 AddressType::MWCMQS => {

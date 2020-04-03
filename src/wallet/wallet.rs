@@ -3,7 +3,7 @@ use common::config::Wallet713Config;
 use common::{ErrorKind, Error};
 
 use grin_wallet_libwallet::{BlockFees, Slate, TxLogEntry, WalletInfo, CbData, WalletInst,
-                            OutputCommitMapping, ScannedBlockInfo, NodeClient};
+                            OutputCommitMapping, ScannedBlockInfo, NodeClient, StatusMessage };
 use grin_wallet_impls::lifecycle::WalletSeed;
 use grin_core::core::Transaction;
 use grin_util::secp::key::{ SecretKey, PublicKey };
@@ -22,6 +22,7 @@ use grin_wallet_libwallet::api_impl::owner_updater;
 use std::time::Duration;
 use std::thread;
 use std::thread::JoinHandle;
+use std::sync::mpsc::Sender;
 
 pub struct Wallet {
     pub active_account: String,
@@ -432,6 +433,7 @@ impl Wallet {
         outputs: Option<Vec<&str>>,
         version: Option<u16>,
         routputs: usize,
+        status_send_channel: &Option<Sender<StatusMessage>>,
     ) -> Result<Slate, Error> {
         let slate = api::initiate_tx(
             self.get_wallet_instance()?,
@@ -446,6 +448,7 @@ impl Wallet {
             outputs,
             version,
             routputs,
+            status_send_channel,
         )?;
 
         Ok(slate)
