@@ -271,7 +271,7 @@ pub fn invoice_tx<'a, L, C, K>(
                                       None,
                                       include_spent,
                                       tx,
-                                      Some(&parent_key_id),
+                                      &parent_key_id,
                                       pagination_start,
                                       pagination_len)?,
         ));
@@ -738,6 +738,7 @@ pub fn invoice_tx<'a, L, C, K>(
         outputs: Option<Vec<&str>>,  // outputs to include into the transaction
         version: Option<u16>, // Slate version
         routputs: usize,  // Number of resulting outputs. Normally it is 1
+        status_send_channel: &Option<Sender<StatusMessage>>,
     ) -> Result<Slate, Error>
         where
             L: WalletLCProvider<'a, C, K>,
@@ -745,7 +746,7 @@ pub fn invoice_tx<'a, L, C, K>(
             K: Keychain + 'a,
     {
         // Caller is responsible for refresh call
-        grin_wallet_libwallet::owner::update_wallet_state(wallet_inst.clone(), None, &None )?;
+        grin_wallet_libwallet::owner::update_wallet_state(wallet_inst.clone(), None, status_send_channel )?;
 
         wallet_lock!(wallet_inst, w);
 
