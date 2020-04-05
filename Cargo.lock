@@ -1258,7 +1258,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "3.1.5"
-source = "git+https://github.com/mwcproject/mwc-wallet#4af9deb4d429b2f5f33d0111eb62e269d3b5c123"
+source = "git+https://github.com/mwcproject/mwc-wallet#cdd63c32be412a7b4d8a3fd8978bc9ab0eaab19d"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1282,7 +1282,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "3.1.5"
-source = "git+https://github.com/mwcproject/mwc-wallet#4af9deb4d429b2f5f33d0111eb62e269d3b5c123"
+source = "git+https://github.com/mwcproject/mwc-wallet#cdd63c32be412a7b4d8a3fd8978bc9ab0eaab19d"
 dependencies = [
  "dirs 1.0.5",
  "grin_wallet_util",
@@ -1295,7 +1295,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "3.1.5"
-source = "git+https://github.com/mwcproject/mwc-wallet#4af9deb4d429b2f5f33d0111eb62e269d3b5c123"
+source = "git+https://github.com/mwcproject/mwc-wallet#cdd63c32be412a7b4d8a3fd8978bc9ab0eaab19d"
 dependencies = [
  "chrono",
  "colored",
@@ -1327,7 +1327,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "3.1.5"
-source = "git+https://github.com/mwcproject/mwc-wallet#4af9deb4d429b2f5f33d0111eb62e269d3b5c123"
+source = "git+https://github.com/mwcproject/mwc-wallet#cdd63c32be412a7b4d8a3fd8978bc9ab0eaab19d"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1368,7 +1368,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "3.1.5"
-source = "git+https://github.com/mwcproject/mwc-wallet#4af9deb4d429b2f5f33d0111eb62e269d3b5c123"
+source = "git+https://github.com/mwcproject/mwc-wallet#cdd63c32be412a7b4d8a3fd8978bc9ab0eaab19d"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1397,7 +1397,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "3.1.5"
-source = "git+https://github.com/mwcproject/mwc-wallet#4af9deb4d429b2f5f33d0111eb62e269d3b5c123"
+source = "git+https://github.com/mwcproject/mwc-wallet#cdd63c32be412a7b4d8a3fd8978bc9ab0eaab19d"
 dependencies = [
  "dirs 1.0.5",
  "grin_api",
@@ -2899,9 +2899,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.50"
+version = "1.0.51"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78a7a12c167809363ec3bd7329fc0a3369056996de43c4b37ef3cd54a6ce4867"
+checksum = "da07b57ee2623368351e9a0488bb0b261322a15a6e0ae53e243cbdc0f4208da9"
 dependencies = [
  "itoa",
  "ryu",
