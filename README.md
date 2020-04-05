@@ -61,3 +61,4 @@ All the [Grin contributors](https://github.com/mimblewimble/grin/graphs/contribu
 ## License
 
 Apache License v2.0.
+
