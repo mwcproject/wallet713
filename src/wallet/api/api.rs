@@ -17,7 +17,8 @@ use grin_wallet_libwallet::{AcctPathMapping, BlockFees, CbData, NodeClient, Slat
                             WalletInfo, OutputCommitMapping, WalletInst, WalletLCProvider,
                             StatusMessage, TxLogEntryType, OutputData};
 use grin_core::core::Transaction;
-use grin_keychain::{Identifier, Keychain};
+use grin_keychain::{Identifier};
+use grin_wallet_impls::keychain::Keychain;
 use grin_util::secp::key::{ PublicKey };
 use crate::common::{Arc, Mutex, Error, ErrorKind};
 
@@ -89,6 +90,10 @@ pub fn invoice_tx<'a, L, C, K>(
             /// 'true', the amount field in the slate will contain the total amount locked, not the provided
             /// transaction amount
             estimate_only: None,
+            /// Whether or not to exclude change outputs, not needed in mwc713.
+            exclude_change_outputs: Some(false),
+            /// Number of confirmations for change outputs, default fine, not used in mwc713.
+            minimum_confirmations_change_outputs: 1,
             /// Sender arguments. If present, the underlying function will also attempt to send the
             /// transaction to a destination and optionally finalize the result
             send_args: None,
@@ -781,6 +786,10 @@ pub fn invoice_tx<'a, L, C, K>(
             estimate_only: None,
             /// Sender arguments. If present, the underlying function will also attempt to send the
             /// transaction to a destination and optionally finalize the result
+            /// Whether or not to exclude change outputs, not needed in mwc713.
+            exclude_change_outputs: Some(false),
+            /// Number of confirmations for change outputs, default fine, not used in mwc713.
+            minimum_confirmations_change_outputs: 1,
             send_args: None,
         };
 

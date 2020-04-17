@@ -17,7 +17,7 @@ use crate::common::ErrorKind;
 use grin_wallet_libwallet::{NodeClient, WalletBackend};
 use grin_util::secp::key::PublicKey;
 use failure::Error;
-use grin_keychain::Keychain;
+use grin_wallet_impls::keychain::Keychain;
 use common::crypto::Hex;
 use std::fs::OpenOptions;
 
