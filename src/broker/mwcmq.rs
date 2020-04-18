@@ -152,9 +152,7 @@ impl MWCMQSBroker {
             &pkey,
             &skey,
         )
-            .map_err(|_| {
-                WsError::new(WsErrorKind::Protocol, "could not encrypt slate!")
-            })?;
+        .map_err(|e| WsError::new(WsErrorKind::Protocol, format!("Unable to encrypt slate!, {}", e)))?;
 
         let message_ser = &serde_json::to_string(&message)?;
         let mut challenge = String::new();
@@ -657,7 +655,7 @@ impl MWCMQSBroker {
                                 ) {
                                     Ok(x) => x,
                                     Err(err) => {
-                                        cli_message!("Error: {}", err);
+                                        cli_message!("Error: Unable to generate proof, {}", err);
                                         continue;
                                     }
                                 };

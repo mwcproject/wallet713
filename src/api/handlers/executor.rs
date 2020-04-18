@@ -100,7 +100,7 @@ impl Future for RunHandlerInThread
                         // Body has to be processed before because of 'state' ownership
                         let body = create_response(&state, StatusCode::BAD_REQUEST, mime::APPLICATION_JSON,
                                                    format!( "{{\"error\" : \"{}\" }}",
-                                                            filter_escape_symbols( &err.find_root_cause().to_string() ) ) );
+                                                            filter_escape_symbols(&format!("{}", err))) );
                         Ok(Async::Ready((state,body)))
                     }
                 }

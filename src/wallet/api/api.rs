@@ -154,10 +154,10 @@ pub fn invoice_tx<'a, L, C, K>(
         let msg = Message::from_slice(msg.as_bytes())?;
 
         let secp = Secp256k1::with_caps(ContextFlag::VerifyOnly);
-        let pk = grin_util::from_hex(pubkey.to_string())?;
+        let pk = grin_util::from_hex(pubkey)?;
         let pk = PublicKey::from_slice(&secp, &pk)?;
 
-        let signature = grin_util::from_hex(signature.to_string())?;
+        let signature = grin_util::from_hex(signature)?;
         let signature = Signature::from_der(&secp, &signature)?;
 
         match secp.verify(&msg, &signature, &pk) {
@@ -582,7 +582,7 @@ pub fn invoice_tx<'a, L, C, K>(
         // If receive outputs is not in the chain but end point send was delivered - mean that it was a cut through and transaction is valid
         // Normally there is a single kernel in tx. If any of kernels found - will make all transaction valid.
         {
-            let file = File::open(kernels_fn).map_err(|_| ErrorKind::FileNotFound(String::from(kernels_fn)))?;
+            let file = File::open(kernels_fn).map_err(|e| ErrorKind::FileNotFound(kernels_fn.to_string(), format!("{}",e)))?;
             let reader = BufReader::new(file);
 
             // Read the file line by line using the lines() iterator from std::io::BufRead.
@@ -600,7 +600,7 @@ pub fn invoice_tx<'a, L, C, K>(
         // ---------- Processing Outputs. Targeting 'receive' and partly 'send' -----------------
         {
             {
-                let file = File::open(outputs_fn).map_err(|_| ErrorKind::FileNotFound(String::from(outputs_fn)))?;
+                let file = File::open(outputs_fn).map_err(|e| ErrorKind::FileNotFound(outputs_fn.to_string(), format!("{}",e)))?;
                 let reader = BufReader::new(file);
 
                 // Read the file line by line using the lines() iterator from std::io::BufRead.
@@ -650,7 +650,7 @@ pub fn invoice_tx<'a, L, C, K>(
         }
 
         // Done, now let's do a reporting
-        let mut res_file = File::create(result_fn).map_err(|_| ErrorKind::FileUnableToCreate(String::from(result_fn)))?;
+        let mut res_file = File::create(result_fn).map_err(|e| ErrorKind::FileUnableToCreate(result_fn.to_string(), format!("{}",e)))?;
 
         write!(res_file, "id,uuid,type,address,create time,height,amount,fee,messages,node validation,validation flags,validation warnings\n" )?;
 
@@ -1137,7 +1137,7 @@ pub fn invoice_tx<'a, L, C, K>(
 
         let (destination, slate) = tx_proof
             .verify_extract(None)
-            .map_err(|_| ErrorKind::VerifyProof)?;
+            .map_err(|e| ErrorKind::VerifyProof(format!("{}",e)))?;
 
         let inputs_ex = tx_proof.inputs.iter().collect::<HashSet<_>>();
 
@@ -1167,7 +1167,7 @@ pub fn invoice_tx<'a, L, C, K>(
             .map(|p| &p.public_blind_excess)
             .collect();
         let excess_sum =
-            PublicKey::from_combination(secp, excess_parts).map_err(|_| ErrorKind::VerifyProof)?;
+            PublicKey::from_combination(secp, excess_parts).map_err(|e| ErrorKind::VerifyProof(format!("Unable to combile public keys, {}", e)) )?;
 
         let commit_amount = secp.commit_value(tx_proof.amount)?;
         inputs.push(commit_amount);
@@ -1176,7 +1176,7 @@ pub fn invoice_tx<'a, L, C, K>(
         let pubkey_excess = commit_excess.to_pubkey(secp)?;
 
         if excess != &pubkey_excess {
-            return Err(ErrorKind::VerifyProof.into());
+            return Err(ErrorKind::VerifyProof("Excess pub keys mismatch".to_string()).into());
         }
 
         let mut input_com: Vec<pedersen::Commitment> =
@@ -1192,7 +1192,7 @@ pub fn invoice_tx<'a, L, C, K>(
         let excess_sum_com = secp.commit_sum(output_com, input_com)?;
 
         if excess_sum_com.to_pubkey(secp)? != excess_sum {
-            return Err(ErrorKind::VerifyProof.into());
+            return Err(ErrorKind::VerifyProof("Excess sum mismatch".to_string()).into());
         }
 
         return Ok((

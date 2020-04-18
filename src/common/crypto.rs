@@ -72,7 +72,7 @@ impl Hex<Signature> for Signature {
     fn from_hex(str: &str) -> Result<Signature, Error> {
         let secp = Secp256k1::new();
         let hex = from_hex(str.to_string())?;
-        Signature::from_der(&secp, &hex).map_err(|_| ErrorKind::Secp.into())
+        Signature::from_der(&secp, &hex).map_err(|e| ErrorKind::Secp(format!("Unable to build signature, {}",e)).into())
     }
 
     fn to_hex(&self) -> String {
@@ -86,7 +86,7 @@ impl Hex<SecretKey> for SecretKey {
     fn from_hex(str: &str) -> Result<SecretKey, Error> {
         let secp = Secp256k1::new();
         let data = from_hex(str.to_string())?;
-        SecretKey::from_slice(&secp, &data).map_err(|_| ErrorKind::Secp.into())
+        SecretKey::from_slice(&secp, &data).map_err(|e| ErrorKind::Secp(format!("Unable to build key, {}",e)).into())
     }
 
     fn to_hex(&self) -> String {
@@ -107,7 +107,7 @@ impl Hex<Commitment> for Commitment {
 
 pub fn public_key_from_secret_key(secret_key: &SecretKey) -> Result<PublicKey, Error> {
     let secp = Secp256k1::new();
-    PublicKey::from_secret_key(&secp, secret_key).map_err(|_| ErrorKind::Secp.into())
+    PublicKey::from_secret_key(&secp, secret_key).map_err(|e| ErrorKind::Secp(format!("Unable to build key, {}",e)).into())
 }
 
 pub fn sign_challenge(challenge: &str, secret_key: &SecretKey) -> Result<Signature, Error> {
@@ -116,7 +116,7 @@ pub fn sign_challenge(challenge: &str, secret_key: &SecretKey) -> Result<Signatu
     let message = Message::from_slice(hasher.result().as_slice())?;
     let secp = Secp256k1::new();
     secp.sign(&message, secret_key)
-        .map_err(|_| ErrorKind::Secp.into())
+        .map_err(|e| ErrorKind::Secp(format!("Unable to sign a challenge, {}", e)).into())
 }
 
 pub fn verify_signature(
@@ -129,7 +129,7 @@ pub fn verify_signature(
     let message = Message::from_slice(hasher.result().as_slice())?;
     let secp = Secp256k1::new();
     secp.verify(&message, signature, public_key)
-        .map_err(|_| ErrorKind::Secp.into())
+        .map_err(|e| ErrorKind::Secp(format!("Unable to verify signature, {}", e)).into())
 }
 
 /// Encode the provided bytes into a hex string

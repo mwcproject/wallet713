@@ -65,7 +65,10 @@ impl Wallet {
     ) -> Result<(), Error> {
         self.lock();
         self.create_wallet_instance(config, account, passphrase)
-            .map_err(|_| ErrorKind::WalletUnlockFailed)?;
+            .map_err(|e| {
+                warn!("Unable to unlock wallet, {}", e);
+                ErrorKind::WalletUnlockFailed
+            })?;
         self.active_account = account.to_string();
         Ok(())
     }
@@ -74,7 +77,7 @@ impl Wallet {
         &mut self,
         message: Option<&str>,
     ) -> Result<(), Error> {
-        api::show_rootpublickey(self.get_wallet_instance()?, message).map_err(|err| ErrorKind::GenericError(err.to_string()))?;
+        api::show_rootpublickey(self.get_wallet_instance()?, message).map_err(|err| ErrorKind::GenericError(format!("Unable to get a public key, {}", err)))?;
         Ok(())
     }
 
@@ -84,7 +87,7 @@ impl Wallet {
         signature: &str,
         pubkey: &str) -> Result<(), Error>
     {
-        api::verifysignature(message, signature, pubkey).map_err(|err| ErrorKind::GenericError(err.to_string()))?;
+        api::verifysignature(message, signature, pubkey).map_err(|err| ErrorKind::GenericError(format!("Unable to verify signature, {}", err)))?;
         Ok(())
     }
 
@@ -528,7 +531,7 @@ impl Wallet {
         dest_acct_name: Option<&str>,
     ) -> Result<(), Error> {
         let s = api::receive_tx(self.get_wallet_instance()?, address, slate,
-                                None, key_id, output_amounts, dest_acct_name).map_err(|_| ErrorKind::GrinWalletReceiveError)?;
+                                None, key_id, output_amounts, dest_acct_name).map_err(|e| ErrorKind::GrinWalletReceiveError(format!("{}", e)))?;
         *slate = s;
         Ok(())
     }
@@ -574,18 +577,18 @@ impl Wallet {
     }
 
     pub fn submit(&self, txn: &mut Transaction) -> Result<(), Error> {
-        api::post_tx(self.get_wallet_instance()?, &txn, false).map_err(|_| ErrorKind::GrinWalletPostError)?;
+        api::post_tx(self.get_wallet_instance()?, &txn, false).map_err(|e| ErrorKind::GrinWalletPostError(format!("{}", e)))?;
         Ok(())
     }
 
     pub fn finalize_slate(&self, slate: &mut Slate, tx_proof: Option<&mut TxProof>) -> Result<(), Error> {
         let wallet = self.get_wallet_instance()?;
-        api::verify_slate_messages( &slate).map_err(|_| ErrorKind::GrinWalletVerifySlateMessagesError)?;
+        api::verify_slate_messages( &slate).map_err(|e| ErrorKind::GrinWalletVerifySlateMessagesError(format!("{}", e)))?;
 
-        let should_post = api::finalize_tx( wallet.clone(), slate, tx_proof).map_err(|_| ErrorKind::GrinWalletFinalizeError)?;
+        let should_post = api::finalize_tx( wallet.clone(), slate, tx_proof).map_err(|e| ErrorKind::GrinWalletFinalizeError(format!("{}", e)))?;
 
         if should_post {
-            api::post_tx( wallet, &slate.tx, false).map_err(|_| ErrorKind::GrinWalletPostError)?;
+            api::post_tx( wallet, &slate.tx, false).map_err(|e| ErrorKind::GrinWalletPostError(format!("{}", e)))?;
         }
         Ok(())
     }
@@ -593,12 +596,12 @@ impl Wallet {
     // Participant ID is different, that is why we have different routine.
     pub fn finalize_invoice_slate(&self, slate: &mut Slate) -> Result<(), Error> {
         let wallet = self.get_wallet_instance()?;
-        api::verify_slate_messages(&slate).map_err(|_| ErrorKind::GrinWalletVerifySlateMessagesError)?;
+        api::verify_slate_messages(&slate).map_err(|e| ErrorKind::GrinWalletVerifySlateMessagesError(format!("{}", e)))?;
 
-        let should_post = api::finalize_invoice_tx(wallet.clone(), slate).map_err(|_| ErrorKind::GrinWalletFinalizeError)?;
+        let should_post = api::finalize_invoice_tx(wallet.clone(), slate).map_err(|e| ErrorKind::GrinWalletFinalizeError(format!("{}", e)))?;
 
         if should_post {
-            api::post_tx(wallet, &slate.tx, false).map_err(|_| ErrorKind::GrinWalletPostError)?;
+            api::post_tx(wallet, &slate.tx, false).map_err(|e| ErrorKind::GrinWalletPostError(format!("{}",e)))?;
         }
         Ok(())
     }

@@ -32,7 +32,7 @@ impl EncryptedMessage {
         let mut common_secret = receiver_public_key.clone();
         common_secret
             .mul_assign(&secp, secret_key)
-            .map_err(|_| ErrorKind::Encryption)?;
+            .map_err(|e| ErrorKind::Encryption(format!("Keys pair doesn't match, {}",e)))?;
         let common_secret_ser = common_secret.serialize_vec(&secp, true);
         let common_secret_slice = &common_secret_ser[1..33];
 
@@ -46,9 +46,9 @@ impl EncryptedMessage {
             enc_bytes.push(0);
         }
         let sealing_key = encrypt::aead::SealingKey::new(&encrypt::aead::CHACHA20_POLY1305, &key)
-            .map_err(|_| ErrorKind::Encryption)?;
+            .map_err(|e| ErrorKind::Encryption(format!("Unable to create sealing key, {}",e)))?;
         encrypt::aead::seal_in_place(&sealing_key, &nonce, &[], &mut enc_bytes, suffix_len)
-            .map_err(|_| ErrorKind::Encryption)?;
+            .map_err(|e| ErrorKind::Encryption(format!("Unable to seal the data, {}",e)))?;
 
         Ok(EncryptedMessage {
             destination: Some(destination.clone()),
@@ -59,13 +59,14 @@ impl EncryptedMessage {
     }
 
     pub fn key(&self, sender_public_key: &PublicKey, secret_key: &SecretKey) -> Result<[u8; 32], Error> {
-        let salt = from_hex(self.salt.clone()).map_err(|_| ErrorKind::Decryption)?;
+        let salt = from_hex(self.salt.clone())
+            .map_err(|e| ErrorKind::Decryption(format!("Salt is not in HEX, {}", e)))?;
 
         let secp = Secp256k1::new();
         let mut common_secret = sender_public_key.clone();
         common_secret
             .mul_assign(&secp, secret_key)
-            .map_err(|_| ErrorKind::Decryption)?;
+            .map_err(|e| ErrorKind::Decryption(format!("Keys pair doesn't match, {}",e)))?;
         let common_secret_ser = common_secret.serialize_vec(&secp, true);
         let common_secret_slice = &common_secret_ser[1..33];
 
@@ -76,15 +77,16 @@ impl EncryptedMessage {
     }
 
     pub fn decrypt_with_key(&self, key: &[u8; 32]) -> Result<String, Error> {
-        let mut encrypted_message =
-            from_hex(self.encrypted_message.clone()).map_err(|_| ErrorKind::Decryption)?;
-        let nonce = from_hex(self.nonce.clone()).map_err(|_| ErrorKind::Decryption)?;
+        let mut encrypted_message = from_hex(self.encrypted_message.clone())
+            .map_err(|e| ErrorKind::Decryption(format!("Uncrypted message is not in HEX, {}", e)))?;
+        let nonce = from_hex(self.nonce.clone())
+            .map_err(|e| ErrorKind::Decryption(format!("Nonce is not in HEX, {}", e)))?;
 
         let opening_key = encrypt::aead::OpeningKey::new(&encrypt::aead::CHACHA20_POLY1305, key)
-            .map_err(|_| ErrorKind::Decryption)?;
+            .map_err(|e| ErrorKind::Decryption(format!("Unable to create sealing key, {}",e)))?;
         let decrypted_data =
             encrypt::aead::open_in_place(&opening_key, &nonce, &[], 0, &mut encrypted_message)
-                .map_err(|_| ErrorKind::Decryption)?;
-        String::from_utf8(decrypted_data.to_vec()).map_err(|_| ErrorKind::Decryption.into())
+                .map_err(|e| ErrorKind::Decryption(format!("Unable to seal the data, {}",e)))?;
+        String::from_utf8(decrypted_data.to_vec()).map_err(|e| ErrorKind::Decryption(format!("Decryption result to HEX conversion error, {}", e)).into())
     }
 }

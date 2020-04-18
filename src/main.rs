@@ -1611,7 +1611,7 @@ fn do_command(
             let mut file = File::open(input.replace("~", &home_dir))?;
             let mut txn_file = String::new();
             file.read_to_string(&mut txn_file)?;
-            let tx_bin = from_hex(txn_file)?;
+            let tx_bin = from_hex(&txn_file)?;
             let mut txn = ser::deserialize::<Transaction>(&mut &tx_bin[..], ser::ProtocolVersion(1) )?;
 
             wallet.lock().submit(&mut txn)?;
@@ -1817,7 +1817,7 @@ fn do_command(
                             res["error"]["code"], res["error"]["message"]
                         );
                         error!("{}", report);
-                        return Err(ErrorKind::HttpRequest.into());
+                        return Err(ErrorKind::HttpRequest(report).into());
                     }
 
                     let slate_value = res["result"]["Ok"].clone();
@@ -1907,7 +1907,7 @@ fn do_command(
                         Err(ErrorKind::ClosedListener("mwcmq".to_string()))?
                     }
                 }
-                _ => Err(ErrorKind::HttpRequest.into()),
+                _ => Err(ErrorKind::HttpRequest(format!("Invoice doesn't support address type: {:?}", to.address_type())).into()),
             };
 
             let slate = res_slate?;
@@ -2023,11 +2023,14 @@ fn do_command(
             cli_message!("check and repair done!");
         }
         Some("sync") => {
-            if wallet.lock().sync()? {
-                cli_message!("Your wallet data successfully synchronized with a node");
-            }
-            else {
-                cli_message!("Warning: Unable to sync wallet with a node");
+            match wallet.lock().sync() {
+                Ok(synced) => if synced {
+                    cli_message!("Your wallet data successfully synchronized with a node");
+                }
+                else {
+                    cli_message!("Warning: Unable to sync wallet with a node");
+                },
+                Err(e) => cli_message!("Warning: Unable to sync wallet with a node, {}", e),
             }
         }
         Some("dump-wallet-data") => {
@@ -2039,16 +2042,16 @@ fn do_command(
             let args = matches.subcommand_matches("set-recv").unwrap();
             let account = args.value_of("account").unwrap();
             if wallet.lock().account_exists(account).unwrap() {
-            unsafe {
-                RECV_ACCOUNT = Some(account.to_string());
+                unsafe {
+                    RECV_ACCOUNT = Some(account.to_string());
 
-                RECV_PASS = match args.value_of("password") {
-                    Some(pass) => Some( grin_util::ZeroingString::from( pass ) ),
-                    _ => None,
-                };
-                cli_message!("Incoming funds will be received in account: {:?}", RECV_ACCOUNT.clone().unwrap());
+                    RECV_PASS = match args.value_of("password") {
+                        Some(pass) => Some(grin_util::ZeroingString::from(pass)),
+                        _ => None,
+                    };
+                    cli_message!("Incoming funds will be received in account: {:?}", RECV_ACCOUNT.clone().unwrap());
+                }
             }
-        }
             else
             {
                 cli_message!("Account {:?} does not exist!", account);
@@ -2078,7 +2081,7 @@ fn do_command(
             let pub_key_file = args.value_of("pubkey_file").unwrap();
 
             let file = File::open(pub_key_file)
-                    .map_err(|_| ErrorKind::FileNotFound( pub_key_file.to_string()) )?;
+                    .map_err(|e| ErrorKind::FileNotFound( pub_key_file.to_string(), format!("{}",e)) )?;
 
             let output_fn = format!("{}.commits", pub_key_file);
 
@@ -2090,7 +2093,7 @@ fn do_command(
             let mut pub_keys = Vec::new();
 
             for line in io::BufReader::new(file).lines() {
-                let pubkey_str = line.map_err(|_| ErrorKind::FileNotFound( pub_key_file.to_string()) )?;
+                let pubkey_str = line.map_err(|e| ErrorKind::FileNotFound( pub_key_file.to_string(), format!("{}",e)) )?;
                 if pubkey_str.is_empty() {
                     continue;
                 }
@@ -2125,8 +2128,8 @@ fn do_command(
                     println!("proof written to {}", input);
                     proof_ok(sender, receiver, amount, outputs, kernel);
                 }
-                Err(_) => {
-                    cli_message!("unable to verify proof");
+                Err(e) => {
+                    cli_message!("unable to verify proof, {}", e);
                 }
             }
         }
@@ -2135,7 +2138,7 @@ fn do_command(
             let input = args.value_of("file").unwrap();
             let path = Path::new(&input.replace("~", &home_dir)).to_path_buf();
             if !path.exists() {
-                return Err(ErrorKind::FileNotFound(input.to_string()).into());
+                return Err(ErrorKind::FileNotFound(input.to_string(), "path doesn't exist".to_string()).into());
             }
             let mut file = File::open(path)?;
             let mut proof = String::new();
@@ -2147,8 +2150,8 @@ fn do_command(
                 Ok((sender, receiver, amount, outputs, kernel)) => {
                     proof_ok(sender, receiver, amount, outputs, kernel);
                 }
-                Err(_) => {
-                    cli_message!("unable to verify proof");
+                Err(e) => {
+                    cli_message!("unable to verify proof, {}", e);
                 }
             }
         }

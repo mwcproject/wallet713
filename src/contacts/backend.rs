@@ -100,16 +100,16 @@ impl Writeable for Contact {
 impl Readable for Contact {
     fn read(reader: &mut dyn Reader) -> Result<Contact, CoreError> {
         let data = reader.read_bytes_len_prefix()?;
-        let data = std::str::from_utf8(&data).map_err(|_| CoreError::CorruptedData)?;
+        let data = std::str::from_utf8(&data).map_err(|e| CoreError::CorruptedData(format!("Unable to read contacts data, {}", e)))?;
 
         let json: serde_json::Value =
-            serde_json::from_str(&data).map_err(|_| CoreError::CorruptedData)?;
+            serde_json::from_str(&data).map_err(|e| CoreError::CorruptedData(format!("Unable to read contacts data, {}", e)))?;
 
         let address = Address::parse(json["address"].as_str().unwrap())
-            .map_err(|_| CoreError::CorruptedData)?;
+            .map_err(|_| CoreError::CorruptedData("Unable to read contacts data, Not found 'address'".to_string()))?;
 
         let contact = Contact::new(json["name"].as_str().unwrap(), address)
-            .map_err(|_| CoreError::CorruptedData)?;
+            .map_err(|_| CoreError::CorruptedData("Unable to read contacts data, Not found 'name'".to_string()))?;
 
         Ok(contact)
     }

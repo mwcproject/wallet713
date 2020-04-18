@@ -93,7 +93,7 @@ pub fn scan_outputs<'a, T: ?Sized, C, K>(wallet: &mut T, pub_keys: Vec<PublicKey
 				//   Legacy logic try to hadble the latest data similar way, it is extra for scanning
 				let res = blake2b(32, &commit.0, &pk_info.rewind_hash);
 				let nonce = SecretKey::from_slice(&secp, res.as_bytes()).map_err(|e| {
-					ErrorKind::GenericError(format!("error: Unable to create nonce: {:?}", e))
+					ErrorKind::GenericError(format!("error: Unable to create nonce: {}", e))
 				})?;
 
 				let info = secp.rewind_bullet_proof(*commit, nonce.clone(), None, *proof);
