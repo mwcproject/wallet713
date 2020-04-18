@@ -134,11 +134,11 @@ fn handle_retrieve_stored_tx(state: &State) -> Result<Response<Body>, Error> {
     let wallet = WalletContainer::borrow_from(&state).lock()?;
     let (_, txs) = wallet.retrieve_txs(true, Some(id), None)?;
     if txs.len() != 1 {
-        return Err(ErrorKind::ModelNotFound.into());
+        return Err(ErrorKind::TransactionModelNotFound.into());
     }
 
     if txs[0].tx_slate_id.is_none() {
-        return Err(ErrorKind::ModelNotFound.into());
+        return Err(ErrorKind::TransactionModelNotFound.into());
     }
 
     let stored_tx = wallet.get_stored_tx(&txs[0].tx_slate_id.unwrap().to_string())?;
@@ -507,8 +507,8 @@ pub fn process_handle_issue_send_tx(container: &WalletContainer, body: &Chunk) -
                              let url = url.unwrap();
                              let res: Result<SlateResp, ErrorKind> = post(url.as_str(), None, &req ).map_err(|e| {
                                  let report = format!("Posting transaction slate (is recipient listening?): {}", e);
-                                     println!("{}", report);
-                                     ErrorKind::HttpRequest
+                                 println!("{}", report);
+                                 ErrorKind::HttpRequest(format!("Unable to post slate to {}, {}", url.as_str(), e))
                              });
 
                              if res.is_ok() {

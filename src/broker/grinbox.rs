@@ -133,9 +133,7 @@ impl GrinboxBroker {
             &pkey,
             &skey,
         )
-            .map_err(|_| {
-                WsError::new(WsErrorKind::Protocol, "could not encrypt slate!")
-            })?;
+        .map_err(|e| WsError::new(WsErrorKind::Protocol, format!("Unable to encrypt slate!, {}", e)))?;
         let message_ser = serde_json::to_string(&message)?;
 
         let mut challenge = String::new();
@@ -151,9 +149,9 @@ impl GrinboxBroker {
 
         if let Some(ref sender) = *self.inner.lock() {
             sender.send(serde_json::to_string(&request).unwrap())
-                .map_err(|_| ErrorKind::GenericError("failed posting slate!".to_string()).into())
+                .map_err(|e| ErrorKind::GenericError(format!("Unable to post slate!, {}", e)).into())
         } else {
-            Err(ErrorKind::GenericError("failed posting slate!".to_string()).into())
+            Err(ErrorKind::GenericError("Unable to post slate, sender not ready".to_string()).into())
         }
     }
 
@@ -318,8 +316,8 @@ impl Handler for GrinboxClient {
     fn on_message(&mut self, msg: Message) -> WsResult<()> {
         let response = match serde_json::from_str::<ProtocolResponse>(&msg.to_string()) {
             Ok(x) => x,
-            Err(_) => {
-                cli_message!("Error: could not parse response");
+            Err(e) => {
+                cli_message!("Error: could not parse response from MQ, {}, {}", msg, e);
                 return Ok(());
             }
         };
@@ -346,7 +344,7 @@ impl Handler for GrinboxClient {
                 ) {
                     Ok(x) => x,
                     Err(err) => {
-                        cli_message!("Error: {}", err);
+                        cli_message!("Error: Unable to generate tx proof, {}", err);
                         return Ok(());
                     }
                 };

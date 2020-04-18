@@ -279,7 +279,8 @@ impl KeybaseBroker {
         let response = KeybaseBroker::api_send(keybase_binary, &payload)?;
         match response["result"]["message"].as_str() {
             Some("message sent") => Ok(()),
-            _ => Err(ErrorKind::KeybaseMessageSendError)?,
+            Some(s) => Err(ErrorKind::KeybaseMessageSendError(format!("keybase responded with {}", s)))?,
+            _ => Err(ErrorKind::KeybaseMessageSendError("Unexpected keybase respond".to_string()))?,
         }
     }
 }

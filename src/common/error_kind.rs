@@ -2,10 +2,10 @@ use failure::Fail;
 
 #[derive(Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ErrorKind {
-    #[fail(display = "secp error")]
-    Secp,
-    #[fail(display = "model not found!")]
-    ModelNotFound,
+    #[fail(display = "secp error, {}", _0)]
+    Secp(String),
+    #[fail(display = "Transaction model not found!")]
+    TransactionModelNotFound,
     #[fail(display = "could not open wallet seed!")]
     WalletSeedCouldNotBeOpened,
     #[fail(display = "transaction doesn't have a proof!")]
@@ -129,16 +129,16 @@ pub enum ErrorKind {
         0
     )]
     HttpsAddressParsingError(String),
-    #[fail(display = "could not send keybase message!")]
-    KeybaseMessageSendError,
-    #[fail(display = "failed receiving slate!")]
-    GrinWalletReceiveError,
-    #[fail(display = "failed verifying slate messages!")]
-    GrinWalletVerifySlateMessagesError,
-    #[fail(display = "failed finalizing slate!")]
-    GrinWalletFinalizeError,
-    #[fail(display = "failed posting transaction!")]
-    GrinWalletPostError,
+    #[fail(display = "could not send keybase message!, {}", _0)]
+    KeybaseMessageSendError(String),
+    #[fail(display = "failed receiving slate!, {}", _0)]
+    GrinWalletReceiveError(String),
+    #[fail(display = "failed verifying slate messages!, {}", _0)]
+    GrinWalletVerifySlateMessagesError(String),
+    #[fail(display = "failed finalizing slate!, {}", _0)]
+    GrinWalletFinalizeError(String),
+    #[fail(display = "failed posting transaction!, {}", _0)]
+    GrinWalletPostError(String),
     #[fail(
         display = "keybase not found! consider installing keybase locally first."
     )]
@@ -160,22 +160,22 @@ pub enum ErrorKind {
     HasListener,
     #[fail(display = "wallet already unlocked")]
     WalletAlreadyUnlocked,
-    #[fail(display = "unable to encrypt message")]
-    Encryption,
-    #[fail(display = "unable to decrypt message")]
-    Decryption,
-    #[fail(display = "http request error")]
-    HttpRequest,
-    #[fail(display = "{}", 0)]
+    #[fail(display = "unable to encrypt message, {}", _0)]
+    Encryption(String),
+    #[fail(display = "unable to decrypt message, {}", _0)]
+    Decryption(String),
+    #[fail(display = "http request error, {}", _0)]
+    HttpRequest(String),
+    #[fail(display = "Generic error, {}", 0)]
     GenericError(String),
-    #[fail(display = "unable to verify proof")]
-    VerifyProof,
-    #[fail(display = "file '{}' not found", 0)]
-    FileNotFound(String),
+    #[fail(display = "unable to verify proof, {}", _0)]
+    VerifyProof(String),
+    #[fail(display = "file '{}' not found, {}", _0, _1)]
+    FileNotFound(String, String),
     #[fail(display = "unable to delete the file '{}'", 0)]
     FileUnableToDelete(String),
-    #[fail(display = "unable to create the file '{}'", 0)]
-    FileUnableToCreate(String),
+    #[fail(display = "unable to create the file '{}', {}", _0, _1)]
+    FileUnableToCreate(String, String),
 
     #[fail(display = "Tx Proof unable to parse address '{}'", 0)]
     TxProofParseAddress(String),
@@ -196,6 +196,6 @@ pub enum ErrorKind {
     TxProofDecryptionKey,
     #[fail(display = "Tx Proof unable to decrypt the message")]
     TxProofDecryptMessage,
-    #[fail(display = "Tx Proof unable to build a slate from the message")]
-    TxProofParseSlate,
+    #[fail(display = "Tx Proof unable to build a slate from the message, {}", _0)]
+    TxProofParseSlate(String),
 }

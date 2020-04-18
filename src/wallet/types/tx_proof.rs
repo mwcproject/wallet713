@@ -64,7 +64,7 @@ impl TxProof {
             .map_err(|_| ErrorKind::TxProofDecryptMessage)?;
 
         let slate = Slate::deserialize_upgrade(&decrypted_message)
-            .map_err(|_| ErrorKind::TxProofParseSlate)?;
+            .map_err(|e| ErrorKind::TxProofParseSlate(format!("{}",e)))?;
 
         Ok((destination, slate))
     }
