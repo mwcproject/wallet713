@@ -6,7 +6,7 @@ use crate::common::crypto::{from_hex, to_hex};
 use crate::common::{ErrorKind, Error};
 use crate::contacts::GrinboxAddress;
 
-use grin_wallet_impls::encrypt;
+use grin_wallet_libwallet::encrypt;
 use std::num::NonZeroU32;
 
 #[derive(Debug, Serialize, Deserialize)]
