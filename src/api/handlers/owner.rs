@@ -204,7 +204,7 @@ pub fn handle_finalize_tx(state: &State, body: &Chunk) -> Result<Response<Body>,
     let container = WalletContainer::borrow_from(&state);
     let wallet = container.lock()?;
 
-    wallet.finalize_slate(&mut slate, None)?;
+    wallet.finalize_slate(&mut slate, None, false)?;
 
     Ok(create_empty_response(&state, StatusCode::OK))
 }
@@ -540,7 +540,7 @@ pub fn process_handle_issue_send_tx(container: &WalletContainer, body: &Chunk) -
                                      );
 
                                      wallet.tx_lock_outputs(&slate, Some(destination), 0)?;
-                                     let res = wallet.finalize_slate(&mut slate, None);
+                                     let res = wallet.finalize_slate(&mut slate, None, false);
 
                                      if res.is_ok() {
                                          cli_message!(

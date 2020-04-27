@@ -581,14 +581,14 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn finalize_slate(&self, slate: &mut Slate, tx_proof: Option<&mut TxProof>) -> Result<(), Error> {
+    pub fn finalize_slate(&self, slate: &mut Slate, tx_proof: Option<&mut TxProof>, fluff: bool) -> Result<(), Error> {
         let wallet = self.get_wallet_instance()?;
         api::verify_slate_messages( &slate).map_err(|e| ErrorKind::GrinWalletVerifySlateMessagesError(format!("{}", e)))?;
 
         let should_post = api::finalize_tx( wallet.clone(), slate, tx_proof).map_err(|e| ErrorKind::GrinWalletFinalizeError(format!("{}", e)))?;
 
         if should_post {
-            api::post_tx( wallet, &slate.tx, false).map_err(|e| ErrorKind::GrinWalletPostError(format!("{}", e)))?;
+            api::post_tx( wallet, &slate.tx, fluff).map_err(|e| ErrorKind::GrinWalletPostError(format!("{}", e)))?;
         }
         Ok(())
     }
