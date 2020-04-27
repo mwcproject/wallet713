@@ -53,6 +53,7 @@ semver = "0.9"
 commands = "0.0.5"
 enquote = "1.0"
 reqwest = "0.9.22"
+lazy_static = "1"
 
 # Release
 #grin_core = { git = "https://github.com/mwcproject/mwc-node", tag = "3.1.3" }

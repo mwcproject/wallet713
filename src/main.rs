@@ -9,6 +9,8 @@ extern crate serde_json;
 extern crate gotham_derive;
 #[macro_use]
 extern crate clap;
+#[macro_use]
+extern crate lazy_static;
 extern crate hyper_tls;
 extern crate env_logger;
 extern crate blake2_rfc;
@@ -110,6 +112,11 @@ use std::sync::mpsc;
 const CLI_HISTORY_PATH: &str = ".history";
 static mut RECV_ACCOUNT: Option<String> = None;
 static mut RECV_PASS: Option<grin_util::ZeroingString> = None;
+
+// Slates that are scheduled to flaff instead of dandelion
+lazy_static! {
+    static ref FLUFFED_SLATES: RwLock<HashSet<String>> = RwLock::new(HashSet::new());
+}
 
 fn getpassword() -> Result<String, Error> {
     let mwc_password = getenv("MWC_PASSWORD")?;
@@ -254,6 +261,8 @@ use broker::{
 };
 use std::borrow::Borrow;
 use uuid::Uuid;
+use parking_lot::RwLock;
+use std::collections::HashSet;
 
 struct Controller {
     name: String,
@@ -312,7 +321,10 @@ impl Controller {
         } else {
             // Try both to finalize
             let w = self.wallet.lock();
-            match w.finalize_slate(slate, tx_proof) {
+
+            let fluff = FLUFFED_SLATES.write().remove(&slate.id.to_string());
+
+            match w.finalize_slate(slate, tx_proof, fluff) {
                 Err(_) => w.finalize_invoice_slate(slate)?,
                 Ok(_) => (),
             }
@@ -1597,12 +1609,13 @@ fn do_command(
         }
         Some("finalize") => {
             let args = matches.subcommand_matches("finalize").unwrap();
+            let fluff = args.is_present("fluff");
             let input = args.value_of("file").unwrap();
             let mut file = File::open(input.replace("~", &home_dir))?;
             let mut slate = String::new();
             file.read_to_string(&mut slate)?;
             let mut slate = Slate::deserialize_upgrade(&slate)?;
-            wallet.lock().finalize_slate(&mut slate, None)?;
+            wallet.lock().finalize_slate(&mut slate, None, fluff)?;
             cli_message!("{} finalized.", input);
         }
         Some("submit") => {
@@ -1625,7 +1638,6 @@ fn do_command(
             let input = args.value_of("file");
             let message = args.value_of("message").map(|s| s.to_string());
             let apisecret = args.value_of("apisecret").map(|s| s.to_string());
-
             let strategy = args.value_of("strategy").unwrap_or("smallest");
             if strategy != "smallest" && strategy != "all" && strategy != "custom" {
                 return Err(ErrorKind::InvalidStrategy.into());
@@ -1668,6 +1680,7 @@ fn do_command(
                     .map_err(|_| ErrorKind::InvalidSlateVersion(v.to_string()))?),
                 None => None,
             };
+            let fluff = args.is_present("fluff");
 
             let amount = args.value_of("amount").unwrap();
             let mut ntotal = 0;
@@ -1759,6 +1772,10 @@ fn do_command(
                 &status_send_channel,
             )?;
 
+            if fluff {
+                FLUFFED_SLATES.write().insert(slate.id.to_string());
+            }
+
             // Stopping updater, sync should be done by now
             running.store(false, Ordering::Relaxed);
             let _ = updater.join();
@@ -1841,7 +1858,7 @@ fn do_command(
             );
 
             if to.address_type() == AddressType::Https {
-                w.finalize_slate(&mut slate, None)?;
+                w.finalize_slate(&mut slate, None, fluff)?;
                 cli_message!(
                     "slate [{}] finalized successfully",
                     slate.id.to_string().bright_green()

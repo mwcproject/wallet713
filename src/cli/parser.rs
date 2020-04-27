@@ -270,6 +270,9 @@ impl<'a, 'b> Parser {
                     .arg(
                          Arg::from_usage("[routputs] -r, --r-outputs=<routputs> 'number of outputs for the recipient. default 1.'")
                     )
+                    .arg(
+                        Arg::from_usage("[fluff] -l, --fluff 'the transaction is submitted as a fluff transactions'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("invoice")
@@ -384,6 +387,9 @@ impl<'a, 'b> Parser {
                     .about("finalizes a slate response file and posts the transaction")
                     .arg(
                         Arg::from_usage("-f, --file=<file> 'the slate file'")
+                    )
+                    .arg(
+                        Arg::from_usage("[fluff] -l, --fluff 'the transaction is submitted as a fluff transactions'")
                     )
             )
             .subcommand(
