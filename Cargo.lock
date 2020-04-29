@@ -286,6 +286,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "bzip2"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42b7c3cbf0fa9c1b82308d57191728ca0256cb821220f4e2fd410a72ade26e3b"
+dependencies = [
+ "bzip2-sys",
+ "libc",
+]
+
+[[package]]
+name = "bzip2-sys"
+version = "0.1.8+1.0.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05305b41c5034ff0e93937ac64133d109b5a2660114ec45e9760bc6816d83038"
+dependencies = [
+ "cc",
+ "libc",
+]
+
+[[package]]
 name = "cargo_metadata"
 version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1975,6 +1995,7 @@ dependencies = [
  "url 1.7.2",
  "uuid 0.7.4",
  "ws",
+ "zip",
 ]
 
 [[package]]
@@ -3893,6 +3914,9 @@ version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6df134e83b8f0f8153a094c7b0fd79dfebe437f1d76e7715afa18ed95ebe2fd7"
 dependencies = [
+ "bzip2",
  "crc32fast",
+ "flate2",
  "podio",
+ "time",
 ]
