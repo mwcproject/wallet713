@@ -31,7 +31,9 @@ extern crate rand;
 extern crate regex;
 extern crate ring;
 extern crate ripemd160;
+#[cfg(not(target_os = "android"))]
 extern crate rpassword;
+#[cfg(not(target_os = "android"))]
 extern crate rustyline;
 extern crate serde;
 extern crate sha2;
@@ -56,6 +58,7 @@ extern crate grin_wallet_controller;
 
 use serde_json::Value;
 use std::{env, thread};
+#[cfg(not(target_os = "android"))]
 use std::borrow::Cow::{self, Borrowed, Owned};
 use std::fs::File;
 use std::io::prelude::*;
@@ -75,11 +78,17 @@ use grin_core::core;
 use grin_core::libtx::tx_fee;
 use grin_core::global;
 use grin_core::global::{set_mining_mode, ChainTypes};
+#[cfg(not(target_os = "android"))]
 use rustyline::completion::{Completer, FilenameCompleter, Pair};
+#[cfg(not(target_os = "android"))]
 use rustyline::config::OutputStreamType;
+#[cfg(not(target_os = "android"))]
 use rustyline::error::ReadlineError;
+#[cfg(not(target_os = "android"))]
 use rustyline::highlight::{Highlighter, MatchingBracketHighlighter};
+#[cfg(not(target_os = "android"))]
 use rustyline::hint::Hinter;
+#[cfg(not(target_os = "android"))]
 use rustyline::{CompletionType, Config, Context, EditMode, Editor, Helper};
 use url::Url;
 
@@ -94,7 +103,9 @@ mod wallet;
 use api::router::{build_foreign_api_router, build_owner_api_router};
 use cli::Parser;
 use common::config::Wallet713Config;
-use common::{ErrorKind, Error, RuntimeMode, COLORED_PROMPT, PROMPT, post, Arc, Mutex};
+use common::{ErrorKind, Error, RuntimeMode, COLORED_PROMPT, post, Arc, Mutex};
+#[cfg(not(target_os = "android"))]
+use common::PROMPT;
 use wallet::Wallet;
 
 use crate::wallet::types::TxProof;
@@ -108,7 +119,7 @@ use common::crypto::Hex;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 
-
+#[cfg(not(target_os = "android"))]
 const CLI_HISTORY_PATH: &str = ".history";
 static mut RECV_ACCOUNT: Option<String> = None;
 static mut RECV_PASS: Option<grin_util::ZeroingString> = None;
@@ -124,7 +135,17 @@ fn getpassword() -> Result<String, Error> {
         return Ok(mwc_password.unwrap());
     }
 
+    #[cfg(not(target_os = "android"))]
     return Ok(rpassword::prompt_password_stdout("Password: ").unwrap_or(String::from("")));
+
+    // Android doesn't have terminal system functions. That is why rpassword doesn't work
+    #[cfg(target_os = "android")]
+    {
+        print!("Password: ");
+        let mut ret = String::new();
+        io::stdin().read_line(&mut ret)?;
+        Ok(ret)
+    }
 }
 
 fn getenv(key: &str) -> Result<Option<String>, Error> {
@@ -578,8 +599,10 @@ fn start_keybase_listener(
     Ok((keybase_publisher, keybase_subscriber, keybase_listener_handle))
 }
 
+#[cfg(not(target_os = "android"))]
 struct EditorHelper(FilenameCompleter, MatchingBracketHighlighter);
 
+#[cfg(not(target_os = "android"))]
 impl Completer for EditorHelper {
     type Candidate = Pair;
 
@@ -593,12 +616,14 @@ impl Completer for EditorHelper {
     }
 }
 
+#[cfg(not(target_os = "android"))]
 impl Hinter for EditorHelper {
     fn hint(&self, _line: &str, _pos: usize, _ctx: &Context<'_>) -> Option<String> {
         None
     }
 }
 
+#[cfg(not(target_os = "android"))]
 impl Highlighter for EditorHelper {
     fn highlight<'l>(&self, line: &'l str, pos: usize) -> Cow<'l, str> {
         self.1.highlight(line, pos)
@@ -621,6 +646,7 @@ impl Highlighter for EditorHelper {
     }
 }
 
+#[cfg(not(target_os = "android"))]
 impl Helper for EditorHelper {}
 
 fn main() {
@@ -975,83 +1001,102 @@ fn main() {
         return;
     }
 
-    let editor_config = Config::builder()
-        .history_ignore_space(true)
-        .completion_type(CompletionType::List)
-        .edit_mode(EditMode::Emacs)
-        .output_stream(OutputStreamType::Stdout)
-        .build();
-    let mut rl = Editor::with_config(editor_config);
-    rl.set_helper(Some(EditorHelper(
-        FilenameCompleter::new(),
-        MatchingBracketHighlighter::new(),
-    )));
+    #[cfg(not(target_os = "android"))]
+        let mut rl = {
+            let editor_config = Config::builder()
+                .history_ignore_space(true)
+                .completion_type(CompletionType::List)
+                .edit_mode(EditMode::Emacs)
+                .output_stream(OutputStreamType::Stdout)
+                .build();
+            let mut rl = Editor::with_config(editor_config);
+            rl.set_helper(Some(EditorHelper(
+                FilenameCompleter::new(),
+                MatchingBracketHighlighter::new(),
+            )));
+            rl
+        };
 
-    let wallet713_home_path_buf = Wallet713Config::default_home_path(&config.chain).unwrap();
-    let wallet713_home_path = wallet713_home_path_buf.to_str().unwrap();
+    #[cfg(not(target_os = "android"))]
+        let wallet713_home_path_buf = Wallet713Config::default_home_path(&config.chain).unwrap();
+    #[cfg(not(target_os = "android"))]
+        let wallet713_home_path = wallet713_home_path_buf.to_str().unwrap();
 
-    if let Some(path) = Path::new(wallet713_home_path)
-        .join(CLI_HISTORY_PATH)
-        .to_str()
-    {
-        let _ = rl.load_history(path).is_ok();
-    }
+    #[cfg(not(target_os = "android"))]
+        if let Some(path) = Path::new(wallet713_home_path)
+            .join(CLI_HISTORY_PATH)
+            .to_str()
+            {
+                let _ = rl.load_history(path).is_ok();
+            }
 
     let prompt_plus = matches.value_of("ready-phrase").unwrap_or("").to_string();
 
     loop {
-        if ! prompt_plus.is_empty() {
+        if !prompt_plus.is_empty() {
             println!("{}", prompt_plus);
         }
-        let command = rl.readline(PROMPT);
-        match command {
-            Ok(command) => {
-                let command = command.trim();
 
-                if command == "exit" {
-                    if mwcmqs_broker.is_some() {
-                        let mut mqs = mwcmqs_broker.unwrap();
-                        if mqs.1.is_running() {
-                            mqs.1.stop();
-                        }
-                    }
+        #[cfg(not(target_os = "android"))]
+            let command = match rl.readline(PROMPT) {
+                Ok(command) => command,
+                Err(_) => {
                     break;
                 }
+            };
 
-                let mut out_is_safe = false;
-                let result = do_command(
-                    &command,
-                    &mut config,
-                    wallet.clone(),
-                    address_book.clone(),
-                    &mut keybase_broker,
-                    &mut grinbox_broker,
-                    &mut mwcmqs_broker,
-                    &mut out_is_safe,
-                );
-
-                if let Err(err) = result {
-                    cli_message!("Error: {}", err);
+        #[cfg(target_os = "android")]
+            let command = {
+                let mut cmd = String::new();
+                if io::stdin().read_line(&mut cmd).unwrap() > 0 {
+                    cmd.trim().to_string()
                 }
+                else {
+                    continue;
+                }
+            };
 
-                if out_is_safe {
-                    if config.disable_history() != true {
-                        rl.add_history_entry(command);
-                    }
+        if command == "exit" {
+            if mwcmqs_broker.is_some() {
+                let mut mqs = mwcmqs_broker.unwrap();
+                if mqs.1.is_running() {
+                    mqs.1.stop();
                 }
             }
-            Err(_) => {
-                break;
-            }
+            break;
         }
+
+        let mut out_is_safe = false;
+        let result = do_command(
+            &command,
+            &mut config,
+            wallet.clone(),
+            address_book.clone(),
+            &mut keybase_broker,
+            &mut grinbox_broker,
+            &mut mwcmqs_broker,
+            &mut out_is_safe,
+        );
+
+        if let Err(err) = result {
+            cli_message!("Error: {}", err);
+        }
+
+        #[cfg(not(target_os = "android"))]
+            if out_is_safe {
+                if config.disable_history() != true {
+                    rl.add_history_entry(command);
+                }
+            }
     }
 
-    if let Some(path) = Path::new(wallet713_home_path)
-        .join(CLI_HISTORY_PATH)
-        .to_str()
-    {
-        let _ = rl.save_history(path).is_ok();
-    }
+    #[cfg(not(target_os = "android"))]
+        if let Some(path) = Path::new(wallet713_home_path)
+            .join(CLI_HISTORY_PATH)
+            .to_str()
+        {
+            let _ = rl.save_history(path).is_ok();
+        }
 }
 
 fn derive_address_key(
@@ -1145,9 +1190,17 @@ fn do_command(
     out_is_safe: &mut bool,
 ) -> Result<(), Error> {
     *out_is_safe = true;
+
+    #[cfg(not(target_os = "android"))]
     let home_dir = dirs::home_dir()
         .map(|p| p.to_str().unwrap().to_string())
         .unwrap_or("~".to_string());
+
+    #[cfg(target_os = "android")]
+    let home_dir = std::env::current_exe() //  dirs::home_dir()
+        .map(|p| { let mut p = p.clone(); p.pop();  p.to_str().unwrap().to_string()})
+        .unwrap_or("~".to_string());
+
     let matches = Parser::parse(command)?;
     match matches.subcommand_name() {
         Some("config") => {

@@ -35,6 +35,7 @@ pub fn is_cli() -> bool {
 }
 
 pub const COLORED_PROMPT: &'static str = "\x1b[36mwallet713>\x1b[0m ";
+#[cfg(not(target_os = "android"))]
 pub const PROMPT: &'static str = "wallet713> ";
 
 pub fn post<IN>(url: &str, api_secret: Option<String>, basic_auth_key: Option<String>, input: &IN) -> StdResult<String, grin_api::Error>
