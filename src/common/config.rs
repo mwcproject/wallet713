@@ -221,9 +221,18 @@ impl Wallet713Config {
     }
 
     pub fn default_home_path(chain: &ChainTypes) -> Result<PathBuf, Error> {
+        // Desktop OS case. Home dir does exist
+        #[cfg(not(target_os = "android"))]
         let mut path = match dirs::home_dir() {
             Some(home) => home,
             None => std::env::current_dir()?,
+        };
+
+        // Android doesn't have Home dir. binary dir will be used instead of home dir
+        #[cfg(target_os = "android")]
+            let mut path = match std::env::current_exe() {
+            Ok(home) => {let mut home = home; home.pop(); home}
+            Err(_) => std::env::current_dir()?,
         };
 
         path.push(WALLET713_HOME);
@@ -252,6 +261,7 @@ impl Wallet713Config {
         ))
     }
 
+    #[cfg(not(target_os = "android"))]
     pub fn disable_history(&self) -> bool {
         self.disable_history.unwrap_or(false)
     }
