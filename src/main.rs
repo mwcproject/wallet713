@@ -1023,12 +1023,14 @@ fn main() {
         let wallet713_home_path = wallet713_home_path_buf.to_str().unwrap();
 
     #[cfg(not(target_os = "android"))]
-        if let Some(path) = Path::new(wallet713_home_path)
-            .join(CLI_HISTORY_PATH)
-            .to_str()
+        {
+            if let Some(path) = Path::new(wallet713_home_path)
+                .join(CLI_HISTORY_PATH)
+                .to_str()
             {
                 let _ = rl.load_history(path).is_ok();
             }
+        }
 
     let prompt_plus = matches.value_of("ready-phrase").unwrap_or("").to_string();
 
@@ -1083,19 +1085,23 @@ fn main() {
         }
 
         #[cfg(not(target_os = "android"))]
-            if out_is_safe {
-                if config.disable_history() != true {
-                    rl.add_history_entry(command);
+            {
+                if out_is_safe {
+                    if config.disable_history() != true {
+                        rl.add_history_entry(command);
+                    }
                 }
             }
     }
 
     #[cfg(not(target_os = "android"))]
-        if let Some(path) = Path::new(wallet713_home_path)
-            .join(CLI_HISTORY_PATH)
-            .to_str()
         {
-            let _ = rl.save_history(path).is_ok();
+            if let Some(path) = Path::new(wallet713_home_path)
+                .join(CLI_HISTORY_PATH)
+                .to_str()
+            {
+                let _ = rl.save_history(path).is_ok();
+            }
         }
 }
 
