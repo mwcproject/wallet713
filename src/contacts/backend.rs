@@ -7,7 +7,11 @@ use grin_core::ser::{Readable, Reader, Writeable, Writer};
 use grin_store::{self, option_to_not_found, to_key};
 use grin_store::Store;
 
-use super::types::{Address, AddressBookBackend, AddressBookBatch, Contact};
+use super::types::{AddressBookBackend, AddressBookBatch, Contact};
+use grin_wallet_impls:: {
+    Address,
+
+};
 use common::Error;
 
 const DB_DIR: &'static str = "contacts";

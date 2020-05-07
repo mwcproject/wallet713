@@ -2,30 +2,29 @@ use std::collections::{HashSet, HashMap, VecDeque};
 use uuid::Uuid;
 
 pub use grin_util::secp::{Message};
-use common::crypto::{Hex, SecretKey};
 use grin_core::core::hash::{Hash};
 use grin_core::ser;
 use grin_util::secp::pedersen;
 use grin_util::secp::{ContextFlag, Secp256k1, Signature};
 use grin_p2p::types::PeerInfoDisplay;
 
-use crate::contacts::GrinboxAddress;
 
-//use super::keys;
-use super::types::TxProof;
+use grin_wallet_libwallet::proof::crypto::Hex;
+use grin_wallet_libwallet::proof::tx_proof::TxProof;
+use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
 use grin_wallet_libwallet::{AcctPathMapping, BlockFees, CbData, NodeClient, Slate, TxLogEntry, TxWrapper,
                             WalletInfo, OutputCommitMapping, WalletInst, WalletLCProvider,
                             StatusMessage, TxLogEntryType, OutputData};
 use grin_core::core::Transaction;
 use grin_keychain::{Identifier};
 use grin_wallet_impls::keychain::Keychain;
-use grin_util::secp::key::{ PublicKey };
+use grin_util::secp::key::{ PublicKey, SecretKey};
 use crate::common::{Arc, Mutex, Error, ErrorKind};
 
 use grin_keychain::{SwitchCommitmentType, ExtKeychainPath};
 use grin_wallet_libwallet::internal::{updater,keys};
 use std::sync::mpsc;
-use crate::common::hasher;
+use grin_wallet_libwallet::proof::hasher;
 use std::sync::mpsc::Sender;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::JoinHandle;
@@ -1119,14 +1118,15 @@ pub fn invoice_tx<'a, L, C, K>(
             .tx_slate_id
             .ok_or_else(|| ErrorKind::TransactionHasNoProof)?;
         TxProof::get_stored_tx_proof( w.get_data_file_dir(), &uuid.to_string())
+            .map_err(|_| ErrorKind::TxStoredProof.into())
     }
 
     pub fn verify_tx_proof(
         tx_proof: &TxProof,
     ) -> Result<
         (
-            Option<GrinboxAddress>,
-            GrinboxAddress,
+            Option<ProvableAddress>,
+            ProvableAddress,
             u64,
             Vec<pedersen::Commitment>,
             pedersen::Commitment,
@@ -1196,7 +1196,7 @@ pub fn invoice_tx<'a, L, C, K>(
         }
 
         return Ok((
-            destination,
+            Some(destination),
             tx_proof.address.clone(),
             tx_proof.amount,
             outputs,

@@ -894,7 +894,11 @@ checksum = "aa4da3c766cd7a0db8242e326e9e4e081edd567072893ed320008189715366a4"
 dependencies = [
  "proc-macro2 1.0.12",
  "quote 1.0.4",
+<<<<<<< HEAD
+ "syn 1.0.18",
+=======
  "syn 1.0.19",
+>>>>>>> remove grinbox feature
  "synstructure 0.12.3",
 ]
 
@@ -1282,7 +1286,11 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "3.1.8-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#d69abab23980942e4ca36457d1e20ee141ec1cd2"
+<<<<<<< HEAD
+source = "git+https://github.com/mwcproject/mwc-wallet#0e922fef4bbda795fa8fc3436d3234951fb8e9d8"
+=======
+source = "git+https://github.com/mwcproject/mwc-wallet#822ce9a77fdd2a60be08d4a5e1ceac8072a75469"
+>>>>>>> remove grinbox feature
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1307,7 +1315,11 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "3.1.8-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#d69abab23980942e4ca36457d1e20ee141ec1cd2"
+<<<<<<< HEAD
+source = "git+https://github.com/mwcproject/mwc-wallet#0e922fef4bbda795fa8fc3436d3234951fb8e9d8"
+=======
+source = "git+https://github.com/mwcproject/mwc-wallet#822ce9a77fdd2a60be08d4a5e1ceac8072a75469"
+>>>>>>> remove grinbox feature
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -1322,7 +1334,11 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "3.1.8-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#d69abab23980942e4ca36457d1e20ee141ec1cd2"
+<<<<<<< HEAD
+source = "git+https://github.com/mwcproject/mwc-wallet#0e922fef4bbda795fa8fc3436d3234951fb8e9d8"
+=======
+source = "git+https://github.com/mwcproject/mwc-wallet#822ce9a77fdd2a60be08d4a5e1ceac8072a75469"
+>>>>>>> remove grinbox feature
 dependencies = [
  "chrono",
  "colored",
@@ -1354,7 +1370,11 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "3.1.8-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#d69abab23980942e4ca36457d1e20ee141ec1cd2"
+<<<<<<< HEAD
+source = "git+https://github.com/mwcproject/mwc-wallet#0e922fef4bbda795fa8fc3436d3234951fb8e9d8"
+=======
+source = "git+https://github.com/mwcproject/mwc-wallet#822ce9a77fdd2a60be08d4a5e1ceac8072a75469"
+>>>>>>> remove grinbox feature
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1398,7 +1418,11 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "3.1.8-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#d69abab23980942e4ca36457d1e20ee141ec1cd2"
+<<<<<<< HEAD
+source = "git+https://github.com/mwcproject/mwc-wallet#0e922fef4bbda795fa8fc3436d3234951fb8e9d8"
+=======
+source = "git+https://github.com/mwcproject/mwc-wallet#822ce9a77fdd2a60be08d4a5e1ceac8072a75469"
+>>>>>>> remove grinbox feature
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1436,7 +1460,11 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "3.1.8-beta.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#d69abab23980942e4ca36457d1e20ee141ec1cd2"
+<<<<<<< HEAD
+source = "git+https://github.com/mwcproject/mwc-wallet#0e922fef4bbda795fa8fc3436d3234951fb8e9d8"
+=======
+source = "git+https://github.com/mwcproject/mwc-wallet#822ce9a77fdd2a60be08d4a5e1ceac8072a75469"
+>>>>>>> remove grinbox feature
 dependencies = [
  "dirs 1.0.5",
  "grin_api",
@@ -2906,9 +2934,9 @@ checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 
 [[package]]
 name = "serde"
-version = "1.0.107"
+version = "1.0.106"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eba7550f2cdf88ffc23ab0f1607133486c390a8c0f89b57e589b9654ee15e04d"
+checksum = "36df6ac6412072f67cf767ebbde4133a5b2e88e76dc6187fa7104cd16f783399"
 dependencies = [
  "serde_derive",
 ]
@@ -2925,13 +2953,17 @@ dependencies = [
 
 [[package]]
 name = "serde_derive"
-version = "1.0.107"
+version = "1.0.106"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10be45e22e5597d4b88afcc71f9d7bfadcd604bf0c78a3ab4582b8d2b37f39f3"
+checksum = "9e549e3abf4fb8621bd1609f11dfc9f5e50320802273b12f3811a67e6716ea6c"
 dependencies = [
  "proc-macro2 1.0.12",
  "quote 1.0.4",
+<<<<<<< HEAD
+ "syn 1.0.18",
+=======
  "syn 1.0.19",
+>>>>>>> remove grinbox feature
 ]
 
 [[package]]
@@ -3166,7 +3198,11 @@ checksum = "67656ea1dc1b41b1451851562ea232ec2e5a80242139f7e679ceccfb5d61f545"
 dependencies = [
  "proc-macro2 1.0.12",
  "quote 1.0.4",
+<<<<<<< HEAD
+ "syn 1.0.18",
+=======
  "syn 1.0.19",
+>>>>>>> remove grinbox feature
  "unicode-xid 0.2.0",
 ]
 
