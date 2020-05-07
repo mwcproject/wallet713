@@ -8,9 +8,12 @@ use serde::Serialize;
 use serde_json::{json, Value};
 
 use grin_wallet_libwallet::Slate;
-use super::types::{CloseReason, Publisher, Subscriber, SubscriptionHandler};
+use grin_wallet_impls:: {
+    Publisher, Subscriber, SubscriptionHandler, CloseReason,
+
+};
 use common::{Arc, Mutex, Error, ErrorKind};
-use contacts::{Address, KeybaseAddress};
+use grin_wallet_impls::{Address, KeybaseAddress,};
 use std::path::Path;
 
 pub const TOPIC_SLATE_NEW: &str = "grin_slate_new";
@@ -61,7 +64,7 @@ impl Publisher for KeybasePublisher {
             None => TOPIC_WALLET713_SLATES,
         };
 
-        KeybaseBroker::send(&slate, &to.stripped(), topic, ttl, self.keybase_binary.clone())?;
+        KeybaseBroker::send(&slate, &to.get_stripped(), topic, ttl, self.keybase_binary.clone())?;
 
         Ok(())
     }
@@ -104,7 +107,7 @@ impl Subscriber for KeybaseSubscriber {
                         username: sender.to_string(),
                         topic: Some(reply_topic),
                     };
-                    handler.on_slate(address.borrow(), &mut slate, None, None);
+                    handler.on_slate(address.borrow(), &mut slate, None);
                 }
             } else {
                 if !dropped {

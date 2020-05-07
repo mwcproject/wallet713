@@ -2,8 +2,6 @@ use failure::Fail;
 
 #[derive(Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ErrorKind {
-    #[fail(display = "secp error, {}", _0)]
-    Secp(String),
     #[fail(display = "Transaction model not found!")]
     TransactionModelNotFound,
     #[fail(display = "could not open wallet seed!")]
@@ -80,11 +78,7 @@ pub enum ErrorKind {
         0
     )]
     ClosedListener(String),
-    #[fail(
-        display = "{} Sender returned invalid response.",
-        0
-    )]
-    InvalidRespose(String),
+
     #[fail(
         display = "listener for {} already started!",
         0
@@ -100,35 +94,10 @@ pub enum ErrorKind {
         0
     )]
     ContactNotFound(String),
-    #[fail(display = "invalid character!")]
-    InvalidBase58Character(char, usize),
-    #[fail(display = "invalid length!")]
-    InvalidBase58Length,
-    #[fail(display = "invalid checksum!")]
-    InvalidBase58Checksum,
-    #[fail(display = "invalid network!")]
-    InvalidBase58Version,
-    #[fail(display = "invalid key!")]
-    InvalidBase58Key,
+
     #[fail(display = "could not parse number from string!")]
     NumberParsingError,
-    #[fail(display = "unknown address type `{}`!", 0)]
-    UnknownAddressType(String),
-    #[fail(
-        display = "could not parse `{}` to a mwcmq address!",
-        0
-    )]
-    GrinboxAddressParsingError(String),
-    #[fail(
-        display = "could not parse `{}` to a keybase address!",
-        0
-    )]
-    KeybaseAddressParsingError(String),
-    #[fail(
-        display = "could not parse `{}` to a https address!",
-        0
-    )]
-    HttpsAddressParsingError(String),
+
     #[fail(display = "could not send keybase message!, {}", _0)]
     KeybaseMessageSendError(String),
     #[fail(display = "failed receiving slate!, {}", _0)]
@@ -143,8 +112,6 @@ pub enum ErrorKind {
         display = "keybase not found! consider installing keybase locally first."
     )]
     KeybaseNotFound,
-    #[fail(display = "mwcmq websocket terminated unexpectedly!")]
-    GrinboxWebsocketAbnormalTermination,
     #[fail(
         display = "rejecting invoice as auto invoice acceptance is turned off!"
     )]
@@ -160,10 +127,9 @@ pub enum ErrorKind {
     HasListener,
     #[fail(display = "wallet already unlocked")]
     WalletAlreadyUnlocked,
-    #[fail(display = "unable to encrypt message, {}", _0)]
-    Encryption(String),
-    #[fail(display = "unable to decrypt message, {}", _0)]
-    Decryption(String),
+    #[fail(display = "Error getting tx proof stored")]
+    TxStoredProof,
+
     #[fail(display = "http request error, {}", _0)]
     HttpRequest(String),
     #[fail(display = "Generic error, {}", 0)]
@@ -177,25 +143,6 @@ pub enum ErrorKind {
     #[fail(display = "unable to create the file '{}', {}", _0, _1)]
     FileUnableToCreate(String, String),
 
-    #[fail(display = "Tx Proof unable to parse address '{}'", 0)]
-    TxProofParseAddress(String),
-    #[fail(display = "Tx Proof unable to parse an address as a public key")]
-    TxProofParsePublicKey,
-
-    #[fail(display = "Tx Proof unable to parse signature '{}'", 0)]
-    TxProofParseSignature(String),
-
-    #[fail(display = "Tx Proof unable to verify signature")]
-    TxProofVerifySignature,
-    #[fail(display = "Tx Proof unable to parse ecrypted message")]
-    TxProofParseEncryptedMessage,
-    #[fail(display = "Tx Proof unable to verify destination address")]
-    TxProofVerifyDestination,
-
-    #[fail(display = "Tx Proof unable to build a key")]
-    TxProofDecryptionKey,
-    #[fail(display = "Tx Proof unable to decrypt the message")]
-    TxProofDecryptMessage,
-    #[fail(display = "Tx Proof unable to build a slate from the message, {}", _0)]
-    TxProofParseSlate(String),
+    #[fail(display = "uanble to get public key")]
+    GetPublicKey,
 }

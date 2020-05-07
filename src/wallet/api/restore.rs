@@ -18,7 +18,7 @@ use grin_wallet_libwallet::{NodeClient, WalletBackend};
 use grin_util::secp::key::PublicKey;
 use failure::Error;
 use grin_wallet_impls::keychain::Keychain;
-use common::crypto::Hex;
+use grin_wallet_libwallet::proof::crypto::Hex;
 use std::fs::OpenOptions;
 
 struct PubKeyInfo {

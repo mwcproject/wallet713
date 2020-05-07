@@ -17,20 +17,16 @@ extern crate blake2_rfc;
 extern crate chrono;
 extern crate ansi_term;
 extern crate colored;
-extern crate digest;
 extern crate failure;
 extern crate futures;
 extern crate gotham;
 extern crate rustls;
-extern crate hmac;
 extern crate hyper;
 extern crate hyper_rustls;
 extern crate mime;
 extern crate parking_lot;
 extern crate rand;
-extern crate regex;
 extern crate ring;
-extern crate ripemd160;
 extern crate rpassword;
 extern crate rustyline;
 extern crate serde;
@@ -96,14 +92,21 @@ use cli::Parser;
 use common::config::Wallet713Config;
 use common::{ErrorKind, Error, RuntimeMode, COLORED_PROMPT, PROMPT, post, Arc, Mutex};
 use wallet::Wallet;
+use contacts::DEFAULT_MWCMQS_PORT;
+use contacts::DEFAULT_MWCMQS_DOMAIN;
 
-use crate::wallet::types::TxProof;
+use grin_wallet_libwallet::proof::tx_proof::TxProof;
 use grin_wallet_libwallet::Slate;
 use grin_util::secp::key::PublicKey;
+use grin_wallet_impls:: {
+    MWCMQPublisher, MWCMQSubscriber, MWCMQSAddress, Publisher, Subscriber, SubscriptionHandler, Address, AddressType,
+    CloseReason, KeybaseAddress,
 
-use contacts::{Address, AddressBook, AddressType, Backend, Contact, GrinboxAddress};
+};
 
-use common::crypto::Hex;
+use contacts::{AddressBook, Backend, Contact,};
+
+use grin_wallet_libwallet::proof::crypto::Hex;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
@@ -203,12 +206,12 @@ fn do_contacts(args: &ArgMatches, address_book: Arc<Mutex<AddressBook>>) -> Resu
             .value_of("address")
             .expect("missing argument: address");
 
-        // try parse as a general address and fallback to mwcmq address
+        // try parse as a general address and fallback to mwcmqs address
         let contact_address = Address::parse(address);
         let contact_address: Result<Box<dyn Address>, Error> = match contact_address {
             Ok(address) => Ok(address),
             Err(e) => {
-                Ok(Box::new(GrinboxAddress::from_str(address).map_err(|_| e)?) as Box<dyn Address>)
+                Ok(Box::new(MWCMQSAddress::from_str(address).map_err(|_| e)?) as Box<dyn Address>)
             }
         };
 
@@ -255,9 +258,9 @@ fn welcome(args: &ArgMatches, runtime_mode: &RuntimeMode) -> Result<Wallet713Con
 }
 
 use broker::{
-    CloseReason, GrinboxPublisher, GrinboxSubscriber, KeybasePublisher, KeybaseSubscriber,
-    MWCMQPublisher, MWCMQSubscriber,
-    Publisher, Subscriber, SubscriptionHandler,
+    KeybasePublisher, KeybaseSubscriber,
+//    MWCMQPublisher, MWCMQSubscriber,
+ //   Publisher, Subscriber, SubscriptionHandler, yang todo remove this
 };
 use std::borrow::Borrow;
 use uuid::Uuid;
@@ -267,6 +270,7 @@ use std::collections::HashSet;
 struct Controller {
     name: String,
     wallet: Arc<Mutex<Wallet>>,
+    config: Option<Wallet713Config>,
     address_book: Arc<Mutex<AddressBook>>,
     publisher: Box<dyn Publisher + Send>,
 }
@@ -275,12 +279,14 @@ impl Controller {
     pub fn new(
         name: &str,
         wallet: Arc<Mutex<Wallet>>,
+        config: Option<Wallet713Config>,
         address_book: Arc<Mutex<AddressBook>>,
         publisher: Box<dyn Publisher + Send>,
     ) -> Result<Self, Error> {
         Ok(Self {
             name: name.to_string(),
             wallet,
+            config,
             address_book,
             publisher,
         })
@@ -291,7 +297,6 @@ impl Controller {
         address: Option<String>,
         slate: &mut Slate,
         tx_proof: Option<&mut TxProof>,
-        config: Option<Wallet713Config>,
         dest_acct_name: Option<&str>,
     ) -> Result<bool, Error> {
         if slate.num_participants > slate.participant_data.len() {
@@ -304,16 +309,16 @@ impl Controller {
 
                 unsafe {
                     let mut dest_acct_name : Option<String> = dest_acct_name.map(|s| String::from(s));
-                    if config.is_some() && RECV_ACCOUNT.is_some() {
+                    if self.config.is_some() && RECV_ACCOUNT.is_some() {
                         let dst_account = RECV_ACCOUNT.clone().unwrap();
-                        w.unlock(&config.clone().unwrap(), &dst_account, RECV_PASS.clone().unwrap_or_else(|| grin_util::ZeroingString::from("")) )?;
+                        w.unlock(&self.config.clone().unwrap(), &dst_account, RECV_PASS.clone().unwrap_or_else(|| grin_util::ZeroingString::from("")) )?;
                         dest_acct_name = Some(dst_account);
                     }
 
                     w.process_sender_initiated_slate(address, slate, None, None, dest_acct_name.as_deref() )?;
 
-                    if config.is_some() && RECV_ACCOUNT.is_some() {
-                        w.unlock(&config.unwrap(), &old_account, RECV_PASS.clone().unwrap_or_else(|| grin_util::ZeroingString::from("")))?;
+                    if self.config.is_some() && RECV_ACCOUNT.is_some() {
+                        w.unlock(self.config.as_ref().unwrap(), &old_account, RECV_PASS.clone().unwrap_or_else(|| grin_util::ZeroingString::from("")))?;
                     }
                 }
             }
@@ -339,8 +344,8 @@ impl SubscriptionHandler for Controller {
         print!("{}", COLORED_PROMPT);
     }
 
-    fn on_slate(&self, from: &dyn Address, slate: &mut Slate, tx_proof: Option<&mut TxProof>, config: Option<Wallet713Config>) {
-        let mut display_from = from.stripped();
+    fn on_slate(&self, from: &dyn Address, slate: &mut Slate, tx_proof: Option<&mut TxProof>) {
+        let mut display_from = from.get_stripped();
         if let Ok(contact) = self
             .address_book
             .lock()
@@ -377,8 +382,8 @@ impl SubscriptionHandler for Controller {
             );
         };
 
-        if from.address_type() == AddressType::Grinbox {
-            GrinboxAddress::from_str(&from.to_string()).expect("invalid mwcmq address");
+        if from.address_type() == AddressType::MWCMQS {
+            MWCMQSAddress::from_str(&from.to_string()).expect("invalid mwcmqs address");
         }
 
 
@@ -389,7 +394,7 @@ impl SubscriptionHandler for Controller {
         };
 
         let result = self
-            .process_incoming_slate(Some(from.to_string()), slate, tx_proof, config, Some(&account) )
+            .process_incoming_slate(Some(from.to_string()), slate, tx_proof, Some(&account) )
             .and_then(|is_finalized| {
                 if !is_finalized {
                     self.publisher
@@ -460,11 +465,14 @@ fn start_mwcmqs_listener(
 
     let mwcmqs_address = config.get_mwcmqs_address()?;
     let mwcmqs_secret_key = config.get_mwcmqs_secret_key()?;
+    let addr_name = mwcmqs_address.get_stripped();
 
     let mwcmqs_publisher = MWCMQPublisher::new(
-        &mwcmqs_address,
+        mwcmqs_address,
         &mwcmqs_secret_key,
-        config,
+        config.clone().mwcmqs_domain.unwrap_or(DEFAULT_MWCMQS_DOMAIN.to_string()),
+        config.clone().mwcmqs_port.unwrap_or(DEFAULT_MWCMQS_PORT),
+        false,
     )?;
 
     let mwcmqs_subscriber = MWCMQSubscriber::new(
@@ -473,13 +481,15 @@ fn start_mwcmqs_listener(
 
     let cloned_publisher = mwcmqs_publisher.clone();
     let mut cloned_subscriber = mwcmqs_subscriber.clone();
+    let config_clone = config.clone();
 
     let _ = thread::Builder::new()
         .name("mwcmqs-brocker".to_string())
         .spawn(move || {
             let controller = Controller::new(
-                &mwcmqs_address.stripped(),
+                &addr_name,
                 wallet.clone(),
+                Some(config_clone),
                 address_book.clone(),
                 Box::new(cloned_publisher),
             )
@@ -490,54 +500,6 @@ fn start_mwcmqs_listener(
         })?;
 
     Ok((mwcmqs_publisher, mwcmqs_subscriber))
-}
-
-fn start_grinbox_listener(
-    config: &Wallet713Config,
-    wallet: Arc<Mutex<Wallet>>,
-    address_book: Arc<Mutex<AddressBook>>,
-) -> Result<(GrinboxPublisher, GrinboxSubscriber, std::thread::JoinHandle<()>), Error> {
-    // make sure wallet is not locked, if it is try to unlock with no passphrase
-    {
-        let mut wallet = wallet.lock();
-        if wallet.is_locked() {
-            wallet.unlock(config, "default", grin_util::ZeroingString::from(""))?;
-        }
-    }
-
-    println!("starting mwcmq listener...");
-    let grinbox_address = config.get_grinbox_address()?;
-    let grinbox_secret_key = config.get_grinbox_secret_key()?;
-
-    let grinbox_publisher = GrinboxPublisher::new(
-        &grinbox_address,
-        &grinbox_secret_key,
-        config.grinbox_protocol_unsecure(),
-        config,
-    )?;
-
-    let grinbox_subscriber = GrinboxSubscriber::new(
-        &grinbox_publisher
-    )?;
-
-    let cloned_publisher = grinbox_publisher.clone();
-    let mut cloned_subscriber = grinbox_subscriber.clone();
-
-    let grinbox_listener_handle = thread::Builder::new()
-        .name("mq-grinbox-brocker".to_string())
-        .spawn(move || {
-            let controller = Controller::new(
-                &grinbox_address.stripped(),
-                wallet.clone(),
-                address_book.clone(),
-                Box::new(cloned_publisher),
-            )
-            .expect("could not start mwcmq controller!");
-            cloned_subscriber
-                .start(Box::new(controller))
-                .expect("something went wrong!");
-        })?;
-    Ok((grinbox_publisher, grinbox_subscriber, grinbox_listener_handle))
 }
 
 fn start_keybase_listener(
@@ -567,6 +529,7 @@ fn start_keybase_listener(
             let controller = Controller::new(
                 "keybase",
                 wallet.clone(),
+                None, //It is ok to pass None here.
                 address_book.clone(),
                 Box::new(cloned_publisher),
             )
@@ -682,7 +645,6 @@ fn main() {
     let wallet = Wallet::new(config.max_auto_accept_invoice);
     let wallet = Arc::new(Mutex::new(wallet));
 
-    let mut grinbox_broker: Option<(GrinboxPublisher, GrinboxSubscriber)> = None;
     let mut keybase_broker: Option<(KeybasePublisher, KeybaseSubscriber)> = None;
     let mut mwcmqs_broker: Option<(MWCMQPublisher, MWCMQSubscriber)> = None;
 
@@ -738,7 +700,7 @@ fn main() {
                 println!("Set an optional password to secure your wallet with. Leave blank for no password.");
                 println!();
                 let cmd = format!("init -p {}", &passphrase);
-                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut grinbox_broker, &mut mwcmqs_broker, &mut out_is_safe) {
+                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker,  &mut mwcmqs_broker, &mut out_is_safe) {
                     println!("{}: {}", "ERROR".bright_red(), err);
                     std::process::exit(1);
                 }
@@ -766,7 +728,7 @@ fn main() {
                 println!();
                 // TODO: refactor this
                 let cmd = format!("recover -m {} -p {}", mnemonic, &passphrase);
-                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut grinbox_broker, &mut mwcmqs_broker, &mut out_is_safe) {
+                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut mwcmqs_broker, &mut out_is_safe) {
                     println!("{}: {}", "ERROR".bright_red(), err);
                     std::process::exit(1);
                 }
@@ -808,7 +770,7 @@ fn main() {
         };
 
         if has_wallet {
-            let der = derive_address_key(&mut config, wallet.clone(), &mut grinbox_broker);
+            let der = derive_address_key(&mut config, wallet.clone());
             if der.is_err() {
                 cli_message!("{}: {}", "ERROR".bright_red(), der.unwrap_err());
             }
@@ -889,8 +851,7 @@ fn main() {
                 let router = build_owner_api_router(
                     wallet.clone(),
                     mwcmqs_broker.clone(),
-                    grinbox_broker.clone(),
-                    keybase_broker.clone(),
+                      keybase_broker.clone(),
                     config.owner_api_secret.clone(),
                     config.owner_api_include_foreign,
                     config.clone(),
@@ -925,7 +886,6 @@ fn main() {
                 let router = build_foreign_api_router(
                     wallet.clone(),
                     mwcmqs_broker.clone(),
-                    grinbox_broker.clone(),
                     keybase_broker.clone(),
                     config.foreign_api_secret.clone(),
                     config.clone(),
@@ -1025,7 +985,6 @@ fn main() {
                     wallet.clone(),
                     address_book.clone(),
                     &mut keybase_broker,
-                    &mut grinbox_broker,
                     &mut mwcmqs_broker,
                     &mut out_is_safe,
                 );
@@ -1057,11 +1016,7 @@ fn main() {
 fn derive_address_key(
     config: &mut Wallet713Config,
     wallet: Arc<Mutex<Wallet>>,
-    grinbox_broker: &mut Option<(GrinboxPublisher, GrinboxSubscriber)>,
 ) -> Result<(), Error> {
-    if grinbox_broker.is_some() {
-        return Err(ErrorKind::HasListener.into());
-    }
     let index = config.grinbox_address_index();
     let key = wallet.lock().derive_address_key(index)?;
     config.grinbox_address_key = Some(key);
@@ -1069,11 +1024,12 @@ fn derive_address_key(
     Ok(())
 }
 
+
 fn show_address(config: &Wallet713Config, include_index: bool) -> Result<(), Error> {
     println!(
         "{}: {}",
-        "Your mwcmq address".bright_yellow(),
-        config.get_grinbox_address()?.stripped().bright_green()
+        "Your mwcmqs address".bright_yellow(),
+        config.get_mwcmqs_address()?.get_stripped().bright_green()
     );
     if include_index {
         println!(
@@ -1140,7 +1096,6 @@ fn do_command(
     wallet: Arc<Mutex<Wallet>>,
     address_book: Arc<Mutex<AddressBook>>,
     keybase_broker: &mut Option<(KeybasePublisher, KeybaseSubscriber)>,
-    grinbox_broker: &mut Option<(GrinboxPublisher, GrinboxSubscriber)>,
     mwcmqs_broker: &mut Option<(MWCMQPublisher, MWCMQSubscriber)>,
     out_is_safe: &mut bool,
 ) -> Result<(), Error> {
@@ -1175,7 +1130,7 @@ fn do_command(
             )?;
 
             if new_address_index.is_some() {
-                derive_address_key(config, wallet, grinbox_broker)?;
+                derive_address_key(config, wallet)?;
                 cli_message!(
                     "Derived with index [{}]",
                     config.grinbox_address_index().to_string().bright_blue()
@@ -1187,7 +1142,7 @@ fn do_command(
         }
         Some("init") => {
             *out_is_safe = false;
-            if keybase_broker.is_some() || grinbox_broker.is_some() {
+            if keybase_broker.is_some() {
                 return Err(ErrorKind::HasListener.into());
             }
             let args = matches.subcommand_matches("init").unwrap();
@@ -1218,12 +1173,12 @@ fn do_command(
                 wallet_inst.complete(seed, config, "default", passphrase, true)?;
                 wallet_inst.update_tip_as_last_scanned()?;
             }
-            derive_address_key(config, wallet, grinbox_broker)?;
+            derive_address_key(config, wallet)?;
 
             return Ok(());
         }
         Some("lock") => {
-            if keybase_broker.is_some() || grinbox_broker.is_some() {
+            if keybase_broker.is_some()  {
                 return Err(ErrorKind::HasListener.into());
             }
             wallet.lock().lock();
@@ -1245,7 +1200,7 @@ fn do_command(
                 w.unlock(config, account, ZeroingString::from(passphrase.as_str()))?;
             }
 
-            derive_address_key(config, wallet, grinbox_broker)?;
+            derive_address_key(config, wallet)?;
             return Ok(());
         }
         Some("accounts") => {
@@ -1282,28 +1237,11 @@ fn do_command(
                 .subcommand_matches("listen")
                 .unwrap()
                 .is_present("mwcmqs");
-            let grinbox = matches
-                .subcommand_matches("listen")
-                .unwrap()
-                .is_present("grinbox");
             let keybase = matches
                 .subcommand_matches("listen")
                 .unwrap()
                 .is_present("keybase");
-            if grinbox {
-                let is_running = match grinbox_broker {
-                    Some((_, subscriber)) => subscriber.is_running(),
-                    _ => false,
-                };
-                if is_running {
-                    Err(ErrorKind::AlreadyListening("mwcmq".to_string()))?
-                } else {
-                    let (publisher, subscriber, _) =
-                        start_grinbox_listener(config, wallet.clone(), address_book.clone())?;
-                    *grinbox_broker = Some((publisher, subscriber));
-                }
-            }
-            if mwcmqs || (!keybase && !grinbox) {
+            if mwcmqs || !keybase {
                 let is_running = match mwcmqs_broker {
                     Some((_, subscriber)) => subscriber.is_running(),
                     _ => false,
@@ -1312,7 +1250,7 @@ fn do_command(
                     Err(ErrorKind::AlreadyListening("mwcmqs".to_string()))?
                 } else {
                     let (publisher, subscriber) = 
-                        start_mwcmqs_listener(config, wallet.clone(), address_book.clone())?;
+                        start_mwcmqs_listener(&config, wallet.clone(), address_book.clone())?;
                     *mwcmqs_broker = Some((publisher, subscriber));
                 }
             }
@@ -1325,7 +1263,7 @@ fn do_command(
                     Err(ErrorKind::AlreadyListening("keybase".to_string()))?
                 } else {
                     let (publisher, subscriber, _) =
-                        start_keybase_listener(config, wallet.clone(), address_book.clone())?;
+                        start_keybase_listener(&config, wallet.clone(), address_book.clone())?;
                     *keybase_broker = Some((publisher, subscriber));
                 }
             }
@@ -1335,30 +1273,12 @@ fn do_command(
                 .subcommand_matches("stop")
                 .unwrap()
                 .is_present("mwcmqs");
-            let grinbox = matches
-                .subcommand_matches("stop")
-                .unwrap()
-                .is_present("grinbox");
             let keybase = matches
                 .subcommand_matches("stop")
                 .unwrap()
                 .is_present("keybase");
-            if grinbox {
-                let is_running = match grinbox_broker {
-                    Some((_, subscriber)) => subscriber.is_running(),
-                    _ => false,
-                };
-                if is_running {
-                    cli_message!("stopping mwcmq listener...");
-                    if let Some((_, subscriber)) = grinbox_broker {
-                        subscriber.stop();
-                    };
-                    *grinbox_broker = None;
-                } else {
-                    Err(ErrorKind::ClosedListener("mwcmq".to_string()))?
-                }
-            }
-            if mwcmqs || (!keybase && !grinbox) {
+
+            if mwcmqs || !keybase {
                 let is_running = match mwcmqs_broker {
                     Some((_, subscriber)) => subscriber.is_running(),
                     _ => false,
@@ -1742,18 +1662,18 @@ fn do_command(
                 to = contact.get_address().to_string();
                 display_to = Some(contact.get_name().to_string());
             }
-            // try parse as a general address and fallback to mwcmq address
+            // try parse as a general address and fallback to mwcmqs address
             let address = Address::parse(&to);
             let address: Result<Box<dyn Address>, Error> = match address {
                 Ok(address) => Ok(address),
                 Err(e) => {
-                    Ok(Box::new(GrinboxAddress::from_str(&to).map_err(|_| e)?) as Box<dyn Address>)
+                    Ok(Box::new(MWCMQSAddress::from_str(&to).map_err(|_| e)?) as Box<dyn Address>)
                 }
             };
 
             let to = address?;
             if display_to.is_none() {
-                display_to = Some(to.stripped());
+                display_to = Some(to.get_stripped());
             }
 
             let w = wallet.lock();
@@ -1785,7 +1705,7 @@ fn do_command(
                 AddressType::MWCMQS => {
                     if let Some((publisher, _)) = mwcmqs_broker {
                         let mwcmqs_address =
-                            contacts::MWCMQSAddress::from_str(&to.to_string())?;
+                            MWCMQSAddress::from_str(&to.to_string())?;
                         publisher.post_slate(&slate, mwcmqs_address.borrow())?;
                     } else {
                         return Err(ErrorKind::ClosedListener("mwcmqs".to_string()).into());
@@ -1794,18 +1714,11 @@ fn do_command(
                 AddressType::Keybase => {
                     if let Some((publisher, _)) = keybase_broker {
                         let mut keybase_address =
-                            contacts::KeybaseAddress::from_str(&to.to_string())?;
+                            KeybaseAddress::from_str(&to.to_string())?;
                         keybase_address.topic = Some(broker::TOPIC_SLATE_NEW.to_string());
                         publisher.post_slate(&slate, keybase_address.borrow())?;
                     } else {
                         return Err(ErrorKind::ClosedListener("keybase".to_string()).into());
-                    }
-                }
-                AddressType::Grinbox => {
-                    if let Some((publisher, _)) = grinbox_broker {
-                        publisher.post_slate(&slate, to.borrow())?;
-                    } else {
-                        return Err(ErrorKind::ClosedListener("mwcmq".to_string()).into());
                     }
                 }
                 AddressType::Https => {
@@ -1888,13 +1801,13 @@ fn do_command(
             let address: Result<Box<dyn Address>, Error> = match address {
                 Ok(address) => Ok(address),
                 Err(e) => {
-                    Ok(Box::new(GrinboxAddress::from_str(&to).map_err(|_| e)?) as Box<dyn Address>)
+                    Ok(Box::new(MWCMQSAddress::from_str(&to).map_err(|_| e)?) as Box<dyn Address>)
                 }
             };
 
             let to = address?;
             if display_to.is_none() {
-                display_to = Some(to.stripped());
+                display_to = Some(to.get_stripped());
             }
 
             let slate = wallet.lock().initiate_receive_tx(Some(to.to_string()) ,amount, outputs)?;
@@ -1916,14 +1829,6 @@ fn do_command(
                         Err(ErrorKind::ClosedListener("mwcmqs".to_string()))?
                     }
                 }
-                AddressType::Grinbox => {
-                    if let Some((publisher, _)) = grinbox_broker {
-                        publisher.post_slate(&slate, to.borrow())?;
-                        Ok(slate)
-                    } else {
-                        Err(ErrorKind::ClosedListener("mwcmq".to_string()))?
-                    }
-                }
                 _ => Err(ErrorKind::HttpRequest(format!("Invoice doesn't support address type: {:?}", to.address_type())).into()),
             };
 
@@ -1938,7 +1843,7 @@ fn do_command(
         }
         Some("restore") => {
             *out_is_safe = false;
-            if keybase_broker.is_some() || grinbox_broker.is_some() {
+            if keybase_broker.is_some() {
                 return Err(ErrorKind::HasListener.into());
             }
             let args = matches.subcommand_matches("restore").unwrap();
@@ -1960,7 +1865,7 @@ fn do_command(
                 w.update_tip_as_last_scanned()?;
             }
 
-            derive_address_key(config, wallet, grinbox_broker)?;
+            derive_address_key(config, wallet)?;
             if passphrase.is_empty() {
                 println!("{}: wallet with no passphrase.", "WARNING".bright_yellow());
             }
@@ -1970,7 +1875,7 @@ fn do_command(
         }
         Some("recover") => {
             *out_is_safe = false;
-            if keybase_broker.is_some() || grinbox_broker.is_some() {
+            if keybase_broker.is_some()  {
                 return Err(ErrorKind::HasListener.into());
             }
             let args = matches.subcommand_matches("recover").unwrap();
@@ -2010,7 +1915,7 @@ fn do_command(
                     }
                 }
 
-                derive_address_key(config, wallet, grinbox_broker)?;
+                derive_address_key(config, wallet)?;
                 if passphrase.is_empty() {
                     println!("{}: wallet with no passphrase.", "WARNING".bright_yellow());
                 }
@@ -2031,7 +1936,7 @@ fn do_command(
             let start_height = u64::from_str_radix(start_height, 10)
                 .map_err(|_| ErrorKind::InvalidNumOutputs(start_height.to_string()))?;
 
-            if keybase_broker.is_some() || grinbox_broker.is_some() || mwcmqs_broker.is_some() {
+            if keybase_broker.is_some() || mwcmqs_broker.is_some() {
                 return Err(ErrorKind::HasListener.into());
             }
             println!("checking and repairing... please wait as this could take a few minutes to complete.");

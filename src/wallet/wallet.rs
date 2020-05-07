@@ -11,8 +11,8 @@ use grin_wallet_impls::node_clients::HTTPNodeClient;
 use grin_keychain::keychain::ExtKeychain;
 use crate::common::{Arc, Mutex};
 
-use crate::common::crypto::Hex;
-use crate::wallet::types::TxProof;
+use grin_wallet_libwallet::proof::crypto::Hex;
+use grin_wallet_libwallet::proof::tx_proof::TxProof;
 use crate::wallet::api::api;
 use grin_util::ZeroingString;
 use grin_wallet_impls::{DefaultWalletImpl, DefaultLCProvider};

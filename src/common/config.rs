@@ -7,11 +7,14 @@ use std::path::{Path, PathBuf};
 use grin_core::global::ChainTypes;
 use grin_util::logger::LoggingConfig;
 
-use super::crypto::{public_key_from_secret_key, PublicKey, SecretKey};
+use grin_wallet_libwallet::proof::crypto::{public_key_from_secret_key};
+use grin_util::secp::key::{PublicKey, SecretKey};
+use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
 use super::ErrorKind;
 use super::is_cli;
-use crate::contacts::{GrinboxAddress, MWCMQSAddress, DEFAULT_GRINBOX_PORT};
+use crate::contacts::{ DEFAULT_GRINBOX_PORT};
 use crate::common::Error;
+use grin_wallet_impls::MWCMQSAddress;
 
 const WALLET713_HOME: &str = ".mwc713";
 const WALLET713_DEFAULT_CONFIG_FILENAME: &str = "wallet713.toml";
@@ -246,7 +249,7 @@ impl Wallet713Config {
     pub fn get_mwcmqs_address(&self) -> Result<MWCMQSAddress, Error> {
         let public_key = self.get_grinbox_public_key()?;
         Ok(MWCMQSAddress::new(
-            public_key,
+            ProvableAddress::from_pub_key(&public_key),
             Some(self.mwcmqs_domain()),
             self.mwcmqs_port,
         ))
@@ -261,37 +264,19 @@ impl Wallet713Config {
             .ok_or_else(|| ErrorKind::NoWallet.into())
     }
 
-    pub fn grinbox_protocol_unsecure(&self) -> bool {
-        self.grinbox_protocol_unsecure.unwrap_or(cfg!(windows))
-    }
-
-    pub fn get_mwcmq_domain(&self) -> String {
-         self.mwcmq_domain.clone().unwrap_or("mq.mwc.mw".to_string())
-    }
 
     pub fn mwcmqs_domain(&self) -> String {
         self.mwcmqs_domain.clone().unwrap_or("mqs.mwc.mw".to_string())
     }
 
-    pub fn mwcmqs_port(&self) -> u16 {
-        self.mwcmqs_port.unwrap_or(443)
-    }
-
-    pub fn grinbox_address_index(&self) -> u32 {
+     pub fn grinbox_address_index(&self) -> u32 {
         self.grinbox_address_index.unwrap_or(0)
     }
 
-    pub fn get_grinbox_address(&self) -> Result<GrinboxAddress, Error> {
-        let public_key = self.get_grinbox_public_key()?;
-        Ok(GrinboxAddress::new(
-            public_key,
-            Some(self.get_mwcmq_domain()),
-            self.mwcmq_port,
-        ))
-    }
 
     pub fn get_grinbox_public_key(&self) -> Result<PublicKey, Error> {
         public_key_from_secret_key(&self.get_grinbox_secret_key()?)
+            .map_err(|_| ErrorKind::GetPublicKey.into())
     }
 
     pub fn get_grinbox_secret_key(&self) -> Result<SecretKey, Error> {

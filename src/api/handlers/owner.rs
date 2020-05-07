@@ -21,10 +21,13 @@ use crate::api::error::ApiError;
 use crate::api::router::{
     trace_create_response, trace_state, trace_state_and_body, WalletContainer,
 };
-use crate::broker::Publisher;
 use crate::common::ErrorKind;
-use crate::contacts::{Address, MWCMQSAddress, KeybaseAddress};
+use grin_wallet_impls:: {
+    MWCMQSAddress, Address, KeybaseAddress,
+
+};
 use grin_wallet_libwallet::Slate;
+use grin_wallet_impls:: Publisher;
 
 #[allow(non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
