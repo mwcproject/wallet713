@@ -11,7 +11,6 @@ use grin_wallet_libwallet::proof::crypto::{public_key_from_secret_key};
 use grin_util::secp::key::{PublicKey, SecretKey};
 use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
 use super::ErrorKind;
-use super::is_cli;
 use crate::contacts::{ DEFAULT_GRINBOX_PORT};
 use crate::common::Error;
 use grin_wallet_impls::MWCMQSAddress;
@@ -19,7 +18,7 @@ use grin_wallet_impls::MWCMQSAddress;
 const WALLET713_HOME: &str = ".mwc713";
 const WALLET713_DEFAULT_CONFIG_FILENAME: &str = "wallet713.toml";
 
-#[derive(Clone, Debug, Serialize, Deserialize, StateData, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Wallet713Config {
     pub chain: ChainTypes,
     pub wallet713_data_path: String,
@@ -286,7 +285,7 @@ impl Wallet713Config {
 
     pub fn get_grinbox_public_key(&self) -> Result<PublicKey, Error> {
         public_key_from_secret_key(&self.get_grinbox_secret_key()?)
-            .map_err(|_| ErrorKind::GetPublicKey.into())
+            .map_err(|e| ErrorKind::GetPublicKeyError(format!("Unable to tranfform public key, {}",e)).into())
     }
 
     pub fn get_grinbox_secret_key(&self) -> Result<SecretKey, Error> {
@@ -349,7 +348,7 @@ impl Wallet713Config {
     }
 
     pub fn grinbox_listener_auto_start(&self) -> bool {
-        self.grinbox_listener_auto_start.unwrap_or(is_cli())
+        self.grinbox_listener_auto_start.unwrap_or(true)
     }
 
     pub fn keybase_listener_auto_start(&self) -> bool {

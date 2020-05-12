@@ -6,8 +6,6 @@ extern crate log;
 #[macro_use]
 extern crate serde_json;
 #[macro_use]
-extern crate gotham_derive;
-#[macro_use]
 extern crate clap;
 #[macro_use]
 extern crate lazy_static;
@@ -19,7 +17,6 @@ extern crate ansi_term;
 extern crate colored;
 extern crate failure;
 extern crate futures;
-extern crate gotham;
 extern crate rustls;
 extern crate hyper;
 extern crate hyper_rustls;
@@ -90,16 +87,14 @@ use url::Url;
 
 #[macro_use]
 mod common;
-mod api;
 mod broker;
 mod cli;
 mod contacts;
 mod wallet;
 
-use api::router::{build_foreign_api_router, build_owner_api_router};
 use cli::Parser;
 use common::config::Wallet713Config;
-use common::{ErrorKind, Error, RuntimeMode, COLORED_PROMPT, post, Arc, Mutex};
+use common::{ErrorKind, Error, COLORED_PROMPT, post, Arc, Mutex};
 #[cfg(not(target_os = "android"))]
 use common::PROMPT;
 use wallet::Wallet;
@@ -124,11 +119,10 @@ use std::sync::mpsc;
 
 #[cfg(not(target_os = "android"))]
 const CLI_HISTORY_PATH: &str = ".history";
-static mut RECV_ACCOUNT: Option<String> = None;
-static mut RECV_PASS: Option<grin_util::ZeroingString> = None;
 
 // Slates that are scheduled to flaff instead of dandelion
 lazy_static! {
+    static ref RECV_ACCOUNT:   RwLock<Option<String>>  = RwLock::new(None);
     static ref FLUFFED_SLATES: RwLock<HashSet<String>> = RwLock::new(HashSet::new());
 }
 
@@ -262,14 +256,10 @@ fn do_contacts(args: &ArgMatches, address_book: Arc<Mutex<AddressBook>>) -> Resu
 const WELCOME_FOOTER: &str = r#"Use `help` to see available commands
 "#;
 
-fn welcome(args: &ArgMatches, runtime_mode: &RuntimeMode) -> Result<Wallet713Config, Error> {
+fn welcome(args: &ArgMatches) -> Result<Wallet713Config, Error> {
     let chain: ChainTypes = match args.is_present("floonet") {
         true => ChainTypes::Floonet,
         false => ChainTypes::Mainnet,
-    };
-
-    unsafe {
-        common::set_runtime_mode(runtime_mode);
     };
 
     let config = do_config(args, &chain, true, None, args.value_of("config-path"))?;
@@ -291,7 +281,7 @@ use std::collections::HashSet;
 struct Controller {
     name: String,
     wallet: Arc<Mutex<Wallet>>,
-    config: Option<Wallet713Config>,
+    //config: Option<Wallet713Config>,
     address_book: Arc<Mutex<AddressBook>>,
     publisher: Box<dyn Publisher + Send>,
 }
@@ -300,14 +290,16 @@ impl Controller {
     pub fn new(
         name: &str,
         wallet: Arc<Mutex<Wallet>>,
-        config: Option<Wallet713Config>,
+        //config: Option<Wallet713Config>,
         address_book: Arc<Mutex<AddressBook>>,
         publisher: Box<dyn Publisher + Send>,
     ) -> Result<Self, Error> {
+        // Wallet MUST be unlocked.
+        assert!(!wallet.lock().is_locked());
         Ok(Self {
             name: name.to_string(),
             wallet,
-            config,
+            //config,
             address_book,
             publisher,
         })
@@ -325,22 +317,19 @@ impl Controller {
             if slate.tx.inputs().len() == 0 {
                 self.wallet.lock().process_receiver_initiated_slate(slate, address.clone())?;
             } else {
-                let mut w = self.wallet.lock();
-                let old_account = w.active_account.clone();
+                let mut w = wallet.lock();
+                let old_account = w.get_current_account()?;
+                let receive_account: String = RECV_ACCOUNT.read().clone().unwrap_or(old_account.label.clone());
 
-                unsafe {
-                    let mut dest_acct_name : Option<String> = dest_acct_name.map(|s| String::from(s));
-                    if self.config.is_some() && RECV_ACCOUNT.is_some() {
-                        let dst_account = RECV_ACCOUNT.clone().unwrap();
-                        w.unlock(&self.config.clone().unwrap(), &dst_account, RECV_PASS.clone().unwrap_or_else(|| grin_util::ZeroingString::from("")) )?;
-                        dest_acct_name = Some(dst_account);
-                    }
+                if old_account.label != receive_account {
+                    w.switch_account(&receive_account)?;
+                }
+                // Processing with a new receive account
+                w.process_sender_initiated_slate(Some(String::from("file")), &mut slate, key_id, output_amounts, None )?;
 
-                    w.process_sender_initiated_slate(address, slate, None, None, dest_acct_name.as_deref() )?;
-
-                    if self.config.is_some() && RECV_ACCOUNT.is_some() {
-                        w.unlock(self.config.as_ref().unwrap(), &old_account, RECV_PASS.clone().unwrap_or_else(|| grin_util::ZeroingString::from("")))?;
-                    }
+                // Switch back to the orifinal one
+                if old_account.label != receive_account {
+                    w.switch_account(&old_account.label)?;
                 }
             }
             Ok(false)
@@ -407,15 +396,8 @@ impl SubscriptionHandler for Controller {
             MWCMQSAddress::from_str(&from.to_string()).expect("invalid mwcmqs address");
         }
 
-
-        let account = {
-            // lock must be very local
-            let w = self.wallet.lock();
-            w.active_account.clone()
-        };
-
         let result = self
-            .process_incoming_slate(Some(from.to_string()), slate, tx_proof, Some(&account) )
+            .process_incoming_slate(Some(from.to_string()), slate, tx_proof, None )
             .and_then(|is_finalized| {
                 if !is_finalized {
                     self.publisher
@@ -478,7 +460,7 @@ fn start_mwcmqs_listener(
     {
         let mut wallet = wallet.lock();
         if wallet.is_locked() {
-            wallet.unlock(config, "default", grin_util::ZeroingString::from(""))?;
+            return Err(ErrorKind::WalletIsLocked)?;
         }
     }
 
@@ -502,7 +484,6 @@ fn start_mwcmqs_listener(
 
     let cloned_publisher = mwcmqs_publisher.clone();
     let mut cloned_subscriber = mwcmqs_subscriber.clone();
-    let config_clone = config.clone();
 
     let _ = thread::Builder::new()
         .name("mwcmqs-brocker".to_string())
@@ -510,7 +491,6 @@ fn start_mwcmqs_listener(
             let controller = Controller::new(
                 &addr_name,
                 wallet.clone(),
-                Some(config_clone),
                 address_book.clone(),
                 Box::new(cloned_publisher),
             )
@@ -532,7 +512,7 @@ fn start_keybase_listener(
     {
         let mut wallet = wallet.lock();
         if wallet.is_locked() {
-            wallet.unlock(config, "default", grin_util::ZeroingString::from(""))?;
+            return Err(ErrorKind::WalletIsLocked)?;
         }
     }
 
@@ -550,7 +530,6 @@ fn start_keybase_listener(
             let controller = Controller::new(
                 "keybase",
                 wallet.clone(),
-                None, //It is ok to pass None here.
                 address_book.clone(),
                 Box::new(cloned_publisher),
             )
@@ -560,6 +539,99 @@ fn start_keybase_listener(
                 .expect("something went wrong!");
         })?;
     Ok((keybase_publisher, keybase_subscriber, keybase_listener_handle))
+}
+
+fn start_wallet_api(
+    config: &Wallet713Config,
+    wallet: Arc<Mutex<Wallet>>,
+) -> Result<(), Error> {
+    if wallet.lock().is_locked() {
+        return Ok(());
+    }
+
+    if config.owner_api() || config.foreign_api() {
+        let tls_config: Option<grin_api::TLSConfig> = if config.is_tls_enabled() {
+            cli_message!( "TLS is enabled. Wallet will use secure connection for Rest API" );
+            Some( grin_api::TLSConfig::new(config.tls_certificate_file.clone().unwrap(),
+                                           config.tls_certificate_key.clone().unwrap() ) )
+        }
+        else {
+            cli_message!("{}: TLS configuration is not set, non secure HTTP connection will be used. It is recommended to use secure TLS connection.",
+                        "WARNING".bright_yellow() );
+            None
+        };
+
+        if (config.owner_api.unwrap_or(false)) {
+            cli_message!(
+                         "starting listener for owner api on [{}]",
+                         config.owner_api_address().bright_green()
+                     );
+            if config.owner_api_secret.is_none() {
+                cli_message!(
+                             "{}: no api secret for owner api, it is recommended to set one.",
+                             "WARNING".bright_yellow()
+                         );
+            }
+
+            let wallet_instance = wallet.lock().get_wallet_instance()?;
+            let addr = config.owner_api_address();
+            let owner_api_secret = config.owner_api_secret.clone();
+            let tls_config = tls_config.clone();
+            let owner_api_include_foreign = config.owner_api_include_foreign.clone();
+
+            thread::Builder::new()
+                .name("owner_listener".to_string())
+                .spawn(move || {
+                    if let Err(e) = grin_wallet_controller::controller::owner_listener(
+                        wallet_instance,
+                        Arc::new(Mutex::new(None)),
+                        &addr,
+                        owner_api_secret,
+                        tls_config,
+                        owner_api_include_foreign,
+                        Some(false), // mqs runs separately
+                        None,
+                        None,
+                        None)
+                    {
+                        cli_message!( "{}: Owner API Listener failed, {}", e, "ERROR".bright_red() );
+                    }
+                })?;
+        }
+
+        if config.foreign_api.unwrap_or(false) {
+            cli_message!(
+                         "starting listener for foreign api on [{}]",
+                         config.foreign_api_address().bright_green()
+                     );
+            if config.foreign_api_secret.is_some() {
+                cli_message!(
+                             "{}: setting the foreign_api_secret will prevent mwc-wallet from sending to this wallet because it doesn't support basic auth. mwc-qt-wallet and mwc713 support it and sender need to be aware about that.",
+                             "WARNING".bright_yellow()
+                         );
+            }
+
+            let wallet_instance = wallet.lock().get_wallet_instance()?;
+            let foreign_api_address = config.foreign_api_address();
+            let tls_config = tls_config.clone();
+
+            thread::Builder::new()
+                .name("foreign_listener".to_string())
+                .spawn(move || {
+                    if let Err(e) = grin_wallet_controller::controller::foreign_listener(
+                        wallet_instance,
+                        Arc::new(Mutex::new(None)),
+                        &foreign_api_address,
+                        tls_config,
+                        false)
+                    {
+                        cli_message!( "{}: Foreign API Listener failed, {}", e, "ERROR".bright_red() );
+                    }
+                })?;
+        }
+    }
+
+    Ok(())
 }
 
 #[cfg(not(target_os = "android"))]
@@ -634,14 +706,9 @@ fn main() {
         .subcommand(SubCommand::with_name("state").about("print wallet initialization state and exit"))
         .get_matches();
 
-    let runtime_mode = match matches.is_present("daemon") {
-        true => RuntimeMode::Daemon,
-        false => RuntimeMode::Cli,
-    };
-
     let disable_history = matches.is_present("disable-history");
 
-    let mut config: Wallet713Config = welcome(&matches, &runtime_mode).unwrap_or_else(|e| {
+    let mut config: Wallet713Config = welcome(&matches ).unwrap_or_else(|e| {
         panic!(
             "{}: could not read or create config! {}",
             "ERROR".bright_red(),
@@ -651,10 +718,6 @@ fn main() {
 
     if disable_history {
         config.disable_history = Some(true);
-    }
-
-    if runtime_mode == RuntimeMode::Daemon {
-        env_logger::init();
     }
 
     let data_path_buf = config.get_data_path().unwrap();
@@ -796,9 +859,11 @@ fn main() {
         };
 
         if has_wallet {
-            let der = derive_address_key(&mut config, wallet.clone());
-            if der.is_err() {
-                cli_message!("{}: {}", "ERROR".bright_red(), der.unwrap_err());
+            if let Err(e) = derive_address_key(&mut config, wallet.clone()) {
+                cli_message!("{}: {}", "ERROR".bright_red(), e);
+            }
+            if let Err(e) = start_wallet_api(&config, wallet.clone()) {
+                cli_message!("{}: {}", "ERROR".bright_red(), e);
             }
         }
         else {
@@ -812,11 +877,6 @@ fn main() {
     }
 
     println!("{}", WELCOME_FOOTER.bright_blue());
-
-    let grinbox_listener_handle: Option<std::thread::JoinHandle<()>> = None;
-    let mut keybase_listener_handle: Option<std::thread::JoinHandle<()>> = None;
-    let mut owner_api_handle: Option<std::thread::JoinHandle<()>> = None;
-    let mut foreign_api_handle: Option<std::thread::JoinHandle<()>> = None;
 
     if config.grinbox_listener_auto_start() {
         let result = start_mwcmqs_listener(&config, wallet.clone(), address_book.clone());
@@ -835,130 +895,8 @@ fn main() {
             Err(e) => cli_message!("{}: {}", "ERROR".bright_red(), e),
             Ok((publisher, subscriber, handle)) => {
                 keybase_broker = Some((publisher, subscriber));
-                keybase_listener_handle = Some(handle);
             },
         }
-    }
-
-    if config.owner_api() || config.foreign_api() {
-
-        let tls_server_config: Option<Arc<rustls::ServerConfig>> = if config.is_tls_enabled() {
-            cli_message!( "TLS is enabled. Wallet will use secure connection for Rest API" );
-            let factory = grin_api::TLSConfig::new(config.tls_certificate_file.clone().unwrap(),
-                                                   config.tls_certificate_key.clone().unwrap() );
-
-            match factory.build_server_config() {
-                Ok( config ) => Some(config),
-                Err(e) => {
-                    println!("{}: Unable to read and validate PEM certificated from config {}", "ERROR".bright_red(), e);
-                    std::process::exit(1);
-                }
-            }
-
-        }
-        else {
-            cli_message!("{}: TLS configuration is not set, non secure HTTP connection will be used. It is recommended to use secure TLS connection.",
-                        "WARNING".bright_yellow() );
-            None
-        };
-
-        owner_api_handle = match config.owner_api {
-            Some(true) => {
-                cli_message!(
-                    "starting listener for owner api on [{}]",
-                    config.owner_api_address().bright_green()
-                );
-                if config.owner_api_secret.is_none() {
-                    cli_message!(
-                        "{}: no api secret for owner api, it is recommended to set one.",
-                        "WARNING".bright_yellow()
-                    );
-                }
-                let router = build_owner_api_router(
-                    wallet.clone(),
-                    mwcmqs_broker.clone(),
-                    keybase_broker.clone(),
-                    config.owner_api_secret.clone(),
-                    config.owner_api_include_foreign,
-                    config.clone(),
-                );
-                let address = config.owner_api_address();
-                let thr_tls_server_config = tls_server_config.clone();
-                let thread = thread::Builder::new()
-                    .name("owner-api-gotham".to_string())
-                    .spawn(move || {
-                        match thr_tls_server_config {
-                            Some( tls_config ) => gotham::tls::start( address, router, (*tls_config).clone() ),
-                            None => gotham::start(address, router)
-                        }
-                    }).unwrap();
-                Some(thread)
-            }
-            _ => None,
-        };
-
-        foreign_api_handle = match config.foreign_api {
-            Some(true) => {
-                cli_message!(
-                    "starting listener for foreign api on [{}]",
-                    config.foreign_api_address().bright_green()
-                );
-                if config.foreign_api_secret.is_some() {
-                    cli_message!(
-                        "{}: setting the foreign_api_secret will prevent mwc-wallet from sending to this wallet because it doesn't support basic auth. mwc-qt-wallet and mwc713 support it and sender need to be aware about that.",
-                        "WARNING".bright_yellow()
-                    );
-                }
-                let router = build_foreign_api_router(
-                    wallet.clone(),
-                    mwcmqs_broker.clone(),
-                    keybase_broker.clone(),
-                    config.foreign_api_secret.clone(),
-                    config.clone(),
-                );
-                let address = config.foreign_api_address();
-                let thr_tls_server_config = tls_server_config.clone();
-                let thread = thread::Builder::new()
-                    .name("foreign-api-gotham".to_string())
-                    .spawn(move || {
-                        match thr_tls_server_config {
-                            Some(tls_config) => gotham::tls::start(address, router, (*tls_config).clone()),
-                            None => gotham::start(address, router)
-                        }
-                    }).unwrap();
-                Some(thread)
-            }
-            _ => None,
-        };
-    };
-
-    if runtime_mode == RuntimeMode::Daemon {
-        let mut listening = false;
-        if let Some(handle) = grinbox_listener_handle {
-            handle.join().unwrap();
-            listening = true;
-        }
-
-        if let Some(handle) = keybase_listener_handle {
-            handle.join().unwrap();
-            listening = true;
-        }
-
-        if let Some(handle) = owner_api_handle {
-            handle.join().unwrap();
-            listening = true;
-        }
-
-        if let Some(handle) = foreign_api_handle {
-            handle.join().unwrap();
-            listening = true;
-        }
-
-        if !listening {
-            warn!("no listener configured, exiting");
-        }
-
-        return;
     }
 
     #[cfg(not(target_os = "android"))]
@@ -1236,12 +1174,6 @@ fn do_command(
 
             return Ok(());
         }
-        Some("lock") => {
-            if keybase_broker.is_some()  {
-                return Err(ErrorKind::HasListener.into());
-            }
-            wallet.lock().lock();
-        }
         Some("unlock") => {
             let args = matches.subcommand_matches("unlock").unwrap();
             let account = args.value_of("account").unwrap_or("default");
@@ -1259,7 +1191,10 @@ fn do_command(
                 w.unlock(config, account, ZeroingString::from(passphrase.as_str()))?;
             }
 
-            derive_address_key(config, wallet)?;
+            derive_address_key(config, wallet.clone())?;
+
+            start_wallet_api(config, wallet)?;
+
             return Ok(());
         }
         Some("accounts") => {
@@ -1267,7 +1202,6 @@ fn do_command(
         }
         Some("account") => {
             let args = matches.subcommand_matches("account").unwrap();
-            *out_is_safe = args.value_of("passphrase").is_none();
 
             let create_args = args.subcommand_matches("create");
             let switch_args = args.subcommand_matches("switch");
@@ -1278,11 +1212,7 @@ fn do_command(
                     .create_account(args.value_of("name").unwrap())?;
             } else if let Some(args) = switch_args {
                 let account = args.value_of("name").unwrap();
-                let passphrase = match args.is_present("passphrase") {
-                    true => password_prompt(args.value_of("passphrase")),
-                    false => "".to_string(),
-                };
-                wallet.lock().unlock(config, account, ZeroingString::from(passphrase.as_str()))?;
+                wallet.lock().switch_account(account)?;
             } else if let Some(args) = rename_args {
                 let old_account = args.value_of("old_account").unwrap();
                 let new_account = args.value_of("new_account").unwrap();
@@ -1546,23 +1476,18 @@ fn do_command(
             };
 
             let mut w = wallet.lock();
-            let old_account = w.active_account.clone();
+            let old_account = w.get_current_account()?;
+            let receive_account: String = RECV_ACCOUNT.read().clone().unwrap_or(old_account.label.clone());
 
-            unsafe {
-                let mut dest_acct_name : Option<String> = Some(w.active_account.clone());
-                if RECV_ACCOUNT.is_some() {
-                    let dst_account = RECV_ACCOUNT.clone().unwrap();
-                    w.unlock(&config, &dst_account, RECV_PASS.clone().unwrap_or_else(|| grin_util::ZeroingString::from("")) )?;
-                    dest_acct_name = Some(dst_account);
-                }
-
-                w.process_sender_initiated_slate(Some(String::from("file")), &mut slate, key_id, output_amounts, dest_acct_name.as_deref() )?;
-
-                if RECV_ACCOUNT.is_some() {
-                    w.unlock(&config, &old_account, RECV_PASS.clone().unwrap_or_else(|| grin_util::ZeroingString::from("")))?;
-                }
+            if old_account.label != receive_account {
+                w.switch_account(&receive_account)?;
             }
-
+            // Processing with a new receive account
+            w.process_sender_initiated_slate(Some(String::from("file")), &mut slate, key_id, output_amounts, None )?;
+            // Switch back to the orifinal one
+            if old_account.label != receive_account {
+                w.switch_account(&old_account.label)?;
+            }
 
             let message = &slate.participant_data[0].message;
             let amount = core::amount_to_hr_string(slate.amount, false);
@@ -2022,20 +1947,13 @@ fn do_command(
         Some("set-recv") => {
             let args = matches.subcommand_matches("set-recv").unwrap();
             let account = args.value_of("account").unwrap();
-            if wallet.lock().account_exists(account).unwrap() {
-                unsafe {
-                    RECV_ACCOUNT = Some(account.to_string());
-
-                    RECV_PASS = match args.value_of("password") {
-                        Some(pass) => Some(grin_util::ZeroingString::from(pass)),
-                        _ => None,
-                    };
-                    cli_message!("Incoming funds will be received in account: {:?}", RECV_ACCOUNT.clone().unwrap());
-                }
+            if wallet.lock().account_path(account)?.is_some() {
+                    RECV_ACCOUNT.write().replace(account.to_string());
+                    cli_message!("Incoming funds will be received in account: {}", account);
             }
             else
             {
-                cli_message!("Account {:?} does not exist!", account);
+                cli_message!("Account {} does not exist!", account);
             }
         }
         Some("getrootpublickey") => {

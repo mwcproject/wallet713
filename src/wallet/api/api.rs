@@ -12,7 +12,7 @@ use grin_p2p::types::PeerInfoDisplay;
 use grin_wallet_libwallet::proof::crypto::Hex;
 use grin_wallet_libwallet::proof::tx_proof::TxProof;
 use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
-use grin_wallet_libwallet::{AcctPathMapping, BlockFees, CbData, NodeClient, Slate, TxLogEntry, TxWrapper,
+use grin_wallet_libwallet::{AcctPathMapping, BlockFees, CbData, NodeClient, Slate, TxLogEntry,
                             WalletInfo, OutputCommitMapping, WalletInst, WalletLCProvider,
                             StatusMessage, TxLogEntryType, OutputData};
 use grin_core::core::Transaction;
@@ -135,7 +135,7 @@ pub fn invoice_tx<'a, L, C, K>(
                 let msg_message = Message::from_slice(msg_hash.as_bytes())?;
 
                 // id pointes to the root key. Will check
-                let signature = keychain.sign(&msg_message,0, &id, &SwitchCommitmentType::None)?;
+                let signature = keychain.sign(&msg_message,0, &id, SwitchCommitmentType::None)?;
 
                 println!("Signature: {}", signature.to_hex());
             },
@@ -177,7 +177,7 @@ pub fn invoice_tx<'a, L, C, K>(
         wallet_lock!(wallet_inst, w);
         let id = keys::next_available_key(&mut **w, None)?;
         let keychain = w.keychain(None)?;
-        let sec_key = keychain.derive_key(amount, &id, &SwitchCommitmentType::Regular)?;
+        let sec_key = keychain.derive_key(amount, &id, SwitchCommitmentType::Regular)?;
         let pubkey = PublicKey::from_secret_key(keychain.secp(), &sec_key)?;
         let ret = format!("{:?}, {:?}", id, pubkey);
         Ok(ret)
@@ -193,6 +193,42 @@ pub fn invoice_tx<'a, L, C, K>(
     {
         wallet_lock!(wallet_inst, w);
         Ok(keys::accounts(&mut **w)?)
+    }
+
+    pub fn get_current_account<'a, L, C, K>(
+        wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>
+    ) -> Result<AcctPathMapping, Error>
+        where
+            L: WalletLCProvider<'a, C, K>,
+            C: NodeClient + 'a,
+            K: Keychain + 'a,
+    {
+        let account = accounts(wallet_inst.clone())?;
+        wallet_lock!(wallet_inst, w);
+        let cur_acc_path = w.parent_key_id();
+
+        for a in account {
+            if a.path == cur_acc_path {
+                return Ok(a);
+            }
+        }
+
+        Err( ErrorKind::GenericError(format!("Not found account name for path {:?}", cur_acc_path)).into() )
+    }
+
+    // Set current account by path
+    pub fn set_current_account<'a, L, C, K>(
+        wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
+        name: &str,
+    ) -> Result<(), Error>
+        where
+            L: WalletLCProvider<'a, C, K>,
+            C: NodeClient + 'a,
+            K: Keychain + 'a,
+    {
+        wallet_lock!(wallet_inst, w);
+        w.set_parent_key_id_by_name(name)?;
+        Ok(())
     }
 
     pub fn create_account_path<'a, L, C, K>(
@@ -939,12 +975,11 @@ pub fn invoice_tx<'a, L, C, K>(
             C: NodeClient + 'a,
             K: Keychain + 'a,
     {
-        let tx_hex = grin_util::to_hex(ser::ser_vec(tx,ser::ProtocolVersion(1) ).unwrap());
         let client = {
             wallet_lock!(wallet_inst, w);
             w.w2n_client().clone()
         };
-        client.post_tx(&TxWrapper { tx_hex: tx_hex }, fluff)?;
+        client.post_tx(tx, fluff)?;
         Ok(())
     }
 

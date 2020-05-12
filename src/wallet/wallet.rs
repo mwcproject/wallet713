@@ -2,8 +2,7 @@ use uuid::Uuid;
 use common::config::Wallet713Config;
 use common::{ErrorKind, Error};
 
-use grin_wallet_libwallet::{BlockFees, Slate, TxLogEntry, WalletInfo, CbData, WalletInst,
-                            OutputCommitMapping, ScannedBlockInfo, NodeClient, StatusMessage };
+use grin_wallet_libwallet::{BlockFees, Slate, TxLogEntry, WalletInfo, CbData, WalletInst, OutputCommitMapping, ScannedBlockInfo, NodeClient, StatusMessage, AcctPathMapping};
 use grin_wallet_impls::lifecycle::WalletSeed;
 use grin_core::core::Transaction;
 use grin_util::secp::key::{ SecretKey, PublicKey };
@@ -23,9 +22,9 @@ use std::time::Duration;
 use std::thread;
 use std::thread::JoinHandle;
 use std::sync::mpsc::Sender;
+use grin_keychain::Identifier;
 
 pub struct Wallet {
-    pub active_account: String,
     backend: Option< Arc<Mutex<Box<dyn WalletInst<'static,
         DefaultLCProvider<'static, HTTPNodeClient, ExtKeychain>,
         HTTPNodeClient,
@@ -42,7 +41,6 @@ pub struct Wallet {
 impl Wallet {
     pub fn new(max_auto_accept_invoice: Option<u64>) -> Self {
         Self {
-            active_account: "default".to_string(),
             backend: None,
             max_auto_accept_invoice,
             updater_running: Arc::new(AtomicBool::new(false)),
@@ -63,13 +61,15 @@ impl Wallet {
         account: &str,
         passphrase: grin_util::ZeroingString,
     ) -> Result<(), Error> {
-        self.lock();
+        if self.backend.is_some() {
+            return Err(ErrorKind::WalletAlreadyUnlocked.into());
+        }
+
         self.create_wallet_instance(config, account, passphrase)
             .map_err(|e| {
                 warn!("Unable to unlock wallet, {}", e);
                 ErrorKind::WalletUnlockFailed
             })?;
-        self.active_account = account.to_string();
         Ok(())
     }
 
@@ -126,18 +126,18 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn account_exists(
+    pub fn account_path(
         &mut self,
         account: &str
-    ) -> Result<bool, Error> {
+    ) -> Result<Option<grin_wallet_libwallet::AcctPathMapping>, Error> {
         let mut ret = false;
         let acct_mappings = api::accounts(self.get_wallet_instance()?)?;
         for m in acct_mappings {
             if m.label == account {
-                ret = true;
+                return Ok(Some(m.clone()));
             }
         }
-        Ok(ret)
+        Ok(None)
     }
     
 
@@ -145,27 +145,6 @@ impl Wallet {
         let seed = WalletSeed::from_file( &config.get_data_path_str()?, passphrase)?;
         grin_wallet_impls::lifecycle::show_recovery_phrase(ZeroingString::from(seed.to_mnemonic()?));
         Ok(())
-    }
-
-    pub fn lock(&mut self) {
-        // Stop updater thread. Normally it should take 1 second
-        self.updater_running.store(false, Ordering::Relaxed);
-        if self.updater_handler.is_some() {
-
-            let thr = self.updater_handler.take().unwrap();
-            thr.join().expect("error: Update wallet state thread failed");
-        }
-        assert!(self.updater_handler.is_none());
-
-        if self.backend.is_some() {
-            let _ = self.get_wallet_instance().and_then( |wallet_inst| {
-                let inst = wallet_inst.clone();
-                let mut w_lock = inst.lock();
-                let _ = w_lock.lc_provider().and_then(|lc_prov| lc_prov.close_wallet(None) );
-                Ok(())
-            });
-        }
-        self.backend = None;
     }
 
     pub fn is_locked(&self) -> bool {
@@ -218,6 +197,9 @@ impl Wallet {
         Ok(())
     }
 
+    pub fn get_current_account(&self) -> Result<AcctPathMapping, Error> {
+        Ok(api::get_current_account(self.get_wallet_instance()?)?)
+    }
 
     pub fn list_accounts(&self) -> Result<(), Error> {
         let acct_mappings = api::accounts(self.get_wallet_instance()?)?;
@@ -235,12 +217,17 @@ impl Wallet {
         Ok(())
     }
 
+    pub fn switch_account(&mut self, name: &str) -> Result<(), Error> {
+        api::set_current_account(self.get_wallet_instance()?, name)?;
+        Ok(())
+    }
+
     pub fn info(&self, refresh: bool, confirmations: u64) -> Result<(), Error> {
         let (mut validated, wallet_info) = api::retrieve_summary_info(
             self.get_wallet_instance()?, refresh,
             confirmations)?;
         if !refresh { validated = true; }
-        display::info(&self.active_account, &wallet_info, !refresh || validated, true);
+        display::info(&self.get_current_account()?.label, &wallet_info, !refresh || validated, true);
         Ok(())
     }
 
@@ -301,7 +288,7 @@ impl Wallet {
         };
 
         display::txs(
-            &self.active_account,
+            &self.get_current_account()?.label,
             height,
             !refresh_from_node || validated,
             &txs,
@@ -324,7 +311,7 @@ impl Wallet {
 
         if id.is_some() {
             let (_, outputs) = self.retrieve_outputs(true, false, Some(&txs[0]))?;
-            display::outputs(&self.active_account, height, !refresh_from_node || validated, outputs, true)?;
+            display::outputs(&self.get_current_account()?.label, height, !refresh_from_node || validated, outputs, true)?;
             debug_assert!(txs.len()==1);
             // should only be one here, but just in case
             for tx in txs {
@@ -419,7 +406,7 @@ impl Wallet {
         };
 
         let (validated, outputs) = api::retrieve_outputs(wallet, show_spent, refresh_from_node, None, pagination_start, pagination_length)?;
-        display::outputs(&self.active_account, height, !refresh_from_node || validated, outputs, true)?;
+        display::outputs(&self.get_current_account()?.label, height, !refresh_from_node || validated, outputs, true)?;
         Ok(())
     }
 
@@ -440,7 +427,7 @@ impl Wallet {
     ) -> Result<Slate, Error> {
         let slate = api::initiate_tx(
             self.get_wallet_instance()?,
-            Some(self.active_account.clone()),
+            None,
             address.clone(),
             amount,
             minimum_confirmations,
@@ -461,7 +448,7 @@ impl Wallet {
     pub fn initiate_receive_tx(&self, address: Option<String>, amount: u64, num_outputs: usize) -> Result<Slate, Error> {
         let slate = api::initiate_receive_tx(self.get_wallet_instance()?,
                                              address,
-                                             Some(self.active_account.clone()),
+                                             None,
                                              amount, num_outputs, None)?;
         Ok(slate)
     }
@@ -547,7 +534,7 @@ impl Wallet {
         }
 
         *slate = api::invoice_tx(self.get_wallet_instance()?,
-                                 Some(self.active_account.clone()), slate,
+                                 None, slate,
                                  address.clone(),
                                  10, 500, 1,
                                  false, None)?;
@@ -691,7 +678,7 @@ impl Wallet {
             Err(_) => {
                 // could not load from file, let's create a new one
                 if create_new {
-                    WalletSeed::init_file_impl(&data_file_dir, 32, None, passphrase, create_file,!create_file, seed)?
+                    WalletSeed::init_file_impl(&data_file_dir, 32, None, passphrase, create_file,!create_file, seed, false)?
                 } else {
                     return Err(ErrorKind::WalletSeedCouldNotBeOpened.into());
                 }

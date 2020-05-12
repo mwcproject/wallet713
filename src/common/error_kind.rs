@@ -71,6 +71,9 @@ pub enum ErrorKind {
     )]
     ZeroConfNotAllowed,
 
+    #[fail(display = "The wallet is locked. Please use `unlock` first.")]
+    WalletIsLocked,
+
     #[fail(display = "could not open wallet! use `unlock` or `init`.")]
     NoWallet,
     #[fail(
@@ -143,6 +146,9 @@ pub enum ErrorKind {
     #[fail(display = "unable to create the file '{}', {}", _0, _1)]
     FileUnableToCreate(String, String),
 
-    #[fail(display = "uanble to get public key")]
-    GetPublicKey,
+    #[fail(display = "unable to get public key, {}", _0)]
+    GetPublicKeyError(String),
+
+    #[fail(display = "Account {} does not exist", _0)]
+    AccountNotExist(String),
 }

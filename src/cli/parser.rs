@@ -71,10 +71,6 @@ impl<'a, 'b> Parser {
                     )
             )
             .subcommand(
-                SubCommand::with_name("lock")
-                    .about("locks the wallet")
-            )
-            .subcommand(
                 SubCommand::with_name("unlock")
                     .about("unlocks the wallet")
                     .arg(
@@ -113,10 +109,6 @@ impl<'a, 'b> Parser {
                             )
                             .arg(
                                 Arg::from_usage("[account] -a, --account=<account> 'the account to use'")
-                            )
-                            .arg(
-                                Arg::from_usage("[passphrase] -p, --passphrase=<passphrase> 'the passphrase to use'")
-                                    .min_values(0)
                             )
                     )
             )
@@ -435,9 +427,6 @@ impl<'a, 'b> Parser {
                     .about("sets which account is the recipient of an incoming transaction")
                     .arg(
                         Arg::from_usage("<account> 'the account to receive to'")
-                    )
-                    .arg(
-                        Arg::from_usage("[password] -p, --password=<password> 'the password for this account'")
                     )
             )
             .subcommand(
