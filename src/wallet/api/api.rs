@@ -3,7 +3,6 @@ use uuid::Uuid;
 
 pub use grin_util::secp::{Message};
 use grin_core::core::hash::{Hash};
-use grin_core::ser;
 use grin_util::secp::pedersen;
 use grin_util::secp::{ContextFlag, Secp256k1, Signature};
 use grin_p2p::types::PeerInfoDisplay;
@@ -12,7 +11,7 @@ use grin_p2p::types::PeerInfoDisplay;
 use grin_wallet_libwallet::proof::crypto::Hex;
 use grin_wallet_libwallet::proof::tx_proof::TxProof;
 use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
-use grin_wallet_libwallet::{AcctPathMapping, BlockFees, CbData, NodeClient, Slate, TxLogEntry,
+use grin_wallet_libwallet::{AcctPathMapping, NodeClient, Slate, TxLogEntry,
                             WalletInfo, OutputCommitMapping, WalletInst, WalletLCProvider,
                             StatusMessage, TxLogEntryType, OutputData};
 use grin_core::core::Transaction;
@@ -38,75 +37,6 @@ pub struct NodeInfo
     pub total_difficulty: u64,
     pub peers: Vec<PeerInfoDisplay>,
 }
-
-pub fn invoice_tx<'a, L, C, K>(
-    wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
-    active_account: Option<String>,
-        slate: &Slate,
-        address: Option<String>,
-        minimum_confirmations: u64,
-        max_outputs: u32,
-        num_change_outputs: u32,
-        selection_strategy_is_use_all: bool,
-        message: Option<String>,
-    ) -> Result< Slate, Error>
-    where
-        L: WalletLCProvider<'a, C, K>,
-        C: NodeClient + 'a,
-        K: Keychain + 'a,
-{
-        // Caller is responsible for refresh call
-        grin_wallet_libwallet::owner::update_wallet_state(wallet_inst.clone(), None, &None )?;
-
-        wallet_lock!(wallet_inst, w);
-
-        let params = grin_wallet_libwallet::InitTxArgs {
-            src_acct_name: active_account,
-            amount: slate.amount,
-            minimum_confirmations,
-            max_outputs,
-            num_change_outputs,
-            /// If `true`, attempt to use up as many outputs as
-            /// possible to create the transaction, up the 'soft limit' of `max_outputs`. This helps
-            /// to reduce the size of the UTXO set and the amount of data stored in the wallet, and
-            /// minimizes fees. This will generally result in many inputs and a large change output(s),
-            /// usually much larger than the amount being sent. If `false`, the transaction will include
-            /// as many outputs as are needed to meet the amount, (and no more) starting with the smallest
-            /// value outputs.
-            selection_strategy_is_use_all,
-            message,
-            /// Optionally set the output target slate version (acceptable
-            /// down to the minimum slate version compatible with the current. If `None` the slate
-            /// is generated with the latest version.
-            target_slate_version: None,
-            /// Number of blocks from current after which TX should be ignored
-            ttl_blocks: None,
-            /// If set, require a payment proof for the particular recipient
-            payment_proof_recipient_address: None,
-            address,
-            /// If true, just return an estimate of the resulting slate, containing fees and amounts
-            /// locked without actually locking outputs or creating the transaction. Note if this is set to
-            /// 'true', the amount field in the slate will contain the total amount locked, not the provided
-            /// transaction amount
-            estimate_only: None,
-            /// Whether or not to exclude change outputs, not needed in mwc713.
-            exclude_change_outputs: Some(false),
-            /// Number of confirmations for change outputs, default fine, not used in mwc713.
-            minimum_confirmations_change_outputs: 1,
-            /// Sender arguments. If present, the underlying function will also attempt to send the
-            /// transaction to a destination and optionally finalize the result
-            send_args: None,
-        };
-        let slate = grin_wallet_libwallet::owner::process_invoice_tx(
-            &mut **w,
-            None,
-            slate,
-            params,
-            false,
-        )?;
-
-        Ok(slate)
-    }
 
     pub fn show_rootpublickey<'a, L, C, K>(
         wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
@@ -883,20 +813,6 @@ pub fn invoice_tx<'a, L, C, K>(
         Ok(true)
     }
 
-    pub fn finalize_invoice_tx<'a, L, C, K>(
-        wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
-        slate: &mut Slate,
-    ) -> Result<bool, Error>
-        where
-            L: WalletLCProvider<'a, C, K>,
-            C: NodeClient + 'a,
-            K: Keychain + 'a,
-    {
-        wallet_lock!(wallet_inst, w);
-        *slate = grin_wallet_libwallet::foreign::finalize_invoice_tx( &mut **w, None, slate )?;
-        Ok(true)
-    }
-
     pub fn cancel_tx<'a, L, C, K>(
         wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
         tx_id: Option<u32>,
@@ -1282,20 +1198,6 @@ pub fn invoice_tx<'a, L, C, K>(
         let s = grin_wallet_libwallet::owner::issue_invoice_tx(&mut **w,
                           None, params , false, num_outputs)?;
         Ok(s)
-    }
-
-    pub fn build_coinbase<'a, L, C, K>(
-        wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
-        block_fees: &BlockFees
-    ) -> Result<CbData, Error>
-        where
-            L: WalletLCProvider<'a, C, K>,
-            C: NodeClient + 'a,
-            K: Keychain + 'a,
-    {
-        wallet_lock!(wallet_inst, w);
-        let res = updater::build_coinbase(&mut **w, None, block_fees, false )?;
-        Ok(res)
     }
 
     pub fn receive_tx<'a, L, C, K>(

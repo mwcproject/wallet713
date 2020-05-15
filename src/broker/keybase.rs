@@ -15,6 +15,7 @@ use grin_wallet_impls:: {
 use common::{Arc, Mutex, Error, ErrorKind};
 use grin_wallet_impls::{Address, KeybaseAddress,};
 use std::path::Path;
+use std::sync::mpsc::{Receiver, Sender};
 
 pub const TOPIC_SLATE_NEW: &str = "grin_slate_new";
 pub const TOPIC_WALLET713_SLATES: &str = "wallet713_grin_slate";
@@ -36,16 +37,18 @@ impl KeybasePublisher {
 
 #[derive(Clone)]
 pub struct KeybaseSubscriber {
+    handler: Arc<Mutex<Box<dyn SubscriptionHandler + Send>>>,
     stop_signal: Arc<Mutex<bool>>,
     keybase_binary: Option<String>,
 }
 
 impl KeybaseSubscriber {
-    pub fn new(keybase_binary: Option<String>) -> Result<Self, Error> {
-        Ok(Self {
+    pub fn new(keybase_binary: Option<String>, handler: Box<dyn SubscriptionHandler + Send>) -> Self {
+        Self {
+            handler: Arc::new(Mutex::new(handler)),
             stop_signal: Arc::new(Mutex::new(true)),
             keybase_binary: keybase_binary,
-        })
+        }
     }
 }
 
@@ -71,7 +74,7 @@ impl Publisher for KeybasePublisher {
 }
 
 impl Subscriber for KeybaseSubscriber {
-    fn start(&mut self, handler: Box<dyn SubscriptionHandler + Send>) -> Result<(), Error> {
+    fn start(&mut self) -> Result<(), Error> {
         {
             let mut guard = self.stop_signal.lock();
             *guard = false;
@@ -91,11 +94,11 @@ impl Subscriber for KeybaseSubscriber {
             if let Ok(unread) = result {
                 if !subscribed {
                     subscribed = true;
-                    handler.on_open();
+                    self.handler.lock().on_open();
                 }
                 if dropped {
                     dropped = false;
-                    handler.on_reestablished();
+                    self.handler.lock().on_reestablished();
                 }
                 for (sender, topic, msg) in &unread {
                     let reply_topic = match topic.as_ref() {
@@ -107,13 +110,13 @@ impl Subscriber for KeybaseSubscriber {
                         username: sender.to_string(),
                         topic: Some(reply_topic),
                     };
-                    handler.on_slate(address.borrow(), &mut slate, None);
+                    self.handler.lock().on_slate(address.borrow(), &mut slate, None);
                 }
             } else {
                 if !dropped {
                     dropped = true;
                     if subscribed {
-                        handler.on_dropped();
+                        self.handler.lock().on_dropped();
                     } else {
                         break Err(ErrorKind::KeybaseNotFound.into());
                     }
@@ -122,8 +125,8 @@ impl Subscriber for KeybaseSubscriber {
             std::thread::sleep(SLEEP_DURATION);
         };
         match result {
-            Err(e) => handler.on_close(CloseReason::Abnormal(e)),
-            _ => handler.on_close(CloseReason::Normal),
+            Err(e) => self.handler.lock().on_close(CloseReason::Abnormal(e)),
+            _ => self.handler.lock().on_close(CloseReason::Normal),
         }
         Ok(())
     }
@@ -138,6 +141,15 @@ impl Subscriber for KeybaseSubscriber {
         let guard = self.stop_signal.lock();
         !*guard
     }
+
+    fn set_notification_channels(&self, _slate_send_channel: Sender<Slate>,
+                                 _message_receive_channel: Receiver<bool>) {
+        panic!("mwc713 Keybase doesn't expected to work with mwc-wallet REST API");
+    }
+    fn reset_notification_channels(&self) {
+        panic!("mwc713 Keybase doesn't expected to work with mwc-wallet REST API");
+    }
+
 }
 
 struct KeybaseBroker {}

@@ -2,7 +2,7 @@ use uuid::Uuid;
 use common::config::Wallet713Config;
 use common::{ErrorKind, Error};
 
-use grin_wallet_libwallet::{BlockFees, Slate, TxLogEntry, WalletInfo, CbData, WalletInst, OutputCommitMapping, ScannedBlockInfo, NodeClient, StatusMessage, AcctPathMapping};
+use grin_wallet_libwallet::{Slate, TxLogEntry, WalletInst, OutputCommitMapping, ScannedBlockInfo, NodeClient, StatusMessage, AcctPathMapping};
 use grin_wallet_impls::lifecycle::WalletSeed;
 use grin_core::core::Transaction;
 use grin_util::secp::key::{ SecretKey, PublicKey };
@@ -22,14 +22,12 @@ use std::time::Duration;
 use std::thread;
 use std::thread::JoinHandle;
 use std::sync::mpsc::Sender;
-use grin_keychain::Identifier;
 
 pub struct Wallet {
     backend: Option< Arc<Mutex<Box<dyn WalletInst<'static,
         DefaultLCProvider<'static, HTTPNodeClient, ExtKeychain>,
         HTTPNodeClient,
         ExtKeychain>>>> >,
-    max_auto_accept_invoice: Option<u64>,
 
     // Updater comes from mwc-wallet. The only purpose is update statused in the background...
     /// Stop state for update thread
@@ -39,10 +37,9 @@ pub struct Wallet {
 }
 
 impl Wallet {
-    pub fn new(max_auto_accept_invoice: Option<u64>) -> Self {
+    pub fn new() -> Self {
         Self {
             backend: None,
-            max_auto_accept_invoice,
             updater_running: Arc::new(AtomicBool::new(false)),
             updater_handler: None,
         }
@@ -130,7 +127,6 @@ impl Wallet {
         &mut self,
         account: &str
     ) -> Result<Option<grin_wallet_libwallet::AcctPathMapping>, Error> {
-        let mut ret = false;
         let acct_mappings = api::accounts(self.get_wallet_instance()?)?;
         for m in acct_mappings {
             if m.label == account {
@@ -504,11 +500,6 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn build_coinbase(&self, block_fees: &BlockFees) -> Result<CbData, Error> {
-        let cb_data = api::build_coinbase(self.get_wallet_instance()?, block_fees)?;
-        Ok(cb_data)
-    }
-
     pub fn process_sender_initiated_slate(
         &self,
         address: Option<String>,
@@ -520,31 +511,6 @@ impl Wallet {
         let s = api::receive_tx(self.get_wallet_instance()?, address, slate,
                                 None, key_id, output_amounts, dest_acct_name).map_err(|e| ErrorKind::GrinWalletReceiveError(format!("{}", e)))?;
         *slate = s;
-        Ok(())
-    }
-
-    pub fn process_receiver_initiated_slate(&self, slate: &mut Slate, address: Option<String> ) -> Result<(), Error> {
-        // reject by default unless wallet is set to auto accept invoices under a certain threshold
-        let max_auto_accept_invoice = self
-            .max_auto_accept_invoice
-            .ok_or(ErrorKind::DoesNotAcceptInvoices)?;
-
-        if slate.amount > max_auto_accept_invoice {
-            Err(ErrorKind::InvoiceAmountTooBig(slate.amount))?;
-        }
-
-        *slate = api::invoice_tx(self.get_wallet_instance()?,
-                                 None, slate,
-                                 address.clone(),
-                                 10, 500, 1,
-                                 false, None)?;
-
-        api::tx_lock_outputs(
-            self.get_wallet_instance()?,
-            slate,
-            address,
-            1)?;
-
         Ok(())
     }
 
@@ -580,24 +546,6 @@ impl Wallet {
         Ok(())
     }
 
-    // Participant ID is different, that is why we have different routine.
-    pub fn finalize_invoice_slate(&self, slate: &mut Slate) -> Result<(), Error> {
-        let wallet = self.get_wallet_instance()?;
-        api::verify_slate_messages(&slate).map_err(|e| ErrorKind::GrinWalletVerifySlateMessagesError(format!("{}", e)))?;
-
-        let should_post = api::finalize_invoice_tx(wallet.clone(), slate).map_err(|e| ErrorKind::GrinWalletFinalizeError(format!("{}", e)))?;
-
-        if should_post {
-            api::post_tx(wallet, &slate.tx, false).map_err(|e| ErrorKind::GrinWalletPostError(format!("{}",e)))?;
-        }
-        Ok(())
-    }
-
-    pub fn retrieve_summary_info(&self, refresh: bool, confirmations: u64) -> Result<WalletInfo, Error> {
-        let (_, wallet_info) = api::retrieve_summary_info(self.get_wallet_instance()?,refresh,  confirmations)?;
-        Ok(wallet_info)
-    }
-
     pub fn retrieve_outputs(
         &self,
         include_spent: bool,
@@ -605,31 +553,6 @@ impl Wallet {
         tx: Option<&TxLogEntry>,
     ) -> Result<(bool, Vec<OutputCommitMapping>), Error> {
         let result = api::retrieve_outputs(self.get_wallet_instance()?,include_spent, refresh_from_node, tx, None, None)?;
-        Ok(result)
-    }
-
-    pub fn retrieve_txs(
-        &self,
-        refresh_from_node: bool,
-        tx_id: Option<u32>,
-        tx_slate_id: Option<Uuid>,
-    ) -> Result<(bool, Vec<TxLogEntry>), Error> {
-        let result = api::retrieve_txs(self.get_wallet_instance()?, refresh_from_node, tx_id, tx_slate_id)?;
-        Ok(result)
-    }
-
-    pub fn get_stored_tx(&self, uuid: &str) -> Result<Transaction, Error> {
-        let result = api::get_stored_tx(self.get_wallet_instance()?,uuid)?;
-        Ok(result)
-    }
-
-    pub fn post_tx(&self, tx: &Transaction, fluff: bool) -> Result<(), Error> {
-        api::post_tx(self.get_wallet_instance()?, tx, fluff)?;
-        Ok(())
-    }
-
-    pub fn node_height(&self) -> Result<(u64, bool), Error> {
-        let result = api::node_height(self.get_wallet_instance()?)?;
         Ok(result)
     }
 
@@ -708,8 +631,6 @@ impl Wallet {
         account: &str,
         passphrase: grin_util::ZeroingString,
     ) -> Result<(), Error> {
-        TxProof::init_proof_backend(config.get_data_path_str()?.as_str() )?;
-
         let node_client = HTTPNodeClient::new(
             &config.mwc_node_uri(),
             config.mwc_node_secret(),
