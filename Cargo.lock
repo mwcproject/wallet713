@@ -1342,7 +1342,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=rebase3.1.1#c326cec314d72ac2d91699bd5a85d46b302edd61"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=rebase3.1.1#d8f394195109dd5ed44ed3352bc82b63120a4448"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1367,7 +1367,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=rebase3.1.1#c326cec314d72ac2d91699bd5a85d46b302edd61"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=rebase3.1.1#d8f394195109dd5ed44ed3352bc82b63120a4448"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -1382,7 +1382,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=rebase3.1.1#c326cec314d72ac2d91699bd5a85d46b302edd61"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=rebase3.1.1#d8f394195109dd5ed44ed3352bc82b63120a4448"
 dependencies = [
  "chrono",
  "colored",
@@ -1413,7 +1413,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=rebase3.1.1#c326cec314d72ac2d91699bd5a85d46b302edd61"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=rebase3.1.1#d8f394195109dd5ed44ed3352bc82b63120a4448"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1456,7 +1456,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=rebase3.1.1#c326cec314d72ac2d91699bd5a85d46b302edd61"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=rebase3.1.1#d8f394195109dd5ed44ed3352bc82b63120a4448"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1494,7 +1494,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=rebase3.1.1#c326cec314d72ac2d91699bd5a85d46b302edd61"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=rebase3.1.1#d8f394195109dd5ed44ed3352bc82b63120a4448"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
@@ -3489,18 +3489,18 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.17"
+version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "467e5ff447618a916519a4e0d62772ab14f434897f3d63f05d8700ef1e9b22c1"
+checksum = "5976891d6950b4f68477850b5b9e5aa64d955961466f9e174363f573e54e8ca7"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.17"
+version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e63c1091225b9834089b429bc4a2e01223470e3183e891582909e9d1c4cb55d9"
+checksum = "ab81dbd1cd69cd2ce22ecfbdd3bdb73334ba25350649408cc6c085f46d89573d"
 dependencies = [
  "proc-macro2 1.0.12",
  "quote 1.0.5",

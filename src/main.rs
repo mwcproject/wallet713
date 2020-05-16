@@ -1571,9 +1571,6 @@ fn do_command(
             };
 
             // if we here, it is mean that we was able to generate slate and send it to one way.
-            // In case of http - even get something back...
-            w.tx_lock_outputs(&slate, address,0)?;
-
             let ret_id = w.get_id(slate.id)?;
             println!("txid={:?}", ret_id);
 
@@ -1585,6 +1582,9 @@ fn do_command(
             );
 
             if to.address_type() == AddressType::Https {
+                // In case of http - even get something back...
+                w.tx_lock_outputs(&slate, address,0)?;
+
                 w.finalize_slate(&mut slate, None, fluff)?;
                 cli_message!(
                     "slate [{}] finalized successfully",
