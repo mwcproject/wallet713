@@ -768,7 +768,7 @@ fn main() {
 
         #[cfg(not(target_os = "android"))]
             let command = match rl.readline(PROMPT) {
-            Ok(command) => command,
+            Ok(command) => command.trim().to_string(),
             Err(e) => {
                 cli_message!("Error: Unable to read input, {}", e);
                 break;
@@ -777,14 +777,14 @@ fn main() {
 
         #[cfg(target_os = "android")]
             let command = {
-            let mut cmd = String::new();
-            if io::stdin().read_line(&mut cmd).unwrap() > 0 {
-                cmd.trim().to_string()
-            }
-            else {
-                continue;
-            }
-        };
+                let mut cmd = String::new();
+                if io::stdin().read_line(&mut cmd).unwrap() > 0 {
+                    cmd.trim().to_string()
+                }
+                else {
+                    continue;
+                }
+            };
 
         if command == "exit" {
             if mwcmqs_broker.is_some() {
