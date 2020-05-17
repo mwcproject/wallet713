@@ -57,13 +57,13 @@ impl AddressBook {
         Ok(contact)
     }
 
-    pub fn get_contact_by_address(&mut self, address: &str) -> Result<Contact, Error> {
+    pub fn _get_contact_by_address(&mut self, address: &str) -> Result<Contact, Error> {
         for contact in self.contacts() {
             if contact.address == address {
                 return Ok(contact);
             }
         }
-        Err(ErrorKind::ContactNotFound(address.to_string()))?
+        Err(ErrorKind::_ContactNotFound(address.to_string()))?
     }
 
     pub fn contacts(&self) -> Box<dyn Iterator<Item = Contact>> {

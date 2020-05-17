@@ -2,8 +2,6 @@ use failure::Fail;
 
 #[derive(Clone, Eq, PartialEq, Debug, Fail)]
 pub enum ErrorKind {
-    #[fail(display = "Transaction model not found!")]
-    TransactionModelNotFound,
     #[fail(display = "could not open wallet seed!")]
     WalletSeedCouldNotBeOpened,
     #[fail(display = "transaction doesn't have a proof!")]
@@ -71,6 +69,9 @@ pub enum ErrorKind {
     )]
     ZeroConfNotAllowed,
 
+    #[fail(display = "The wallet is locked. Please use `unlock` first.")]
+    WalletIsLocked,
+
     #[fail(display = "could not open wallet! use `unlock` or `init`.")]
     NoWallet,
     #[fail(
@@ -93,7 +94,7 @@ pub enum ErrorKind {
         display = "could not find contact named `{}`!",
         0
     )]
-    ContactNotFound(String),
+    _ContactNotFound(String),
 
     #[fail(display = "could not parse number from string!")]
     NumberParsingError,
@@ -112,15 +113,6 @@ pub enum ErrorKind {
         display = "keybase not found! consider installing keybase locally first."
     )]
     KeybaseNotFound,
-    #[fail(
-        display = "rejecting invoice as auto invoice acceptance is turned off!"
-    )]
-    DoesNotAcceptInvoices,
-    #[fail(
-        display = "rejecting invoice as amount '{}' is too big!",
-        0
-    )]
-    InvoiceAmountTooBig(u64),
     #[fail(
         display = "please stop the listeners before doing this operation"
     )]
@@ -143,6 +135,6 @@ pub enum ErrorKind {
     #[fail(display = "unable to create the file '{}', {}", _0, _1)]
     FileUnableToCreate(String, String),
 
-    #[fail(display = "uanble to get public key")]
-    GetPublicKey,
+    #[fail(display = "unable to get public key, {}", _0)]
+    GetPublicKeyError(String),
 }

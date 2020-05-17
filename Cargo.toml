@@ -1,6 +1,6 @@
 [package]
 name = "mwc713"
-version = "3.1.4"
+version = "3.2.0"
 authors = ["vault713 devs"]
 description = "A wallet that makes it easy to send, store, and swap MWC."
 keywords = [ "grin", "mimblewimble", "rust", "crypto", "cryptocurrency" ]
@@ -35,15 +35,13 @@ sha2 = "0.7"
 digest = "0.7"
 failure = "0.1"
 uuid = { version = "0.7", features = ["serde", "v4"] }
-ring = "0.14"
+ring = "0.16"
 prettytable-rs = "0.7"
 # Requesting gotham 0.4 for tls support
-gotham = "0.4.0"
-gotham_derive = "0.4.0"
-rustls = "0.15"
-hyper = "0.12"
+rustls = "0.16"
+hyper = "0.13"
 hyper-tls = "0.3.2"
-hyper-rustls = "0.16"
+hyper-rustls = "0.19"
 mime = "0.3"
 chrono = { version = "0.4.4", features = ["serde"] }
 blake2-rfc = "0.2"
