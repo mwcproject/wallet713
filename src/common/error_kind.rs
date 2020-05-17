@@ -155,4 +155,10 @@ pub enum ErrorKind {
     #[fail(display = "Unknown error occurred during swap processing")]
     SwapMessageError,
 
+    #[fail(display = "Swap deal not found for this wallet, {}", 0)]
+    SwapDealNotFoundError(String),
+
+    #[fail(display = "Unable to build saved swap from Json, {}", 0)]
+    SwapDealGenericError(String),
+
 }

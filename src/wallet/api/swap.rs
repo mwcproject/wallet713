@@ -3,10 +3,13 @@ use std::sync::Arc;
 use std::str::FromStr;
 use std::{mem, time, thread};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::fs::{read_to_string, write};
+use std::fs::{read_to_string, write, File};
+use std::path::Path;
+use std::{fs, path};
+use std::io::{Read, Write};
 use parking_lot::{ Mutex };
-use failure::Error;
 use blake2_rfc::blake2b::blake2b;
+use uuid::Uuid;
 
 use crate::bitcoin::{Address};
 use crate::bitcoin::network::constants::Network as BtcNetwork;
@@ -17,7 +20,7 @@ use grin_wallet_impls::adapters::mwcmq::MWCMQPublisher;
 use grin_wallet_impls::adapters::types::Publisher;
 use grin_wallet_impls::adapters::types::ContextHolderType;
 use grin_wallet_config::WalletConfig;
-use common::ErrorKind;
+use common::{ErrorKind, Error};
 use common::config::Wallet713Config;
 
 use grinswap::{Context, Swap, Currency, Action, Status, SwapApi, BuyApi, SellApi};
@@ -35,6 +38,7 @@ use grin_wallet_impls::node_clients::HTTPNodeClient;
 use grin_keychain::{ExtKeychain, Keychain, Identifier, SwitchCommitmentType };
 
 const GRIN_UNIT: u64 = 1_000_000_000;
+pub const SWAP_DEAL_SAVE_DIR: &'static str = "saved_swap_deal";
 
 pub struct ContextHolder {
     pub context: Context,
@@ -141,6 +145,51 @@ fn _btc_address(kc: &ExtKeychain) -> String
         BtcNetwork::Testnet,
     );
     format!("{}", address)
+}
+
+// Init for file storage for saving swap deals
+fn init_swap_backend(data_file_dir: &str) -> Result<(), Error> {
+    let stored_swap_deal_path = path::Path::new(data_file_dir).join(SWAP_DEAL_SAVE_DIR);
+    fs::create_dir_all(&stored_swap_deal_path)
+        .expect("Could not create swap deal storage directory!");
+    Ok(())
+}
+
+// Get swap deal from the storage
+fn get_swap_deal(data_file_dir: &str, swap_id: &str) -> Result<Swap, Error> {
+    let filename = format!("{}.swap", swap_id);
+    let path = path::Path::new(data_file_dir)
+                    .join(SWAP_DEAL_SAVE_DIR)
+                    .join(filename);
+    let swap_deal_file = Path::new(&path).to_path_buf();
+    if !swap_deal_file.exists() {
+        return Err(ErrorKind::SwapDealNotFoundError(
+            swap_deal_file.to_str().unwrap_or(&"UNKNOWN").to_string(),
+        ).into());
+    }
+    let mut swap_deal_f = File::open(swap_deal_file)?;
+    let mut content = String::new();
+    swap_deal_f.read_to_string(&mut content)?;
+
+    Ok((serde_json::from_str(&content).map_err(|e| {
+        ErrorKind::SwapDealGenericError(format!("Unable to get saved swap from Json, {}", e))
+    }))?)
+}
+
+// Store swap deal to a file
+fn store_swap_deal(swap: &Swap, data_file_dir: &str, swap_id: &str) -> Result<(), Error> {
+    let filename = format!("{}.swap", swap_id);
+    let path = path::Path::new(data_file_dir)
+                    .join(SWAP_DEAL_SAVE_DIR)
+                    .join(filename);
+    let path_buf = Path::new(&path).to_path_buf();
+    let mut stored_swap = File::create(path_buf)?;
+    let swap_ser = serde_json::to_string(swap).map_err(|e| {
+        ErrorKind::SwapDealGenericError(format!("Unable to convert swap to Json, {}", e))
+    })?;
+    stored_swap.write_all(&swap_ser.as_bytes())?;
+    stored_swap.sync_all()?;
+    Ok(())
 }
 
 pub fn make_sell_mwc<'a, T: ?Sized, C, K>(_wallet: &mut T,
@@ -266,6 +315,7 @@ pub fn take_sell_mwc<'a, T: ?Sized, C, K>(_wallet: &mut T,
     assert_eq!(swap_sell.status, Status::Offered);
     assert_eq!(action, Action::ReceiveMessage);
     println!("In swap, I am done creating the offer. ");
+    store_swap_deal(&swap_sell, _wallet.get_data_file_dir(), &swap_sell.id.to_string());
 
     Ok(())
 }
@@ -352,7 +402,7 @@ pub fn process_accept_offer<'a, T: ?Sized, C, K>(wallet: &mut T,
                                           from: &dyn crate::contacts::types::Address,
                                           message: Message,
                                           config: &Wallet713Config,
-                                          publisher: &mut Publisher
+                                          publisher: &mut Publisher,
 ) -> Result<(), Error>
     where
         T: WalletBackend<'a, C, K>,
@@ -370,9 +420,10 @@ pub fn process_accept_offer<'a, T: ?Sized, C, K>(wallet: &mut T,
     let mut api_sell = BtcSwapApi::<_, _>::new(
         node_client.clone(), btc_node_client);
 
-    /*let (ctx_sell, mut swap_sell) = CONTEXT.read();
+    let ctx_sell = context_sell(&kc_sell);
+    let mut swap_sell = get_swap_deal(wallet.get_data_file_dir(), &message.id.to_string()).unwrap();
 
-    let action = api_sell.receive_message(&kc_sell, swap_sell, &ctx_sell, message).unwrap();
+    let action = api_sell.receive_message(&kc_sell, &mut swap_sell, &ctx_sell, message).unwrap();
     assert_eq!(action, Action::PublishTx);
     assert_eq!(swap_sell.status, Status::Accepted);
     println!("Received message for publishing txs!");
@@ -386,7 +437,7 @@ pub fn process_accept_offer<'a, T: ?Sized, C, K>(wallet: &mut T,
         } => assert_eq!(actual, 0),
         _ => panic!("Invalid action"),
     }
-    println!("Successfully submitted!");*/
+    println!("Successfully submitted!");
 
     Ok(())
 }
@@ -411,7 +462,10 @@ pub fn process_init_redeem<'a, T: ?Sized, C, K>(wallet: &mut T,
     let kc_sell = _keychain(1);
     let mut api_sell = BtcSwapApi::<_, _>::new(
         node_client.clone(), btc_node_client);
-/*
+
+    let ctx_sell = context_sell(&kc_sell);
+    let mut swap_sell = get_swap_deal(wallet.get_data_file_dir(), &message.id.to_string()).unwrap();
+
     loop {
         let action = api_sell.required_action(&kc_sell, &mut swap_sell, &ctx_sell).unwrap();
         println!("action={:?}", action);
@@ -425,7 +479,7 @@ pub fn process_init_redeem<'a, T: ?Sized, C, K>(wallet: &mut T,
 
     let _action = api_sell.receive_message(&kc_sell, &mut swap_sell, &ctx_sell, message).unwrap();
     let signed_redeem_message = api_sell.message(&kc_sell,&swap_sell).unwrap();
-    let res = publisher.post_take(&signed_redeem_message, &from.stripped());
+    let res = publisher.post_take(&signed_redeem_message, &from.get_stripped());
 
     if res.is_err() {
         println!("Error: {:?}", res);
@@ -458,7 +512,7 @@ pub fn process_init_redeem<'a, T: ?Sized, C, K>(wallet: &mut T,
     let action = api_sell.completed(&kc_sell, &mut swap_sell, &ctx_sell).unwrap();
     assert_eq!(action, Action::None);
     assert_eq!(swap_sell.status, Status::Completed);
-*/
+
     Ok(())
 }
 
@@ -483,7 +537,9 @@ pub fn process_redeem<'a, T: ?Sized, C, K>(wallet: &mut T,
     let mut api_buy = BtcSwapApi::<_, _>::new(
         node_client.clone(), btc_node_client);
 
-    /*
+    let ctx_buy = context_sell(&kc_buy);
+    let mut swap_buy = get_swap_deal(wallet.get_data_file_dir(), &message.id.to_string()).unwrap();
+
     loop {
         let action = api_buy.required_action(&kc_buy, &mut swap_buy, &ctx_buy).unwrap();
         println!("action = {:?}", action);
@@ -513,7 +569,7 @@ pub fn process_redeem<'a, T: ?Sized, C, K>(wallet: &mut T,
         }
     }
 
-    println!("Buyer completes!"); */
+    println!("Buyer completes!");
     Ok(())
 }
 
@@ -547,7 +603,6 @@ impl SwapProcessor {
             C: NodeClient + 'a,
             K: grinswap::Keychain + 'a,
     {
-
         println!("Processing swap message!!!");
 
         let _res = match &message.inner {
@@ -579,6 +634,10 @@ impl SwapProcessor {
         K: Keychain + 'a,
         {
             println!("Starting the swap!");
+
+            init_swap_backend(wallet.get_data_file_dir()).unwrap_or_else(|e| {
+                error!("Unable to init swap_backend_storage {}", e);
+            });
 
             let ctx = match btc_redeem {
                 Some(btc_address) => SwapProcessor::new(is_buy, qty, rate,
