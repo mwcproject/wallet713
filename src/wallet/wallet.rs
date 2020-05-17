@@ -529,8 +529,8 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn submit(&self, txn: &mut Transaction) -> Result<(), Error> {
-        api::post_tx(self.get_wallet_instance()?, &txn, false).map_err(|e| ErrorKind::GrinWalletPostError(format!("{}", e)))?;
+    pub fn submit(&self, txn: &mut Transaction, fluff: bool) -> Result<(), Error> {
+        api::post_tx(self.get_wallet_instance()?, &txn, fluff).map_err(|e| ErrorKind::GrinWalletPostError(format!("{}", e)))?;
         Ok(())
     }
 

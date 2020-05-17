@@ -100,7 +100,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26c4f3195085c36ea8d24d32b2f828d23296a9370a28aa39d111f6f16bef9f3b"
 dependencies = [
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "syn 1.0.22",
 ]
 
@@ -182,7 +182,7 @@ dependencies = [
  "log",
  "peeking_take_while",
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "regex",
  "rustc-hash",
  "shlex",
@@ -910,7 +910,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aa4da3c766cd7a0db8242e326e9e4e081edd567072893ed320008189715366a4"
 dependencies = [
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "syn 1.0.22",
  "synstructure 0.12.3",
 ]
@@ -1048,7 +1048,7 @@ checksum = "d0b5a30a4328ab5473878237c447333c093297bded83a4983d10f4deea240d39"
 dependencies = [
  "proc-macro-hack",
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "syn 1.0.22",
 ]
 
@@ -1342,7 +1342,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#a8306a2c3277da64ebcdd976c61dcb77e09bafe0"
+source = "git+https://github.com/mwcproject/mwc-wallet#2ee9c559bdd88d85e0d38ac9e7ee8f8a96acbe99"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1367,7 +1367,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#a8306a2c3277da64ebcdd976c61dcb77e09bafe0"
+source = "git+https://github.com/mwcproject/mwc-wallet#2ee9c559bdd88d85e0d38ac9e7ee8f8a96acbe99"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -1382,7 +1382,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#a8306a2c3277da64ebcdd976c61dcb77e09bafe0"
+source = "git+https://github.com/mwcproject/mwc-wallet#2ee9c559bdd88d85e0d38ac9e7ee8f8a96acbe99"
 dependencies = [
  "chrono",
  "colored",
@@ -1413,7 +1413,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#a8306a2c3277da64ebcdd976c61dcb77e09bafe0"
+source = "git+https://github.com/mwcproject/mwc-wallet#2ee9c559bdd88d85e0d38ac9e7ee8f8a96acbe99"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1456,7 +1456,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#a8306a2c3277da64ebcdd976c61dcb77e09bafe0"
+source = "git+https://github.com/mwcproject/mwc-wallet#2ee9c559bdd88d85e0d38ac9e7ee8f8a96acbe99"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1494,7 +1494,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#a8306a2c3277da64ebcdd976c61dcb77e09bafe0"
+source = "git+https://github.com/mwcproject/mwc-wallet#2ee9c559bdd88d85e0d38ac9e7ee8f8a96acbe99"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
@@ -2520,7 +2520,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a82996f11efccb19b685b14b5df818de31c1edcee3daa256ab5775dd98e72feb"
 dependencies = [
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "syn 1.0.22",
 ]
 
@@ -2628,9 +2628,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.5"
+version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42934bc9c8ab0d3b273a16d8551c8f0fcff46be73276ca083ec2414c15c4ba5e"
+checksum = "54a21852a652ad6f610c9510194f398ff6f8692e334fd1145fed931f7fbe44ea"
 dependencies = [
  "proc-macro2 1.0.13",
 ]
@@ -3176,7 +3176,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "818fbf6bfa9a42d3bfcaca148547aa00c7b915bec71d1757aa2d44ca68771984"
 dependencies = [
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "syn 1.0.22",
 ]
 
@@ -3394,7 +3394,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1425de3c33b0941002740a420b1a906a350b88d08b82b2c8a01035a3f9447bac"
 dependencies = [
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "unicode-xid 0.2.0",
 ]
 
@@ -3417,7 +3417,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67656ea1dc1b41b1451851562ea232ec2e5a80242139f7e679ceccfb5d61f545"
 dependencies = [
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "syn 1.0.22",
  "unicode-xid 0.2.0",
 ]
@@ -3503,7 +3503,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ab81dbd1cd69cd2ce22ecfbdd3bdb73334ba25350649408cc6c085f46d89573d"
 dependencies = [
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "syn 1.0.22",
 ]
 
@@ -3675,7 +3675,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f0c3acc6aa564495a0f2e1d59fab677cd7f81a19994cfc7f3ad0e64301560389"
 dependencies = [
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "syn 1.0.22",
 ]
 
@@ -4063,7 +4063,7 @@ dependencies = [
  "lazy_static",
  "log",
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "syn 1.0.22",
  "wasm-bindgen-shared",
 ]
@@ -4074,7 +4074,7 @@ version = "0.2.62"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2cd85aa2c579e8892442954685f0d801f9129de24fa2136b2c6a539c76b65776"
 dependencies = [
- "quote 1.0.5",
+ "quote 1.0.6",
  "wasm-bindgen-macro-support",
 ]
 
@@ -4085,7 +4085,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8eb197bd3a47553334907ffd2f16507b4f4f01bbec3ac921a7719e0decdfe72a"
 dependencies = [
  "proc-macro2 1.0.13",
- "quote 1.0.5",
+ "quote 1.0.6",
  "syn 1.0.22",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",

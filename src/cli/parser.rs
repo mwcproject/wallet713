@@ -390,6 +390,9 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("-f, --file=<file> 'the transaction file'")
                     )
+                    .arg(
+                        Arg::from_usage("[fluff] -l, --fluff 'the transaction is submitted as a fluff transactions'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("check")

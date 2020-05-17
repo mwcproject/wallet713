@@ -7,8 +7,6 @@ extern crate log;
 extern crate serde_json;
 #[macro_use]
 extern crate clap;
-#[macro_use]
-extern crate lazy_static;
 extern crate hyper_tls;
 extern crate env_logger;
 extern crate blake2_rfc;
@@ -119,12 +117,6 @@ use std::sync::mpsc;
 
 #[cfg(not(target_os = "android"))]
 const CLI_HISTORY_PATH: &str = ".history";
-
-// Slates that are scheduled to flaff instead of dandelion
-lazy_static! {
-    static ref RECV_ACCOUNT:   RwLock<Option<String>>  = RwLock::new(None);
-    static ref FLUFFED_SLATES: RwLock<HashSet<String>> = RwLock::new(HashSet::new());
-}
 
 fn getpassword() -> Result<String, Error> {
     let mwc_password = getenv("MWC_PASSWORD")?;
@@ -275,8 +267,6 @@ use broker::{
 };
 use std::borrow::Borrow;
 use uuid::Uuid;
-use std::sync::RwLock;
-use std::collections::HashSet;
 
 fn start_mwcmqs_listener(
     config: &Wallet713Config,
@@ -1305,20 +1295,9 @@ fn do_command(
                 None
             };
 
-            let mut w = wallet.lock();
-            let old_account = w.get_current_account()?;
-            let receive_account: String = RECV_ACCOUNT.read().unwrap().clone().unwrap_or(old_account.label.clone());
-
-            if old_account.label != receive_account {
-                w.switch_account(&receive_account)?;
-            }
+            let w = wallet.lock();
             // Processing with a new receive account
             w.process_sender_initiated_slate(Some(String::from("file")), &mut slate, key_id, output_amounts, None )?;
-            // Switch back to the orifinal one
-            if old_account.label != receive_account {
-                w.switch_account(&old_account.label)?;
-            }
-
             let message = &slate.participant_data[0].message;
             let amount = core::amount_to_hr_string(slate.amount, false);
             if message.is_some() {
@@ -1360,8 +1339,8 @@ fn do_command(
             file.read_to_string(&mut txn_file)?;
             let tx_bin = from_hex(&txn_file)?;
             let mut txn = ser::deserialize::<Transaction>(&mut &tx_bin[..], ser::ProtocolVersion(1) )?;
-
-            wallet.lock().submit(&mut txn)?;
+            let fluff = args.is_present("fluff");
+            wallet.lock().submit(&mut txn, fluff)?;
         }
         Some("nodeinfo") => {
             wallet.lock().node_info()?;
@@ -1507,7 +1486,7 @@ fn do_command(
             )?;
 
             if fluff {
-                FLUFFED_SLATES.write().unwrap().insert(slate.id.to_string());
+                grin_wallet_controller::controller::set_fluff_for_slate(slate.id.to_string());
             }
 
             // Stopping updater, sync should be done by now
@@ -1778,8 +1757,8 @@ fn do_command(
             let args = matches.subcommand_matches("set-recv").unwrap();
             let account = args.value_of("account").unwrap();
             if wallet.lock().account_path(account)?.is_some() {
-                    RECV_ACCOUNT.write().unwrap().replace(account.to_string());
-                    cli_message!("Incoming funds will be received in account: {}", account);
+                grin_wallet_libwallet::set_receive_account(account.to_string());
+                cli_message!("Incoming funds will be received in account: {}", account);
             }
             else
             {
@@ -1789,7 +1768,6 @@ fn do_command(
         Some("getrootpublickey") => {
             let args = matches.subcommand_matches("getrootpublickey").unwrap();
             let message = args.value_of("message");
-
             let mut w = wallet.lock();
             w.getrootpublickey(message)?;
         }
