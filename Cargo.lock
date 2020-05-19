@@ -2,9 +2,9 @@
 # It is not intended for manual editing.
 [[package]]
 name = "addr2line"
-version = "0.12.0"
+version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "456d75cbb82da1ad150c8a9d97285ffcd21c9931dcb11e995903e7d75141b38b"
+checksum = "a49806b9dadc843c61e7c97e72490ad7f7220ae249012fbda9ad0609457c0543"
 dependencies = [
  "gimli",
 ]
@@ -1342,7 +1342,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#17a9f2bcbb75b4a56728441429c67c29dc29f82b"
+source = "git+https://github.com/mwcproject/mwc-wallet#3f00f69a542f91eef3db16fa8ccc8d184181e0ca"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1367,7 +1367,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#17a9f2bcbb75b4a56728441429c67c29dc29f82b"
+source = "git+https://github.com/mwcproject/mwc-wallet#3f00f69a542f91eef3db16fa8ccc8d184181e0ca"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -1382,7 +1382,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#17a9f2bcbb75b4a56728441429c67c29dc29f82b"
+source = "git+https://github.com/mwcproject/mwc-wallet#3f00f69a542f91eef3db16fa8ccc8d184181e0ca"
 dependencies = [
  "chrono",
  "colored",
@@ -1413,7 +1413,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#17a9f2bcbb75b4a56728441429c67c29dc29f82b"
+source = "git+https://github.com/mwcproject/mwc-wallet#3f00f69a542f91eef3db16fa8ccc8d184181e0ca"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1456,7 +1456,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#17a9f2bcbb75b4a56728441429c67c29dc29f82b"
+source = "git+https://github.com/mwcproject/mwc-wallet#3f00f69a542f91eef3db16fa8ccc8d184181e0ca"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1494,7 +1494,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#17a9f2bcbb75b4a56728441429c67c29dc29f82b"
+source = "git+https://github.com/mwcproject/mwc-wallet#3f00f69a542f91eef3db16fa8ccc8d184181e0ca"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
@@ -2506,18 +2506,18 @@ checksum = "d4fd5641d01c8f18a23da7b6fe29298ff4b55afcccdf78973b24cf3175fee32e"
 
 [[package]]
 name = "pin-project"
-version = "0.4.16"
+version = "0.4.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81d480cb4e89522ccda96d0eed9af94180b7a5f93fb28f66e1fd7d68431663d1"
+checksum = "edc93aeee735e60ecb40cf740eb319ff23eab1c5748abfdb5c180e4ce49f7791"
 dependencies = [
  "pin-project-internal",
 ]
 
 [[package]]
 name = "pin-project-internal"
-version = "0.4.16"
+version = "0.4.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a82996f11efccb19b685b14b5df818de31c1edcee3daa256ab5775dd98e72feb"
+checksum = "e58db2081ba5b4c93bd6be09c40fd36cb9193a8336c384f3b40012e531aa7e40"
 dependencies = [
  "proc-macro2 1.0.13",
  "quote 1.0.6",
@@ -3700,9 +3700,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-rustls"
-version = "0.12.2"
+version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "141afec0978abae6573065a48882c6bae44c5cc61db9b511ac4abf6a09bfd9cc"
+checksum = "3068d891551949b37681724d6b73666787cc63fa8e255c812a41d2513aff9775"
 dependencies = [
  "futures-core",
  "rustls",

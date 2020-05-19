@@ -634,7 +634,7 @@ impl Wallet {
         let node_client = HTTPNodeClient::new(
             &config.mwc_node_uri(),
             config.mwc_node_secret(),
-        );
+        )?;
 
         let _ = WalletSeed::from_file(&config.get_data_path_str()?, passphrase.clone())?;
 
