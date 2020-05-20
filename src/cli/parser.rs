@@ -371,7 +371,7 @@ impl<'a, 'b> Parser {
                 SubCommand::with_name("encryptslate")
                 .about("encrypts a slate")
                     .arg(
-                        Arg::from_usage("-f, --file=<file> 'the slate file'")
+                        Arg::from_usage("-s, --slate=<slate> 'the slate'")
                     )
                     .arg(
                         Arg::from_usage("[to] -t, --to=<address> 'the address to send MWCs to'")
@@ -381,7 +381,7 @@ impl<'a, 'b> Parser {
                 SubCommand::with_name("decryptslate")
                 .about("decrypts a slate")
                     .arg(
-                        Arg::from_usage("-f, --file=<file> 'the slate file'")
+                        Arg::from_usage("-s, --slate=<slate> 'the slate'")
                     )
             )
             .subcommand(

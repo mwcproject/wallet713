@@ -1262,10 +1262,7 @@ fn do_command(
 	Some("encryptslate") => {
 		let args = matches.subcommand_matches("encryptslate").unwrap();
  		let to = args.value_of("to");
-		let input = args.value_of("file").unwrap();
-		let mut file = File::open(input.replace("~", &home_dir))?;
-		let mut slate = String::new();
-		file.read_to_string(&mut slate)?;
+		let slate = args.value_of("slate").unwrap();
 		let slate = Slate::deserialize_upgrade(&slate)?;
 
 		if to.is_none() {
@@ -1284,13 +1281,11 @@ fn do_command(
 	}
 	Some("decryptslate") => {
 		let args = matches.subcommand_matches("decryptslate").unwrap();
-		let input = args.value_of("file").unwrap();
-		let mut file = File::open(input.replace("~", &home_dir))?;
+		let slate = args.value_of("slate").unwrap();
 		let public_key = config.get_grinbox_public_key()?;
 		let source_address = ProvableAddress::from_pub_key(&public_key);
 		let mut data = "http://example.com/?".to_string();
-		file.read_to_string(&mut data)?;
-		let data = str::replace(&data, "\"", "");
+		data.push_str(slate);
 
 		let url = Url::parse(&data)?;
 		let mut pairs = url.query_pairs();
