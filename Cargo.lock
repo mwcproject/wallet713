@@ -322,9 +322,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.0.53"
+version = "1.0.54"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "404b1fe4f65288577753b17e3b36a04596ee784493ec249bf81c7f2d2acd751c"
+checksum = "7bbb73db36c1246e9034e307d0fba23f9a2e251faa47ade70c1bd252220c8311"
 
 [[package]]
 name = "cexpr"
@@ -1342,7 +1342,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#0230351381288afbb449c96c288e93dee0ff1a82"
+source = "git+https://github.com/mwcproject/mwc-wallet#89a7f250ea3b26f350e9046bf3e04469f0b39f36"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1367,7 +1367,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#0230351381288afbb449c96c288e93dee0ff1a82"
+source = "git+https://github.com/mwcproject/mwc-wallet#89a7f250ea3b26f350e9046bf3e04469f0b39f36"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -1382,7 +1382,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#0230351381288afbb449c96c288e93dee0ff1a82"
+source = "git+https://github.com/mwcproject/mwc-wallet#89a7f250ea3b26f350e9046bf3e04469f0b39f36"
 dependencies = [
  "chrono",
  "colored",
@@ -1413,7 +1413,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#0230351381288afbb449c96c288e93dee0ff1a82"
+source = "git+https://github.com/mwcproject/mwc-wallet#89a7f250ea3b26f350e9046bf3e04469f0b39f36"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1456,7 +1456,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#0230351381288afbb449c96c288e93dee0ff1a82"
+source = "git+https://github.com/mwcproject/mwc-wallet#89a7f250ea3b26f350e9046bf3e04469f0b39f36"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1494,7 +1494,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#0230351381288afbb449c96c288e93dee0ff1a82"
+source = "git+https://github.com/mwcproject/mwc-wallet#89a7f250ea3b26f350e9046bf3e04469f0b39f36"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",

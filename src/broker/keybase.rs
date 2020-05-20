@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use serde::Serialize;
 use serde_json::{json, Value};
+use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
 
 use grin_wallet_libwallet::Slate;
 use grin_wallet_impls:: {
@@ -71,6 +72,20 @@ impl Publisher for KeybasePublisher {
 
         Ok(())
     }
+
+        fn encrypt_slate(&self, _slate: &Slate, _to: &dyn Address) -> Result<String, Error> {
+		Ok("".to_string())
+	}
+
+        fn decrypt_slate(
+                &self,
+                _from: String,
+                _mapmessage: String,
+                _signature: String,
+                _source_address: &ProvableAddress,
+        ) -> Result<String, Error> {
+		Ok("".to_string())
+	}
 }
 
 impl Subscriber for KeybaseSubscriber {
