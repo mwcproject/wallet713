@@ -368,6 +368,23 @@ impl<'a, 'b> Parser {
                     )
             )
             .subcommand(
+                SubCommand::with_name("encryptslate")
+                .about("encrypts a slate")
+                    .arg(
+                        Arg::from_usage("-f, --file=<file> 'the slate file'")
+                    )
+                    .arg(
+                        Arg::from_usage("[to] -t, --to=<address> 'the address to send MWCs to'")
+                    )
+            )
+            .subcommand(
+                SubCommand::with_name("decryptslate")
+                .about("decrypts a slate")
+                    .arg(
+                        Arg::from_usage("-f, --file=<file> 'the slate file'")
+                    )
+            )
+            .subcommand(
                 SubCommand::with_name("showpubkeys")
                     .about("prints the public keys of a specified slate file")
                     .arg(

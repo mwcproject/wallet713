@@ -48,6 +48,7 @@ extern crate grin_wallet_libwallet;
 extern crate grin_wallet_controller;
 
 use serde_json::Value;
+use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
 use std::{env, thread};
 #[cfg(not(target_os = "android"))]
 use std::borrow::Cow::{self, Borrowed, Owned};
@@ -1258,6 +1259,58 @@ fn do_command(
                 wallet.lock().getnextkey(amount)?;
             }
         }
+	Some("encryptslate") => {
+		let args = matches.subcommand_matches("encryptslate").unwrap();
+ 		let to = args.value_of("to");
+		let input = args.value_of("file").unwrap();
+		let mut file = File::open(input.replace("~", &home_dir))?;
+		let mut slate = String::new();
+		file.read_to_string(&mut slate)?;
+		let slate = Slate::deserialize_upgrade(&slate)?;
+
+		if to.is_none() {
+			return Err(ErrorKind::ToNotSpecified("".to_string()).into());
+		}
+		let to = to.unwrap();
+
+		if let Some((publisher, _)) = mwcmqs_broker {
+                        let mwcmqs_address =
+                            MWCMQSAddress::from_str(&to.to_string())?;
+                        let slate = publisher.encrypt_slate(&slate, mwcmqs_address.borrow())?;
+			println!("slate='{}'", slate);
+		} else {
+			return Err(ErrorKind::ClosedListener("mwcmqs".to_string()).into());
+		}
+	}
+	Some("decryptslate") => {
+		let args = matches.subcommand_matches("decryptslate").unwrap();
+		let input = args.value_of("file").unwrap();
+		let mut file = File::open(input.replace("~", &home_dir))?;
+		let public_key = config.get_grinbox_public_key()?;
+		let source_address = ProvableAddress::from_pub_key(&public_key);
+		let mut data = "http://example.com/?".to_string();
+		file.read_to_string(&mut data)?;
+		let data = str::replace(&data, "\"", "");
+
+		let url = Url::parse(&data)?;
+		let mut pairs = url.query_pairs();
+		let mut from = String::new();
+		let mut signature = String::new();
+		let mut mapmessage = String::new();
+
+                while pairs.count()>0 {
+			let next = pairs.next();
+			let next = next.unwrap();
+			if next.0 == "from" { from = next.1.to_string(); }
+			if next.0 == "signature" { signature = next.1.to_string(); }
+			if next.0 == "mapmessage" { mapmessage = next.1.to_string(); }
+		}
+
+ 		if let Some((publisher, _)) = mwcmqs_broker {
+        		let decrypted_slate = publisher.decrypt_slate(from, mapmessage, signature, &source_address)?;
+			println!("slate='{}'", decrypted_slate);
+		}
+	}
         Some("receive") => {
             let args = matches.subcommand_matches("receive").unwrap();
             let key_id = args.value_of("key_id");

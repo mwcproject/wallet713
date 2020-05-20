@@ -81,6 +81,12 @@ pub enum ErrorKind {
     ClosedListener(String),
 
     #[fail(
+        display = "{} To address was not specified.",
+        0
+    )]
+    ToNotSpecified(String),
+
+    #[fail(
         display = "listener for {} already started!",
         0
     )]

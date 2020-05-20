@@ -74,7 +74,7 @@ impl Publisher for KeybasePublisher {
     }
 
         fn encrypt_slate(&self, _slate: &Slate, _to: &dyn Address) -> Result<String, Error> {
-		Ok("".to_string())
+		unimplemented!();
 	}
 
         fn decrypt_slate(
@@ -84,7 +84,7 @@ impl Publisher for KeybasePublisher {
                 _signature: String,
                 _source_address: &ProvableAddress,
         ) -> Result<String, Error> {
-		Ok("".to_string())
+		unimplemented!();
 	}
 }
 
