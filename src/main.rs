@@ -1276,7 +1276,31 @@ fn do_command(
                         let slate = publisher.encrypt_slate(&slate, mwcmqs_address.borrow())?;
 			println!("slate='{}'", slate);
 		} else {
-			return Err(ErrorKind::ClosedListener("mwcmqs".to_string()).into());
+            let mwcmqs_address = config.get_mwcmqs_address()?;
+            let mwcmqs_secret_key = config.get_mwcmqs_secret_key()?;
+            let addr_name = mwcmqs_address.get_stripped();
+
+            let keychain_mask = Arc::new(Mutex::new(None));
+
+            let controller = Controller::new(
+                &addr_name,
+                wallet.lock().get_wallet_instance()?,
+                keychain_mask,
+                config.max_auto_accept_invoice,
+                false,
+            );
+
+            let publisher = MWCMQPublisher::new(
+            mwcmqs_address.clone(),
+                &mwcmqs_secret_key,
+                config.clone().mwcmqs_domain.unwrap_or(DEFAULT_MWCMQS_DOMAIN.to_string()),
+                config.clone().mwcmqs_port.unwrap_or(DEFAULT_MWCMQS_PORT),
+                false,
+                Box::new(controller.clone())
+            );
+
+            let slate = publisher.encrypt_slate(&slate, mwcmqs_address.borrow())?;
+            println!("slate='{}'", slate);
 		}
 	}
 	Some("decryptslate") => {
@@ -1293,7 +1317,7 @@ fn do_command(
 		let mut signature = String::new();
 		let mut mapmessage = String::new();
 
-                while pairs.count()>0 {
+        while pairs.count()>0 {
 			let next = pairs.next();
 			let next = next.unwrap();
 			if next.0 == "from" { from = next.1.to_string(); }
@@ -1302,9 +1326,37 @@ fn do_command(
 		}
 
  		if let Some((publisher, _)) = mwcmqs_broker {
-        		let decrypted_slate = publisher.decrypt_slate(from, mapmessage, signature, &source_address)?;
+            let decrypted_slate = publisher.decrypt_slate(from, mapmessage, signature, &source_address)?;
 			println!("slate='{}'", decrypted_slate);
 		}
+        else
+        {
+            let mwcmqs_address = config.get_mwcmqs_address()?;
+            let mwcmqs_secret_key = config.get_mwcmqs_secret_key()?;
+            let addr_name = mwcmqs_address.get_stripped();
+
+            let keychain_mask = Arc::new(Mutex::new(None));
+
+            let controller = Controller::new(
+                &addr_name,
+                wallet.lock().get_wallet_instance()?,
+                keychain_mask,
+                config.max_auto_accept_invoice,
+                false,
+            );
+
+            let publisher = MWCMQPublisher::new(
+                mwcmqs_address.clone(),
+                &mwcmqs_secret_key,
+                config.clone().mwcmqs_domain.unwrap_or(DEFAULT_MWCMQS_DOMAIN.to_string()),
+                config.clone().mwcmqs_port.unwrap_or(DEFAULT_MWCMQS_PORT),
+                false,
+                Box::new(controller.clone())
+            );
+
+            let decrypted_slate = publisher.decrypt_slate(from, mapmessage, signature, &source_address)?;
+            println!("slate='{}'", decrypted_slate);
+        }
 	}
         Some("receive") => {
             let args = matches.subcommand_matches("receive").unwrap();
