@@ -1222,14 +1222,13 @@ fn do_command(
                         let slate = publisher.encrypt_slate(&slate, mwcmqs_address.borrow())?;
 			println!("slate='{}'", slate);
 		} else {
-            /*
             let mwcmqs_address_for_publisher = config.get_mwcmqs_address()?;
             let mwcmqs_secret_key = config.get_grinbox_secret_key()?;
             let addr_name = mwcmqs_address.get_stripped();
 
             let keychain_mask = Arc::new(Mutex::new(None));
 
-            let controller = Controller::new(
+            let controller = grin_wallet_controller::controller::Controller::new(
                 &addr_name,
                 wallet.lock().get_wallet_instance()?,
                 keychain_mask,
@@ -1248,7 +1247,6 @@ fn do_command(
 
             let slate = publisher.encrypt_slate(&slate, mwcmqs_address.borrow())?;
             println!("slate='{}'", slate);
-            */
 		}
 	}
 	Some("decryptslate") => {
@@ -1279,14 +1277,13 @@ fn do_command(
 		}
         else
         {
-            /*
             let mwcmqs_address = config.get_mwcmqs_address()?;
             let mwcmqs_secret_key = config.get_grinbox_secret_key()?;
             let addr_name = mwcmqs_address.get_stripped();
 
             let keychain_mask = Arc::new(Mutex::new(None));
 
-            let controller = Controller::new(
+            let controller = grin_wallet_controller::controller::Controller::new(
                 &addr_name,
                 wallet.lock().get_wallet_instance()?,
                 keychain_mask,
@@ -1305,7 +1302,6 @@ fn do_command(
 
             let decrypted_slate = publisher.decrypt_slate(from, mapmessage, signature, &source_address)?;
             println!("slate='{}'", decrypted_slate);
-            */
         }
 	}
         Some("receive") => {
