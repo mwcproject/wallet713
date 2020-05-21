@@ -105,8 +105,6 @@ pub enum ErrorKind {
     #[fail(display = "could not parse number from string!")]
     NumberParsingError,
 
-    #[fail(display = "could not send keybase message!, {}", _0)]
-    KeybaseMessageSendError(String),
     #[fail(display = "failed receiving slate!, {}", _0)]
     GrinWalletReceiveError(String),
     #[fail(display = "failed verifying slate messages!, {}", _0)]
@@ -115,10 +113,6 @@ pub enum ErrorKind {
     GrinWalletFinalizeError(String),
     #[fail(display = "failed posting transaction!, {}", _0)]
     GrinWalletPostError(String),
-    #[fail(
-        display = "keybase not found! consider installing keybase locally first."
-    )]
-    KeybaseNotFound,
     #[fail(
         display = "please stop the listeners before doing this operation"
     )]

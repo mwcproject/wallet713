@@ -268,12 +268,6 @@ impl Wallet713Config {
         self.disable_history.unwrap_or(false)
     }
 
-    pub fn get_mwcmqs_secret_key(&self) -> Result<SecretKey, Error> {
-        self.grinbox_address_key.clone()
-            .ok_or_else(|| ErrorKind::NoWallet.into())
-    }
-
-
     pub fn mwcmqs_domain(&self) -> String {
         self.mwcmqs_domain.clone().unwrap_or("mqs.mwc.mw".to_string())
     }

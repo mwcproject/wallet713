@@ -86,7 +86,6 @@ use url::Url;
 
 #[macro_use]
 mod common;
-mod broker;
 mod cli;
 mod contacts;
 mod wallet;
@@ -103,11 +102,7 @@ use contacts::DEFAULT_MWCMQS_DOMAIN;
 use grin_wallet_libwallet::proof::tx_proof::TxProof;
 use grin_wallet_libwallet::Slate;
 use grin_util::secp::key::PublicKey;
-use grin_wallet_impls:: {
-    MWCMQPublisher, MWCMQSubscriber, MWCMQSAddress, Publisher, Subscriber, Address, AddressType,
-    KeybaseAddress,
-};
-use grin_wallet_controller::controller::Controller;
+use grin_wallet_impls::{MWCMQPublisher, MWCMQSubscriber, MWCMQSAddress, Publisher, Subscriber, Address, AddressType, KeybaseAddress, KeybasePublisher, KeybaseSubscriber};
 
 use contacts::{AddressBook, Backend, Contact,};
 
@@ -115,6 +110,8 @@ use grin_wallet_libwallet::proof::crypto::Hex;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
+use std::borrow::Borrow;
+use uuid::Uuid;
 
 #[cfg(not(target_os = "android"))]
 const CLI_HISTORY_PATH: &str = ".history";
@@ -261,13 +258,6 @@ fn welcome(args: &ArgMatches) -> Result<Wallet713Config, Error> {
     Ok(config)
 }
 
-use broker::{
-    KeybasePublisher, KeybaseSubscriber,
-//    MWCMQPublisher, MWCMQSubscriber,
-    //   Publisher, Subscriber, SubscriptionHandler, yang todo remove this
-};
-use std::borrow::Borrow;
-use uuid::Uuid;
 
 fn start_mwcmqs_listener(
     config: &Wallet713Config,
@@ -282,55 +272,25 @@ fn start_mwcmqs_listener(
 
     println!("starting mwcmqs listener...");
 
-    let mwcmqs_address = config.get_mwcmqs_address()?;
-    let mwcmqs_secret_key = config.get_mwcmqs_secret_key()?;
-    let addr_name = mwcmqs_address.get_stripped();
-
-    let keychain_mask = Arc::new(Mutex::new(None));
-
-    let controller = Controller::new(
-        &addr_name,
+    let res = grin_wallet_controller::controller::start_mwcmqs_listener(
         wallet.lock().get_wallet_instance()?,
-        keychain_mask,
-        config.max_auto_accept_invoice,
+        grin_wallet_config::MQSConfig {
+            mwcmqs_domain: config.mwcmqs_domain.clone().unwrap_or(DEFAULT_MWCMQS_DOMAIN.to_string()),
+            mwcmqs_port: config.mwcmqs_port.clone().unwrap_or(DEFAULT_MWCMQS_PORT),
+        },
+        config.grinbox_address_index.clone().unwrap_or(0),
         false,
-    );
-
-    let mwcmqs_publisher = MWCMQPublisher::new(
-        mwcmqs_address,
-        &mwcmqs_secret_key,
-        config.clone().mwcmqs_domain.unwrap_or(DEFAULT_MWCMQS_DOMAIN.to_string()),
-        config.clone().mwcmqs_port.unwrap_or(DEFAULT_MWCMQS_PORT),
+        Arc::new(Mutex::new(None)),
         false,
-        Box::new(controller.clone())
-    );
+    )?;
 
-    controller.set_publisher(Box::new(mwcmqs_publisher.clone()));
-
-    let mwcmqs_subscriber = MWCMQSubscriber::new(
-        &mwcmqs_publisher
-    );
-
-    let mut cloned_subscriber = mwcmqs_subscriber.clone();
-
-    let _ = thread::Builder::new()
-        .name("mwcmqs-brocker".to_string())
-        .spawn(move || {
-            cloned_subscriber
-                .start()
-                .expect("Unable to start mwc MQS brocker");
-        })?;
-
-    // Publishing this running MQS service
-    grin_wallet_impls::init_mwcmqs_access_data( mwcmqs_publisher.clone(), mwcmqs_subscriber.clone());
-
-    Ok((mwcmqs_publisher, mwcmqs_subscriber))
+    Ok(res)
 }
 
 fn start_keybase_listener(
     config: &Wallet713Config,
     wallet: Arc<Mutex<Wallet>>,
-) -> Result<(KeybasePublisher, KeybaseSubscriber, std::thread::JoinHandle<()>), Error> {
+) -> Result<(KeybasePublisher, KeybaseSubscriber), Error> {
     // make sure wallet is not locked, if it is try to unlock with no passphrase
     {
         if wallet.lock().is_locked() {
@@ -341,28 +301,15 @@ fn start_keybase_listener(
     cli_message!("starting keybase listener...");
 
     let keychain_mask = Arc::new(Mutex::new(None));
-    let controller = Controller::new(
-        "keybase",
+    let res = grin_wallet_controller::controller::start_keybase_listener(
         wallet.lock().get_wallet_instance()?,
-        keychain_mask,
-        config.max_auto_accept_invoice,
+        config.default_keybase_ttl.clone(),
+        config.keybase_binary.clone(),
         false,
-    );
-    let keybase_subscriber = KeybaseSubscriber::new(config.keybase_binary.clone(), Box::new(controller.clone()) );
-    let keybase_publisher = KeybasePublisher::new(config.default_keybase_ttl.clone(),
-                                                  config.keybase_binary.clone())?;
-    controller.set_publisher(Box::new(keybase_publisher.clone()));
+        keychain_mask,
+        false)?;
 
-    let mut cloned_subscriber = keybase_subscriber.clone();
-
-    let keybase_listener_handle = thread::Builder::new()
-        .name("keybase-brocker".to_string())
-        .spawn(move || {
-            cloned_subscriber
-                .start()
-                .expect("something went wrong!");
-        })?;
-    Ok((keybase_publisher, keybase_subscriber, keybase_listener_handle))
+    Ok(res)
 }
 
 fn start_wallet_api(
@@ -713,7 +660,7 @@ fn main() {
         let result = start_keybase_listener(&config, wallet.clone());
         match result {
             Err(e) => cli_message!("{}: {}", "ERROR".bright_red(), e),
-            Ok((publisher, subscriber, _handle)) => {
+            Ok((publisher, subscriber)) => {
                 keybase_broker = Some((publisher, subscriber));
             },
         }
@@ -1072,7 +1019,7 @@ fn do_command(
                 if is_running {
                     Err(ErrorKind::AlreadyListening("keybase".to_string()))?
                 } else {
-                    let (publisher, subscriber, _) =
+                    let (publisher, subscriber) =
                         start_keybase_listener(&config, wallet.clone())?;
                     *keybase_broker = Some((publisher, subscriber));
                 }
@@ -1556,7 +1503,7 @@ fn do_command(
                     if let Some((publisher, _)) = keybase_broker {
                         let mut keybase_address =
                             KeybaseAddress::from_str(&to.to_string())?;
-                        keybase_address.topic = Some(broker::TOPIC_SLATE_NEW.to_string());
+                        keybase_address.topic = Some( grin_wallet_impls::TOPIC_SLATE_NEW.to_string());
                         publisher.post_slate(&slate, keybase_address.borrow())?;
                     } else {
                         return Err(ErrorKind::ClosedListener("keybase".to_string()).into());
