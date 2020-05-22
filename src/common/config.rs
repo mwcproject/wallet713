@@ -82,8 +82,8 @@ pub const WALLET713_CONFIG_HELP: &str =
 # grinbox_protocol_unsecure = false
 
 # MWC MQS connection settings. By default mwc713 using thhis method for communication.
-# mwcmqs_domain: mqs.mwc.mw
-# mwcmqs_port: 443
+# mwcmqs_domain = \"mqs.mwc.mw\"
+# mwcmqs_port = 443
 
 # MWC MQS/GrinBox address defive index. Every new index will give you a new address that will be used for
 # communication with message queue
