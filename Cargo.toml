@@ -39,9 +39,6 @@ ring = "0.16"
 prettytable-rs = "0.7"
 # Requesting gotham 0.4 for tls support
 rustls = "0.16"
-hyper = "0.13"
-hyper-tls = "0.3.2"
-hyper-rustls = "0.19"
 mime = "0.3"
 chrono = { version = "0.4.4", features = ["serde"] }
 blake2-rfc = "0.2"

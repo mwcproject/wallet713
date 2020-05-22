@@ -99,7 +99,7 @@ version = "0.1.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26c4f3195085c36ea8d24d32b2f828d23296a9370a28aa39d111f6f16bef9f3b"
 dependencies = [
- "proc-macro2 1.0.13",
+ "proc-macro2 1.0.15",
  "quote 1.0.6",
  "syn 1.0.23",
 ]
@@ -181,7 +181,7 @@ dependencies = [
  "lazycell",
  "log",
  "peeking_take_while",
- "proc-macro2 1.0.13",
+ "proc-macro2 1.0.15",
  "quote 1.0.6",
  "regex",
  "rustc-hash",
@@ -909,7 +909,7 @@ version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aa4da3c766cd7a0db8242e326e9e4e081edd567072893ed320008189715366a4"
 dependencies = [
- "proc-macro2 1.0.13",
+ "proc-macro2 1.0.15",
  "quote 1.0.6",
  "syn 1.0.23",
  "synstructure 0.12.3",
@@ -1047,7 +1047,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d0b5a30a4328ab5473878237c447333c093297bded83a4983d10f4deea240d39"
 dependencies = [
  "proc-macro-hack",
- "proc-macro2 1.0.13",
+ "proc-macro2 1.0.15",
  "quote 1.0.6",
  "syn 1.0.23",
 ]
@@ -1137,7 +1137,7 @@ checksum = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
 [[package]]
 name = "grin_api"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-node#9edf1ddb8f6f2d4bf96a629fde3b798ebbf67d5d"
+source = "git+https://github.com/mwcproject/mwc-node#c49da1bec666af50cd4d5a51c4582019d20156c3"
 dependencies = [
  "bytes 0.5.4",
  "easy-jsonrpc-mw",
@@ -1152,25 +1152,26 @@ dependencies = [
  "grin_util",
  "http 0.1.21",
  "hyper 0.13.5",
- "hyper-rustls",
+ "hyper-rustls 0.19.1",
+ "hyper-rustls 0.20.0",
  "hyper-timeout",
  "lazy_static",
  "log",
  "regex",
  "ring",
- "rustls",
+ "rustls 0.16.0",
  "serde",
  "serde_derive",
  "serde_json",
  "tokio 0.2.21",
- "tokio-rustls",
+ "tokio-rustls 0.12.3",
  "url 1.7.2",
 ]
 
 [[package]]
 name = "grin_chain"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-node#9edf1ddb8f6f2d4bf96a629fde3b798ebbf67d5d"
+source = "git+https://github.com/mwcproject/mwc-node#c49da1bec666af50cd4d5a51c4582019d20156c3"
 dependencies = [
  "bit-vec",
  "bitflags 1.2.1",
@@ -1193,7 +1194,7 @@ dependencies = [
 [[package]]
 name = "grin_core"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-node#9edf1ddb8f6f2d4bf96a629fde3b798ebbf67d5d"
+source = "git+https://github.com/mwcproject/mwc-node#c49da1bec666af50cd4d5a51c4582019d20156c3"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1219,7 +1220,7 @@ dependencies = [
 [[package]]
 name = "grin_keychain"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-node#9edf1ddb8f6f2d4bf96a629fde3b798ebbf67d5d"
+source = "git+https://github.com/mwcproject/mwc-node#c49da1bec666af50cd4d5a51c4582019d20156c3"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1243,7 +1244,7 @@ dependencies = [
 [[package]]
 name = "grin_p2p"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-node#9edf1ddb8f6f2d4bf96a629fde3b798ebbf67d5d"
+source = "git+https://github.com/mwcproject/mwc-node#c49da1bec666af50cd4d5a51c4582019d20156c3"
 dependencies = [
  "bitflags 1.2.1",
  "chrono",
@@ -1267,7 +1268,7 @@ dependencies = [
 [[package]]
 name = "grin_pool"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-node#9edf1ddb8f6f2d4bf96a629fde3b798ebbf67d5d"
+source = "git+https://github.com/mwcproject/mwc-node#c49da1bec666af50cd4d5a51c4582019d20156c3"
 dependencies = [
  "blake2-rfc",
  "chrono",
@@ -1301,7 +1302,7 @@ dependencies = [
 [[package]]
 name = "grin_store"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-node#9edf1ddb8f6f2d4bf96a629fde3b798ebbf67d5d"
+source = "git+https://github.com/mwcproject/mwc-node#c49da1bec666af50cd4d5a51c4582019d20156c3"
 dependencies = [
  "byteorder",
  "croaring-mw",
@@ -1321,7 +1322,7 @@ dependencies = [
 [[package]]
 name = "grin_util"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-node#9edf1ddb8f6f2d4bf96a629fde3b798ebbf67d5d"
+source = "git+https://github.com/mwcproject/mwc-node#c49da1bec666af50cd4d5a51c4582019d20156c3"
 dependencies = [
  "backtrace",
  "base64 0.9.3",
@@ -1342,7 +1343,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#d8893a2548eee7a673617899f96c681448babf81"
+source = "git+https://github.com/mwcproject/mwc-wallet#5685d4f3eb223023ff57ad8ea4ccf771f9956499"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1367,7 +1368,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#d8893a2548eee7a673617899f96c681448babf81"
+source = "git+https://github.com/mwcproject/mwc-wallet#5685d4f3eb223023ff57ad8ea4ccf771f9956499"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -1382,7 +1383,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#d8893a2548eee7a673617899f96c681448babf81"
+source = "git+https://github.com/mwcproject/mwc-wallet#5685d4f3eb223023ff57ad8ea4ccf771f9956499"
 dependencies = [
  "chrono",
  "colored",
@@ -1413,7 +1414,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#d8893a2548eee7a673617899f96c681448babf81"
+source = "git+https://github.com/mwcproject/mwc-wallet#5685d4f3eb223023ff57ad8ea4ccf771f9956499"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1433,7 +1434,8 @@ dependencies = [
  "grin_wallet_util",
  "http 0.1.21",
  "hyper 0.13.5",
- "hyper-rustls",
+ "hyper-rustls 0.19.1",
+ "hyper-rustls 0.20.0",
  "hyper-socks2",
  "hyper-timeout",
  "lazy_static",
@@ -1456,7 +1458,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#d8893a2548eee7a673617899f96c681448babf81"
+source = "git+https://github.com/mwcproject/mwc-wallet#5685d4f3eb223023ff57ad8ea4ccf771f9956499"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1494,7 +1496,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "3.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet#d8893a2548eee7a673617899f96c681448babf81"
+source = "git+https://github.com/mwcproject/mwc-wallet#5685d4f3eb223023ff57ad8ea4ccf771f9956499"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
@@ -1700,11 +1702,29 @@ dependencies = [
  "ct-logs",
  "futures-util",
  "hyper 0.13.5",
- "rustls",
+ "rustls 0.16.0",
  "rustls-native-certs",
  "tokio 0.2.21",
- "tokio-rustls",
+ "tokio-rustls 0.12.3",
  "webpki",
+]
+
+[[package]]
+name = "hyper-rustls"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ac965ea399ec3a25ac7d13b8affd4b8f39325cca00858ddf5eb29b79e6b14b08"
+dependencies = [
+ "bytes 0.5.4",
+ "ct-logs",
+ "futures-util",
+ "hyper 0.13.5",
+ "log",
+ "rustls 0.17.0",
+ "tokio 0.2.21",
+ "tokio-rustls 0.13.1",
+ "webpki",
+ "webpki-roots",
 ]
 
 [[package]]
@@ -2145,9 +2165,6 @@ dependencies = [
  "grin_wallet_controller",
  "grin_wallet_impls",
  "grin_wallet_libwallet",
- "hyper 0.13.5",
- "hyper-rustls",
- "hyper-tls 0.3.2",
  "lazy_static",
  "log",
  "mime",
@@ -2159,7 +2176,7 @@ dependencies = [
  "reqwest",
  "ring",
  "rpassword",
- "rustls",
+ "rustls 0.16.0",
  "rustyline",
  "semver",
  "serde",
@@ -2520,7 +2537,7 @@ version = "0.4.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e58db2081ba5b4c93bd6be09c40fd36cb9193a8336c384f3b40012e531aa7e40"
 dependencies = [
- "proc-macro2 1.0.13",
+ "proc-macro2 1.0.15",
  "quote 1.0.6",
  "syn 1.0.23",
 ]
@@ -2592,9 +2609,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.13"
+version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53f5ffe53a6b28e37c9c1ce74893477864d64f74778a93a4beb43c8fa167f639"
+checksum = "70a50b9351bfa8d65a7d93ce712dc63d2fd15ddbf2c36990fc7cac344859c04f"
 dependencies = [
  "unicode-xid 0.2.0",
 ]
@@ -2633,7 +2650,7 @@ version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54a21852a652ad6f610c9510194f398ff6f8692e334fd1145fed931f7fbe44ea"
 dependencies = [
- "proc-macro2 1.0.13",
+ "proc-macro2 1.0.15",
 ]
 
 [[package]]
@@ -3010,13 +3027,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustls"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c0d4a31f5d68413404705d6982529b0e11a9aacd4839d1d6222ee3b8cb4015e1"
+dependencies = [
+ "base64 0.11.0",
+ "log",
+ "ring",
+ "sct",
+ "webpki",
+]
+
+[[package]]
 name = "rustls-native-certs"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51ffebdbb48c14f84eba0b715197d673aff1dd22cc1007ca647e28483bbcc307"
 dependencies = [
  "openssl-probe",
- "rustls",
+ "rustls 0.16.0",
  "schannel",
  "security-framework 0.3.4",
 ]
@@ -3176,7 +3206,7 @@ version = "1.0.110"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "818fbf6bfa9a42d3bfcaca148547aa00c7b915bec71d1757aa2d44ca68771984"
 dependencies = [
- "proc-macro2 1.0.13",
+ "proc-macro2 1.0.15",
  "quote 1.0.6",
  "syn 1.0.23",
 ]
@@ -3394,7 +3424,7 @@ version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95b5f192649e48a5302a13f2feb224df883b98933222369e4b3b0fe2a5447269"
 dependencies = [
- "proc-macro2 1.0.13",
+ "proc-macro2 1.0.15",
  "quote 1.0.6",
  "unicode-xid 0.2.0",
 ]
@@ -3417,7 +3447,7 @@ version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67656ea1dc1b41b1451851562ea232ec2e5a80242139f7e679ceccfb5d61f545"
 dependencies = [
- "proc-macro2 1.0.13",
+ "proc-macro2 1.0.15",
  "quote 1.0.6",
  "syn 1.0.23",
  "unicode-xid 0.2.0",
@@ -3490,20 +3520,20 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.18"
+version = "1.0.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5976891d6950b4f68477850b5b9e5aa64d955961466f9e174363f573e54e8ca7"
+checksum = "b13f926965ad00595dd129fa12823b04bbf866e9085ab0a5f2b05b850fbfc344"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.18"
+version = "1.0.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ab81dbd1cd69cd2ce22ecfbdd3bdb73334ba25350649408cc6c085f46d89573d"
+checksum = "893582086c2f98cde18f906265a65b5030a074b1046c674ae898be6519a7f479"
 dependencies = [
- "proc-macro2 1.0.13",
+ "proc-macro2 1.0.15",
  "quote 1.0.6",
  "syn 1.0.23",
 ]
@@ -3675,7 +3705,7 @@ version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f0c3acc6aa564495a0f2e1d59fab677cd7f81a19994cfc7f3ad0e64301560389"
 dependencies = [
- "proc-macro2 1.0.13",
+ "proc-macro2 1.0.15",
  "quote 1.0.6",
  "syn 1.0.23",
 ]
@@ -3706,7 +3736,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3068d891551949b37681724d6b73666787cc63fa8e255c812a41d2513aff9775"
 dependencies = [
  "futures-core",
- "rustls",
+ "rustls 0.16.0",
+ "tokio 0.2.21",
+ "webpki",
+]
+
+[[package]]
+name = "tokio-rustls"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "15cb62a0d2770787abc96e99c1cd98fcf17f94959f3af63ca85bdfb203f051b4"
+dependencies = [
+ "futures-core",
+ "rustls 0.17.0",
  "tokio 0.2.21",
  "webpki",
 ]
@@ -4063,7 +4105,7 @@ dependencies = [
  "bumpalo",
  "lazy_static",
  "log",
- "proc-macro2 1.0.13",
+ "proc-macro2 1.0.15",
  "quote 1.0.6",
  "syn 1.0.23",
  "wasm-bindgen-shared",
@@ -4085,7 +4127,7 @@ version = "0.2.62"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8eb197bd3a47553334907ffd2f16507b4f4f01bbec3ac921a7719e0decdfe72a"
 dependencies = [
- "proc-macro2 1.0.13",
+ "proc-macro2 1.0.15",
  "quote 1.0.6",
  "syn 1.0.23",
  "wasm-bindgen-backend",
@@ -4116,6 +4158,15 @@ checksum = "f1f50e1972865d6b1adb54167d1c8ed48606004c2c9d0ea5f1eeb34d95e863ef"
 dependencies = [
  "ring",
  "untrusted",
+]
+
+[[package]]
+name = "webpki-roots"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8eff4b7516a57307f9349c64bf34caa34b940b66fed4b2fb3136cb7386e5739"
+dependencies = [
+ "webpki",
 ]
 
 [[package]]

@@ -7,7 +7,6 @@ extern crate log;
 extern crate serde_json;
 #[macro_use]
 extern crate clap;
-extern crate hyper_tls;
 extern crate env_logger;
 extern crate blake2_rfc;
 extern crate chrono;
@@ -16,8 +15,6 @@ extern crate colored;
 extern crate failure;
 extern crate futures;
 extern crate rustls;
-extern crate hyper;
-extern crate hyper_rustls;
 extern crate mime;
 extern crate parking_lot;
 extern crate rand;
