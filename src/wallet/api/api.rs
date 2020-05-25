@@ -760,7 +760,6 @@ pub struct NodeInfo
             minimum_confirmations_change_outputs: 1,
             send_args: None,
         };
-println!("params = {:?}", params.ttl_blocks);
 
         let s = grin_wallet_libwallet::owner::init_send_tx( &mut **w,
                                                    None, params , false,
