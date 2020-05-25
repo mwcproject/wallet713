@@ -1419,6 +1419,10 @@ fn do_command(
                 Some(ret)
             };
 
+            let ttl_blocks = args.value_of("ttl-blocks").unwrap_or("0");
+            let ttl_blocks = u64::from_str_radix(ttl_blocks, 10)
+                .map_err(|_| ErrorKind::InvalidTTLBlocks(ttl_blocks.to_string()))?;
+
             let confirmations = args.value_of("confirmations").unwrap_or("10");
             let confirmations = u64::from_str_radix(confirmations, 10)
                 .map_err(|_| ErrorKind::InvalidMinConfirmations(confirmations.to_string()))?;
@@ -1477,6 +1481,7 @@ fn do_command(
                     version,
                     routputs,
                     &status_send_channel,
+                    ttl_blocks,
                 )?;
 
                 file.write_all(serde_json::to_string(&slate)?.as_bytes())?;
@@ -1526,6 +1531,7 @@ fn do_command(
                 version,
                 1,
                 &status_send_channel,
+                ttl_blocks,
             )?;
 
             if fluff {

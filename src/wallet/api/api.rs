@@ -709,6 +709,7 @@ pub struct NodeInfo
         version: Option<u16>, // Slate version
         routputs: usize,  // Number of resulting outputs. Normally it is 1
         status_send_channel: &Option<Sender<StatusMessage>>,
+	ttl_blocks: u64,
     ) -> Result<Slate, Error>
         where
             L: WalletLCProvider<'a, C, K>,
@@ -719,6 +720,8 @@ pub struct NodeInfo
         grin_wallet_libwallet::owner::update_wallet_state(wallet_inst.clone(), None, status_send_channel )?;
 
         wallet_lock!(wallet_inst, w);
+
+	let ttl_blocks = if ttl_blocks == 0 { None } else { Some(ttl_blocks) };
 
         let params = grin_wallet_libwallet::InitTxArgs {
             src_acct_name: active_account,
@@ -740,7 +743,7 @@ pub struct NodeInfo
             /// is generated with the latest version.
             target_slate_version: version,
             /// Number of blocks from current after which TX should be ignored
-            ttl_blocks: None,
+            ttl_blocks: ttl_blocks,
             /// If set, require a payment proof for the particular recipient
             payment_proof_recipient_address: None,
             /// If true, just return an estimate of the resulting slate, containing fees and amounts
@@ -757,6 +760,7 @@ pub struct NodeInfo
             minimum_confirmations_change_outputs: 1,
             send_args: None,
         };
+println!("params = {:?}", params.ttl_blocks);
 
         let s = grin_wallet_libwallet::owner::init_send_tx( &mut **w,
                                                    None, params , false,

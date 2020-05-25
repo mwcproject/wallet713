@@ -245,6 +245,9 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("[strategy] -s, --strategy=<strategy> 'the input selection strategy (all/smallest/custom). Default: smallest'")
                     )
                     .arg(
+                        Arg::from_usage("[ttl-blocks] -b, --ttl-blocks=<ttl-blocks> 'the number of blocks to consider this transaction valid for. Full nodes will not allow this transaction to confirm after this many blocks. Default is None which means the transaction will always be valid.'")
+                    )
+                    .arg(
                         Arg::from_usage("[confirmations] -c, --confirmations=<confirmations> 'the number of confirmations required for inputs'")
                     )
                     .arg(

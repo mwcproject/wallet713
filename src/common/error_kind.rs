@@ -26,6 +26,11 @@ pub enum ErrorKind {
     )]
     InvalidStrategy,
     #[fail(
+        display = "invalid number of ttl_blocks given: `{}`",
+        0
+    )]
+    InvalidTTLBlocks(String),
+    #[fail(
         display = "invalid number of minimum confirmations given: `{}`",
         0
     )]
