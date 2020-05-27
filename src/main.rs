@@ -44,7 +44,6 @@ extern crate grin_wallet_impls;
 extern crate grin_wallet_libwallet;
 extern crate grin_wallet_controller;
 
-use serde_json::Value;
 use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
 use std::{env, thread};
 #[cfg(not(target_os = "android"))]
@@ -89,7 +88,7 @@ mod wallet;
 
 use cli::Parser;
 use common::config::Wallet713Config;
-use common::{ErrorKind, Error, COLORED_PROMPT, post, Arc, Mutex};
+use common::{ErrorKind, Error, COLORED_PROMPT, Arc, Mutex};
 #[cfg(not(target_os = "android"))]
 use common::PROMPT;
 use wallet::Wallet;
@@ -99,7 +98,7 @@ use contacts::DEFAULT_MWCMQS_DOMAIN;
 use grin_wallet_libwallet::proof::tx_proof::TxProof;
 use grin_wallet_libwallet::Slate;
 use grin_util::secp::key::PublicKey;
-use grin_wallet_impls::{MWCMQPublisher, MWCMQSubscriber, MWCMQSAddress, Publisher, Subscriber, Address, AddressType, KeybaseAddress, KeybasePublisher, KeybaseSubscriber};
+use grin_wallet_impls::{MWCMQPublisher, MWCMQSubscriber, MWCMQSAddress, Publisher, Subscriber, Address, AddressType, KeybasePublisher, KeybaseSubscriber};
 
 use contacts::{AddressBook, Backend, Contact,};
 
@@ -1371,7 +1370,7 @@ fn do_command(
             let mut slate = String::new();
             file.read_to_string(&mut slate)?;
             let mut slate = Slate::deserialize_upgrade(&slate)?;
-            wallet.lock().finalize_slate(&mut slate, None, fluff)?;
+            wallet.lock().finalize_post_slate(&mut slate, fluff)?;
             cli_message!("{} finalized.", input);
         }
         Some("submit") => {
@@ -1492,6 +1491,11 @@ fn do_command(
                     0)?;
 
                 cli_message!("{} created successfully.", input);
+
+                // Stopping updater, sync should be done by now
+                running.store(false, Ordering::Relaxed);
+                let _ = updater.join();
+
                 return Ok(());
             }
 
@@ -1534,73 +1538,21 @@ fn do_command(
                 ttl_blocks,
             )?;
 
-            if fluff {
-                grin_wallet_controller::controller::set_fluff_for_slate(slate.id.to_string());
-            }
-
             // Stopping updater, sync should be done by now
             running.store(false, Ordering::Relaxed);
             let _ = updater.join();
 
-
-            match to.address_type() {
-                AddressType::MWCMQS => {
-                    if let Some((publisher, _)) = mwcmqs_broker {
-                        let mwcmqs_address =
-                            MWCMQSAddress::from_str(&to.to_string())?;
-                        publisher.post_slate(&slate, mwcmqs_address.borrow())?;
-                    } else {
-                        return Err(ErrorKind::ClosedListener("mwcmqs".to_string()).into());
-                    }
-                }
-                AddressType::Keybase => {
-                    if let Some((publisher, _)) = keybase_broker {
-                        let mut keybase_address =
-                            KeybaseAddress::from_str(&to.to_string())?;
-                        keybase_address.topic = Some( grin_wallet_impls::TOPIC_SLATE_NEW.to_string());
-                        publisher.post_slate(&slate, keybase_address.borrow())?;
-                    } else {
-                        return Err(ErrorKind::ClosedListener("keybase".to_string()).into());
-                    }
-                }
-                AddressType::Https => {
-                    let url =
-                        Url::parse(&format!("{}/v2/foreign", to.to_string()))?;
-                    let req = json!({
-                        "jsonrpc": "2.0",
-                        "method": "receive_tx",
-                        "id": 1,
-                        "params": [
-                                slate,
-                                null,
-                                null
-                        ]
-                    });
-
-                    trace!("Sending receive_tx request: {}", req);
-
-                    let res = post(url.as_str(), apisecret, Some("mwc".to_string()), &req)?;
-
-                    let res: Value = serde_json::from_str(&res).unwrap();
-                    trace!("Response: {}", res);
-                    if res["error"] != json!(null) {
-                        let report = format!(
-                            "Posting transaction slate: Error: {}, Message: {}",
-                            res["error"]["code"], res["error"]["message"]
-                        );
-                        error!("{}", report);
-                        return Err(ErrorKind::HttpRequest(report).into());
-                    }
-
-                    let slate_value = res["result"]["Ok"].clone();
-
-                    slate = Slate::deserialize_upgrade(&serde_json::to_string(&slate_value).unwrap())?;
-                }
+            let method = match to.address_type() {
+                AddressType::MWCMQS => "mwcmqs",
+                AddressType::Keybase => "keybase",
+                AddressType::Https => "http",
             };
 
-            // if we here, it is mean that we was able to generate slate and send it to one way.
-            let ret_id = w.get_id(slate.id)?;
-            println!("txid={:?}", ret_id);
+            let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &apisecret, None)?;
+            slate = sender.send_tx(&slate)?;
+
+            w.tx_lock_outputs(&slate, address,0)?;
+            w.finalize_post_slate( &mut slate, fluff)?;
 
             cli_message!(
                     "slate [{}] for [{}] MWCs sent successfully to [{}]",
@@ -1608,17 +1560,6 @@ fn do_command(
                 core::amount_to_hr_string(slate.amount, false),
                 display_to.unwrap()
             );
-
-            if to.address_type() == AddressType::Https {
-                // In case of http - even get something back...
-                w.tx_lock_outputs(&slate, address,0)?;
-
-                w.finalize_slate(&mut slate, None, fluff)?;
-                cli_message!(
-                    "slate [{}] finalized successfully",
-                    slate.id.to_string()
-                );
-            }
         }
         Some("invoice") => {
             let args = matches.subcommand_matches("invoice").unwrap();

@@ -227,13 +227,6 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn get_id(&self, slate_id: Uuid) -> Result<u32, Error> {
-        // guess height is needed to check node online status.
-        let (_height, _) = api::node_height(self.get_wallet_instance()?)?;
-        let id = api::retrieve_tx_id_by_slate_id(self.get_wallet_instance()?, slate_id)?;
-        Ok(id)
-    }
-
     pub fn txs_count(&self) -> Result<usize, Error> {
         let (_, txs) = api::retrieve_txs_with_proof_flag(self.get_wallet_instance()?, false, None, None, None, None)?;
         Ok(txs.len())
@@ -536,15 +529,11 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn finalize_slate(&self, slate: &mut Slate, tx_proof: Option<&mut TxProof>, fluff: bool) -> Result<(), Error> {
+    pub fn finalize_post_slate(&self, slate: &mut Slate, fluff: bool) -> Result<(), Error> {
         let wallet = self.get_wallet_instance()?;
         api::verify_slate_messages( &slate).map_err(|e| ErrorKind::GrinWalletVerifySlateMessagesError(format!("{}", e)))?;
-
-        let should_post = api::finalize_tx( wallet.clone(), slate, tx_proof).map_err(|e| ErrorKind::GrinWalletFinalizeError(format!("{}", e)))?;
-
-        if should_post {
-            api::post_tx( wallet, &slate.tx, fluff).map_err(|e| ErrorKind::GrinWalletPostError(format!("{}", e)))?;
-        }
+        api::finalize_tx( wallet.clone(), slate).map_err(|e| ErrorKind::GrinWalletFinalizeError(format!("{}", e)))?;
+        api::post_tx( wallet, &slate.tx, fluff).map_err(|e| ErrorKind::GrinWalletPostError(format!("{}", e)))?;
         Ok(())
     }
 

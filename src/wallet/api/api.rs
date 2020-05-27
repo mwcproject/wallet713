@@ -189,28 +189,6 @@ pub struct NodeInfo
         Ok(())
     }
 
-   pub fn retrieve_tx_id_by_slate_id<'a, L, C, K>(
-       wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
-       slate_id: Uuid
-   ) -> Result<u32, Error>
-   where
-           L: WalletLCProvider<'a, C, K>,
-           C: NodeClient + 'a,
-           K: Keychain + 'a,
-   {
-       wallet_lock!(wallet_inst, w);
-       let tx = updater::retrieve_txs(&mut **w, None,
-                                      None, Some(slate_id),
-                                      None,
-                                      false, None, None)?;
-       let mut ret = 1000000000;
-       for t in &tx {
-           ret = t.id;
-       }
-
-       Ok(ret)
-   }
-
     pub fn retrieve_outputs<'a, L, C, K>(
         wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
         include_spent: bool,
@@ -786,9 +764,8 @@ pub struct NodeInfo
 
     pub fn finalize_tx<'a, L, C, K>(
         wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
-        slate: &mut Slate,
-        tx_proof: Option<&mut TxProof>,
-    ) -> Result<bool, Error>
+        slate: &mut Slate
+    ) -> Result<(), Error>
         where
             L: WalletLCProvider<'a, C, K>,
             C: NodeClient + 'a,
@@ -796,24 +773,10 @@ pub struct NodeInfo
     {
         wallet_lock!(wallet_inst, w);
 
-        let (slate_res, context) = grin_wallet_libwallet::owner::finalize_tx( &mut **w, None, slate )?;
+        let (slate_res, _context) = grin_wallet_libwallet::owner::finalize_tx( &mut **w, None, slate )?;
         *slate = slate_res;
 
-        if tx_proof.is_some() {
-            let mut proof = tx_proof.unwrap();
-            proof.amount = context.amount;
-            proof.fee = context.fee;
-            for input in context.input_commits {
-                proof.inputs.push(input.clone());
-            }
-            for output in context.output_commits {
-                proof.outputs.push(output.clone());
-            }
-
-            proof.store_tx_proof(w.get_data_file_dir(), &slate.id.to_string() )?;
-        };
-
-        Ok(true)
+        Ok(())
     }
 
     pub fn cancel_tx<'a, L, C, K>(
