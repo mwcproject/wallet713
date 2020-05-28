@@ -189,6 +189,28 @@ pub struct NodeInfo
         Ok(())
     }
 
+    pub fn retrieve_tx_id_by_slate_id<'a, L, C, K>(
+        wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
+        slate_id: Uuid
+    ) -> Result<u32, Error>
+        where
+            L: WalletLCProvider<'a, C, K>,
+            C: NodeClient + 'a,
+            K: Keychain + 'a,
+    {
+        wallet_lock!(wallet_inst, w);
+        let tx = updater::retrieve_txs(&mut **w, None,
+                                       None, Some(slate_id),
+                                       None,
+                                       false, None, None)?;
+        let mut ret = 1000000000;
+        for t in &tx {
+            ret = t.id;
+        }
+
+        Ok(ret)
+    }
+
     pub fn retrieve_outputs<'a, L, C, K>(
         wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
         include_spent: bool,

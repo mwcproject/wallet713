@@ -227,6 +227,13 @@ impl Wallet {
         Ok(())
     }
 
+    pub fn get_id(&self, slate_id: Uuid) -> Result<u32, Error> {
+        // guess height is needed to check node online status.
+        let (_height, _) = api::node_height(self.get_wallet_instance()?)?;
+        let id = api::retrieve_tx_id_by_slate_id(self.get_wallet_instance()?, slate_id)?;
+        Ok(id)
+    }
+
     pub fn txs_count(&self) -> Result<usize, Error> {
         let (_, txs) = api::retrieve_txs_with_proof_flag(self.get_wallet_instance()?, false, None, None, None, None)?;
         Ok(txs.len())

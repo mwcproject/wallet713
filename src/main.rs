@@ -1554,6 +1554,9 @@ fn do_command(
             w.tx_lock_outputs(&slate, address,0)?;
             w.finalize_post_slate( &mut slate, fluff)?;
 
+            let ret_id = w.get_id(slate.id)?;
+            println!("txid={:?}", ret_id);
+
             cli_message!(
                     "slate [{}] for [{}] MWCs sent successfully to [{}]",
                 slate.id.to_string(),
