@@ -1566,10 +1566,14 @@ fn do_command(
                 AddressType::Https => "http",
             };
 
+            let original_slate = slate.clone();
+
             let mut tor_config = grin_wallet_config::TorConfig::default();
             tor_config.send_config_dir = absolute_path(config.get_top_level_directory()?)?.into_os_string().into_string().unwrap();
             let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &apisecret, Some(tor_config))?;
             slate = sender.send_tx(&slate)?;
+            // Checking is sender didn't do any harm to slate
+            Slate::compare_slates( &original_slate, &slate)?;
 
             w.tx_lock_outputs(&slate, address,0)?;
             w.finalize_post_slate( &mut slate, fluff)?;
