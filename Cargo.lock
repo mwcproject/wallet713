@@ -2172,6 +2172,7 @@ dependencies = [
  "nanoid",
  "native-tls",
  "parking_lot 0.6.4",
+ "path-clean",
  "prettytable-rs",
  "rand 0.6.5",
  "reqwest",
@@ -2488,6 +2489,12 @@ dependencies = [
  "smallvec 0.6.13",
  "winapi 0.3.8",
 ]
+
+[[package]]
+name = "path-clean"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ecba01bf2678719532c5e3059e0b5f0811273d94b397088b82e3bd0a78c78fdd"
 
 [[package]]
 name = "pbkdf2"

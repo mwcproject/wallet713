@@ -9,6 +9,7 @@ extern crate serde_json;
 extern crate clap;
 extern crate env_logger;
 extern crate blake2_rfc;
+extern crate path_clean;
 extern crate chrono;
 extern crate ansi_term;
 extern crate colored;
@@ -52,7 +53,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io;
 use std::io::{Read, Write, BufReader};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use grin_core::core::Transaction;
 use grin_core::ser;
 
@@ -109,8 +110,25 @@ use std::sync::mpsc;
 use std::borrow::Borrow;
 use uuid::Uuid;
 
+
+use path_clean::PathClean;
+
 #[cfg(not(target_os = "android"))]
 const CLI_HISTORY_PATH: &str = ".history";
+
+pub fn absolute_path<P>(path: P) -> io::Result<PathBuf>
+where
+    P: AsRef<Path>,
+{
+    let path = path.as_ref();
+    let absolute_path = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        env::current_dir()?.join(path)
+    }.clean();
+
+    Ok(absolute_path)
+}
 
 fn getpassword() -> Result<String, Error> {
     let mwc_password = getenv("MWC_PASSWORD")?;
@@ -1548,7 +1566,9 @@ fn do_command(
                 AddressType::Https => "http",
             };
 
-            let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &apisecret, None)?;
+            let mut tor_config = grin_wallet_config::TorConfig::default();
+            tor_config.send_config_dir = absolute_path(config.get_top_level_directory()?)?.into_os_string().into_string().unwrap();
+            let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &apisecret, Some(tor_config))?;
             slate = sender.send_tx(&slate)?;
 
             w.tx_lock_outputs(&slate, address,0)?;
