@@ -281,6 +281,9 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("[outputs] -o, --outputs=<outputs> 'the number of outputs'")
                     )
+                    .arg(
+                        Arg::from_usage("[fluff] -l, --fluff 'the transaction is submitted as a fluff transactions'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("repost")

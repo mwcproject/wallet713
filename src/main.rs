@@ -1572,8 +1572,10 @@ fn do_command(
             tor_config.send_config_dir = absolute_path(config.get_top_level_directory()?)?.into_os_string().into_string().unwrap();
             let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &apisecret, Some(tor_config))?;
             slate = sender.send_tx(&slate)?;
+            // Sender can chenge that, restoring original value
+            slate.ttl_cutoff_height = original_slate.ttl_cutoff_height.clone();
             // Checking is sender didn't do any harm to slate
-            Slate::compare_slates( &original_slate, &slate)?;
+            Slate::compare_slates_send( &original_slate, &slate)?;
 
             w.tx_lock_outputs(&slate, address,0)?;
             w.finalize_post_slate( &mut slate, fluff)?;
@@ -1597,6 +1599,7 @@ fn do_command(
             let amount = args.value_of("amount").unwrap();
             let amount = core::amount_from_hr_string(amount)
                 .map_err(|_| ErrorKind::InvalidAmount(amount.to_string()))?;
+            let fluff = args.is_present("fluff");
 
             let mut to = to.to_string();
             let mut display_to = None;
@@ -1620,29 +1623,29 @@ fn do_command(
                 display_to = Some(to.get_stripped());
             }
 
-            let slate = wallet.lock().initiate_receive_tx(Some(to.to_string()) ,amount, outputs)?;
+            let mut slate = wallet.lock().initiate_receive_tx(Some(to.to_string()) ,amount, outputs)?;
 
-            let res_slate: Result<Slate, Error> = match to.address_type() {
-                AddressType::Keybase => {
-                    if let Some((publisher, _)) = keybase_broker {
-                        publisher.post_slate(&slate, to.borrow())?;
-                        Ok(slate)
-                    } else {
-                        Err(ErrorKind::ClosedListener("keybase".to_string()))?
-                    }
-                }
-                AddressType::MWCMQS => {
-                    if let Some((publisher, _)) = mwcmqs_broker {
-                        publisher.post_slate(&slate, to.borrow())?;
-                        Ok(slate)
-                    } else {
-                        Err(ErrorKind::ClosedListener("mwcmqs".to_string()))?
-                    }
-                }
-                _ => Err(ErrorKind::HttpRequest(format!("Invoice doesn't support address type: {:?}", to.address_type())).into()),
+            let method = match to.address_type() {
+                AddressType::MWCMQS => "mwcmqs",
+                AddressType::Keybase => "keybase",
+                AddressType::Https => return Err(ErrorKind::HttpRequest(format!("Invoice doesn't support address type: {:?}", to.address_type())).into()),
             };
 
-            let slate = res_slate?;
+            // Invoices supported by MQS and Keybase only. HTTP based transport works differently, no invoice processing on them.
+            let original_slate = slate.clone();
+            let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &None, None)?;
+            slate = sender.send_tx(&slate)?;
+            // Sender can chenge that, restoring original value
+            slate.ttl_cutoff_height = original_slate.ttl_cutoff_height.clone();
+            // Checking is sender didn't do any harm to slate
+            Slate::compare_slates_invoice( &original_slate, &slate)?;
+
+            { // Do exactly what send does..
+                let w = wallet.lock();
+                w.tx_lock_outputs(&slate, Some(to.to_string()), 0)?;
+                w.finalize_post_slate(&mut slate, fluff)?;
+            }
+
             // Locking for this slate is skipped. Transaction will be received at return state
             cli_message!(
                 "invoice slate [{}] for [{}] MWCs sent successfully to [{}]",

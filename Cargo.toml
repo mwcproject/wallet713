@@ -91,11 +91,11 @@ grin_wallet_config = { git = "https://github.com/mwcproject/mwc-wallet", branch 
 #grin_util = { path = "../mwc-node/util", version= "3.1.3"}
 #grin_store = { path = "../mwc-node/store", version= "3.1.3"}
 #grin_p2p = { path = "../mwc-node/p2p", version= "3.1.3" }
-#grin_wallet_impls = { path = "../mwc-wallet/impls", version= "3.1.7" }
-#grin_wallet_libwallet = { path = "../mwc-wallet/libwallet", version= "3.1.7" }
-#grin_wallet_api = { path = "../mwc-wallet/api", version= "3.1.7" }
-#grin_wallet_controller = { path = "../mwc-wallet/controller", version= "3.1.7" }
-#grin_wallet_config = { path = "../mwc-wallet/config", version= "3.1.7" }
+#grin_wallet_impls = { path = "../mwc-wallet/impls", version= "3.2.1-beta.1" }
+#grin_wallet_libwallet = { path = "../mwc-wallet/libwallet", version= "3.2.1-beta.1" }
+#grin_wallet_api = { path = "../mwc-wallet/api", version= "3.2.1-beta.1" }
+#grin_wallet_controller = { path = "../mwc-wallet/controller", version= "3.2.1-beta.1" }
+#grin_wallet_config = { path = "../mwc-wallet/config", version= "3.2.1-beta.1" }
 
 # OS specific dependencies
 [target.'cfg(not(target_os = "android"))'.dependencies]
