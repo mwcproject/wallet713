@@ -208,6 +208,9 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("[mwcmqs] -s, --mwcmqs 'start the mwcmqs listener'")
                     )
+                    .arg(
+                        Arg::from_usage("[tor] -t, --tor 'start the tor listener'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("stop")

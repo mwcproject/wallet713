@@ -1012,7 +1012,11 @@ fn do_command(
                 .subcommand_matches("listen")
                 .unwrap()
                 .is_present("keybase");
-            if mwcmqs || !keybase {
+            let tor = matches
+                .subcommand_matches("listen")
+                .unwrap()
+                .is_present("tor");
+            if mwcmqs || (!keybase && !tor) {
                 let is_running = match mwcmqs_broker {
                     Some((_, subscriber)) => subscriber.is_running(),
                     _ => false,
@@ -1037,6 +1041,9 @@ fn do_command(
                         start_keybase_listener(&config, wallet.clone())?;
                     *keybase_broker = Some((publisher, subscriber));
                 }
+            }
+            if tor {
+                println!("tor not implemented.");
             }
         }
         Some("stop") => {
