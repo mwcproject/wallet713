@@ -224,6 +224,9 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("[mwcmqs] -s, --mwcmqs 'stop the mwcmqs listener'")
                     )
+                    .arg(
+                        Arg::from_usage("[tor] -t, --tor 'stop the tor listener'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("send")

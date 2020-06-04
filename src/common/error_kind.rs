@@ -41,6 +41,11 @@ pub enum ErrorKind {
     )]
     InvalidPaginationLength(String),
     #[fail(
+        display = "Tor Error: `{}`",
+        0
+    )]
+    TORError(String),
+    #[fail(
     display = "invalid transaction id number: `{}`",
     0
     )]
