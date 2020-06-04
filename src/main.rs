@@ -1,7 +1,6 @@
 #[macro_use]
 extern crate serde_derive;
 extern crate prettytable;
-extern crate nix;
 #[macro_use]
 extern crate log;
 #[macro_use]

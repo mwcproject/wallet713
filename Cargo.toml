@@ -16,7 +16,6 @@ name = "mwczip"
 path = "src/zip/main.rs"
 
 [dependencies]
-nix = "0.10.0"
 serde = "1"
 dont_disappear = "3.0.0"
 serde_derive = "1"

@@ -2171,7 +2171,6 @@ dependencies = [
  "mime",
  "nanoid",
  "native-tls",
- "nix 0.10.0",
  "parking_lot 0.6.4",
  "path-clean",
  "prettytable-rs",
@@ -2230,20 +2229,6 @@ dependencies = [
  "cfg-if",
  "libc",
  "winapi 0.3.8",
-]
-
-[[package]]
-name = "nix"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b7fd5681d13fda646462cfbd4e5f2051279a89a544d50eb98c365b507246839f"
-dependencies = [
- "bitflags 1.2.1",
- "bytes 0.4.12",
- "cfg-if",
- "gcc",
- "libc",
- "void",
 ]
 
 [[package]]
@@ -3085,7 +3070,7 @@ dependencies = [
  "libc",
  "log",
  "memchr 2.3.3",
- "nix 0.14.1",
+ "nix",
  "unicode-segmentation",
  "unicode-width",
  "utf8parse",
