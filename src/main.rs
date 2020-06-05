@@ -1609,11 +1609,9 @@ fn do_command(
 
             let mut to = to.unwrap().to_string();
 
-            let mut display_to = None;
             if to.starts_with("@") {
                 let contact = address_book.lock().get_contact(&to[1..])?;
                 to = contact.get_address().to_string();
-                display_to = Some(contact.get_name().to_string());
             }
             // try parse as a general address and fallback to mwcmqs address
             let address = Address::parse(&to);
@@ -1625,9 +1623,6 @@ fn do_command(
             };
 
             let to = address?;
-            if display_to.is_none() {
-                display_to = Some(to.get_stripped());
-            }
 
             let w = wallet.lock();
             let address = Some(to.to_string());
@@ -1662,13 +1657,6 @@ fn do_command(
             tor_config.send_config_dir = absolute_path(config.get_top_level_directory()?)?.into_os_string().into_string().unwrap();
             let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &apisecret, Some(tor_config))?;
             slate = sender.send_tx(&slate)?;
-
-            cli_message!(
-                    "slate [{}] for [{}] MWCs sent successfully to [{}]",
-                slate.id.to_string(),
-                core::amount_to_hr_string(slate.amount, false),
-                display_to.unwrap()
-            );
 
             // Sender can chenge that, restoring original value
             slate.ttl_cutoff_height = original_slate.ttl_cutoff_height.clone();
