@@ -1608,10 +1608,12 @@ fn do_command(
             }
 
             let mut to = to.unwrap().to_string();
+            let mut display_to = None;
 
             if to.starts_with("@") {
                 let contact = address_book.lock().get_contact(&to[1..])?;
                 to = contact.get_address().to_string();
+                display_to = Some(contact.get_name().to_string());
             }
             // try parse as a general address and fallback to mwcmqs address
             let address = Address::parse(&to);
@@ -1623,6 +1625,9 @@ fn do_command(
             };
 
             let to = address?;
+            if display_to.is_none() {	
+                display_to = Some(to.get_stripped());	
+            }
 
             let w = wallet.lock();
             let address = Some(to.to_string());
@@ -1667,6 +1672,12 @@ fn do_command(
             w.finalize_post_slate( &mut slate, fluff)?;
 
             let ret_id = w.get_id(slate.id)?;
+            cli_message!(	
+                    "Transaction [{}] for [{}] MWCs sent successfully to [{}]",	
+                slate.id.to_string(),	
+                core::amount_to_hr_string(slate.amount, false),	
+                display_to.unwrap()	
+            );
             println!("txid={:?}", ret_id);
         }
         Some("invoice") => {

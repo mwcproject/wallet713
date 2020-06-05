@@ -1343,7 +1343,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#0954837d660784f9ed4d8b43fce376362e4be56a"
+source = "git+https://github.com/mwcproject/mwc-wallet#5a49d10fda4ee29373612f653b9adf8100fa42f5"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1368,7 +1368,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#0954837d660784f9ed4d8b43fce376362e4be56a"
+source = "git+https://github.com/mwcproject/mwc-wallet#5a49d10fda4ee29373612f653b9adf8100fa42f5"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -1383,7 +1383,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#0954837d660784f9ed4d8b43fce376362e4be56a"
+source = "git+https://github.com/mwcproject/mwc-wallet#5a49d10fda4ee29373612f653b9adf8100fa42f5"
 dependencies = [
  "chrono",
  "colored",
@@ -1414,7 +1414,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#0954837d660784f9ed4d8b43fce376362e4be56a"
+source = "git+https://github.com/mwcproject/mwc-wallet#5a49d10fda4ee29373612f653b9adf8100fa42f5"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1457,7 +1457,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#0954837d660784f9ed4d8b43fce376362e4be56a"
+source = "git+https://github.com/mwcproject/mwc-wallet#5a49d10fda4ee29373612f653b9adf8100fa42f5"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1495,7 +1495,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#0954837d660784f9ed4d8b43fce376362e4be56a"
+source = "git+https://github.com/mwcproject/mwc-wallet#5a49d10fda4ee29373612f653b9adf8100fa42f5"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
@@ -2410,9 +2410,9 @@ dependencies = [
 
 [[package]]
 name = "openssl-sys"
-version = "0.9.57"
+version = "0.9.58"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7410fef80af8ac071d4f63755c0ab89ac3df0fd1ea91f1d1f37cf5cec4395990"
+checksum = "a842db4709b604f0fe5d1170ae3565899be2ad3d9cbc72dedc789ac0511f78de"
 dependencies = [
  "autocfg 1.0.0",
  "cc",
