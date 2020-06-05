@@ -541,6 +541,7 @@ impl Wallet {
         api::verify_slate_messages( &slate).map_err(|e| ErrorKind::GrinWalletVerifySlateMessagesError(format!("{}", e)))?;
         api::finalize_tx( wallet.clone(), slate).map_err(|e| ErrorKind::GrinWalletFinalizeError(format!("{}", e)))?;
         api::post_tx( wallet, &slate.tx, fluff).map_err(|e| ErrorKind::GrinWalletPostError(format!("{}", e)))?;
+        println!("slate [{}] finalized successfully",slate.id.to_string());
         Ok(())
     }
 
