@@ -1662,6 +1662,14 @@ fn do_command(
             tor_config.send_config_dir = absolute_path(config.get_top_level_directory()?)?.into_os_string().into_string().unwrap();
             let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &apisecret, Some(tor_config))?;
             slate = sender.send_tx(&slate)?;
+
+            cli_message!(
+                    "slate [{}] for [{}] MWCs sent successfully to [{}]",
+                slate.id.to_string(),
+                core::amount_to_hr_string(slate.amount, false),
+                display_to.unwrap()
+            );
+
             // Sender can chenge that, restoring original value
             slate.ttl_cutoff_height = original_slate.ttl_cutoff_height.clone();
             // Checking is sender didn't do any harm to slate
@@ -1672,13 +1680,6 @@ fn do_command(
 
             let ret_id = w.get_id(slate.id)?;
             println!("txid={:?}", ret_id);
-
-            cli_message!(
-                    "slate [{}] for [{}] MWCs sent successfully to [{}]",
-                slate.id.to_string(),
-                core::amount_to_hr_string(slate.amount, false),
-                display_to.unwrap()
-            );
         }
         Some("invoice") => {
             let args = matches.subcommand_matches("invoice").unwrap();
