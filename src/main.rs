@@ -322,7 +322,7 @@ fn start_tor_listener(
 
                 let _ = match p {
                      Ok(p) => {
-                        cli_message!("TOR listener has started on address: http://{}.onion", onion_address);
+                        cli_message!("tor listener started for [http://{}.onion]", onion_address);
                         for _ in 1..2_000_000_000 {
                             std::thread::sleep(std::time::Duration::from_millis(30));
                             let val = mutex_clone.lock().unwrap();
@@ -1103,7 +1103,7 @@ fn do_command(
             if tor {
                 if !(*tor_running) {
                     if config.foreign_api() {
-                        cli_message!("Starting TOR listener...");
+                        cli_message!("starting tor listener...");
                         *tor_running = true;
                         *tor_state = Some(start_tor_listener(&config, wallet.clone())?);
                     } else {
