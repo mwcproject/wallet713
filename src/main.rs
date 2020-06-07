@@ -308,6 +308,7 @@ fn start_tor_listener(
 ) -> Result<std::sync::Arc<std::sync::Mutex<u32>>, Error> {
     let keychain_mask = Arc::new(Mutex::new(None));
 
+    let cloned_config = config.clone();
     let addr = config.foreign_api_address().clone();
     let mutex = std::sync::Arc::new(std::sync::Mutex::new(1));
     let mutex_clone = mutex.clone();
@@ -315,10 +316,14 @@ fn start_tor_listener(
     thread::Builder::new()
             .name("tor_listener".to_string())
             .spawn(move || {
+                let wallet_data_dir = &absolute_path(
+                      cloned_config.get_top_level_directory().unwrap() +
+                      "/" +
+                      &cloned_config.get_wallet_data_directory().unwrap()).unwrap().into_os_string().into_string().unwrap();
                 let winst = wallet.lock().get_wallet_instance().unwrap();
                 let onion_address = grin_wallet_controller::controller::get_tor_address(winst.clone(), keychain_mask.clone()).unwrap();
                 let p = grin_wallet_controller::controller::init_tor_listener(winst,
-                            keychain_mask, &addr);
+                            keychain_mask, &addr, Some(wallet_data_dir));
 
                 let _ = match p {
                      Ok(p) => {
@@ -1659,7 +1664,9 @@ fn do_command(
             let original_slate = slate.clone();
 
             let mut tor_config = grin_wallet_config::TorConfig::default();
-            tor_config.send_config_dir = absolute_path(config.get_top_level_directory()?)?.into_os_string().into_string().unwrap();
+            tor_config.send_config_dir = absolute_path(
+                    config.get_top_level_directory().unwrap() + "/" +
+                    &config.get_wallet_data_directory()?)?.into_os_string().into_string().unwrap();
             let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &apisecret, Some(tor_config))?;
             slate = sender.send_tx(&slate)?;
 
