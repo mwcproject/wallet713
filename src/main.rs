@@ -302,6 +302,16 @@ fn start_mwcmqs_listener(
     Ok(res)
 }
 
+fn get_wallet_data_dir(config: &Wallet713Config) -> String {
+    let mut top_level_dir = config.get_top_level_directory().unwrap();
+    if top_level_dir.len() == 0 {
+        top_level_dir = std::env::current_dir().unwrap().display().to_string();
+    }
+    let wallet_data_dir = top_level_dir + "/" + &config.get_wallet_data_directory().unwrap();
+
+    absolute_path(wallet_data_dir).unwrap().into_os_string().into_string().unwrap()
+}
+
 fn start_tor_listener(
     config: &Wallet713Config,
     wallet: Arc<Mutex<Wallet>>,
@@ -316,14 +326,12 @@ fn start_tor_listener(
     thread::Builder::new()
             .name("tor_listener".to_string())
             .spawn(move || {
-                let wallet_data_dir = &absolute_path(
-                      cloned_config.get_top_level_directory().unwrap() +
-                      "/" +
-                      &cloned_config.get_wallet_data_directory().unwrap()).unwrap().into_os_string().into_string().unwrap();
+
+                let wallet_data_dir = get_wallet_data_dir(&cloned_config);
                 let winst = wallet.lock().get_wallet_instance().unwrap();
                 let onion_address = grin_wallet_controller::controller::get_tor_address(winst.clone(), keychain_mask.clone()).unwrap();
                 let p = grin_wallet_controller::controller::init_tor_listener(winst,
-                            keychain_mask, &addr, Some(wallet_data_dir));
+                            keychain_mask, &addr, Some(&wallet_data_dir));
 
                 let _ = match p {
                      Ok(p) => {
@@ -1664,9 +1672,7 @@ fn do_command(
             let original_slate = slate.clone();
 
             let mut tor_config = grin_wallet_config::TorConfig::default();
-            tor_config.send_config_dir = absolute_path(
-                    config.get_top_level_directory().unwrap() + "/" +
-                    &config.get_wallet_data_directory()?)?.into_os_string().into_string().unwrap();
+            tor_config.send_config_dir = get_wallet_data_dir(config);
             let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &apisecret, Some(tor_config))?;
             slate = sender.send_tx(&slate)?;
 
