@@ -46,6 +46,7 @@ extern crate grin_wallet_libwallet;
 extern crate grin_wallet_controller;
 extern crate grin_wallet_util;
 
+use grin_wallet_impls::adapters::HttpSlateSender;
 use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
 use std::{env, thread};
 #[cfg(not(target_os = "android"))]
@@ -332,6 +333,13 @@ fn start_tor_listener(
                 let onion_address = grin_wallet_controller::controller::get_tor_address(winst.clone(), keychain_mask.clone()).unwrap();
                 let p = grin_wallet_controller::controller::init_tor_listener(winst,
                             keychain_mask, &addr, Some(&wallet_data_dir));
+                println!("Started listener");
+
+		let sender = HttpSlateSender::new("https://example.com", None, Some(wallet_data_dir), false);
+                println!("Sender created");
+		let mut sender = sender.unwrap();
+		let _s = sender.start_socks(&cloned_config.get_socks_addr());
+                println!("Socks started!");
 
                 let _ = match p {
                      Ok(p) => {
@@ -1672,6 +1680,7 @@ fn do_command(
             let original_slate = slate.clone();
 
             let mut tor_config = grin_wallet_config::TorConfig::default();
+            tor_config.socks_running = true;
             tor_config.send_config_dir = get_wallet_data_dir(config);
             let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &apisecret, Some(tor_config))?;
             slate = sender.send_tx(&slate)?;

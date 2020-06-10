@@ -1343,7 +1343,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#55643d1c26bb44d32315e86656c91a1da077d8ca"
+source = "git+https://github.com/mwcproject/mwc-wallet#91de0fbcf27772f1984d741d6217ea2c9485b52d"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1368,7 +1368,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#55643d1c26bb44d32315e86656c91a1da077d8ca"
+source = "git+https://github.com/mwcproject/mwc-wallet#91de0fbcf27772f1984d741d6217ea2c9485b52d"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -1383,7 +1383,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#55643d1c26bb44d32315e86656c91a1da077d8ca"
+source = "git+https://github.com/mwcproject/mwc-wallet#91de0fbcf27772f1984d741d6217ea2c9485b52d"
 dependencies = [
  "chrono",
  "colored",
@@ -1414,7 +1414,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#55643d1c26bb44d32315e86656c91a1da077d8ca"
+source = "git+https://github.com/mwcproject/mwc-wallet#91de0fbcf27772f1984d741d6217ea2c9485b52d"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1457,7 +1457,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#55643d1c26bb44d32315e86656c91a1da077d8ca"
+source = "git+https://github.com/mwcproject/mwc-wallet#91de0fbcf27772f1984d741d6217ea2c9485b52d"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1495,7 +1495,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#55643d1c26bb44d32315e86656c91a1da077d8ca"
+source = "git+https://github.com/mwcproject/mwc-wallet#91de0fbcf27772f1984d741d6217ea2c9485b52d"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
@@ -2098,7 +2098,7 @@ checksum = "f5e374eff525ce1c5b7687c4cef63943e7686524a387933ad27ca7ec43779cb3"
 dependencies = [
  "log",
  "mio",
- "miow 0.3.4",
+ "miow 0.3.5",
  "winapi 0.3.8",
 ]
 
@@ -2127,9 +2127,9 @@ dependencies = [
 
 [[package]]
 name = "miow"
-version = "0.3.4"
+version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22dfdd1d51b2639a5abd17ed07005c3af05fb7a2a3b1a1d0d7af1000a520c1c7"
+checksum = "07b88fb9795d4d36d62a012dfbf49a8f5cf12751f36d31a9dbe66d528e58979e"
 dependencies = [
  "socket2",
  "winapi 0.3.8",
@@ -3220,9 +3220,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.53"
+version = "1.0.54"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "993948e75b189211a9b31a7528f950c6adc21f9720b6438ff80a7fa2f864cea2"
+checksum = "cfe4c1f6427dbc29329c6288e9e748b8b8e0ea42a0aab733e887fa72c22e965d"
 dependencies = [
  "itoa",
  "ryu",

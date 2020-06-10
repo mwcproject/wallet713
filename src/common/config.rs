@@ -29,6 +29,7 @@ pub struct Wallet713Config {
     pub mwcmqs_port: Option<u16>,
     pub grinbox_protocol_unsecure: Option<bool>,
     pub grinbox_address_index: Option<u32>,
+    pub socks_addr: Option<String>,
     pub mwc_node_uri: Option<String>,
     pub mwc_node_secret: Option<String>,
     pub grinbox_listener_auto_start: Option<bool>,
@@ -84,6 +85,9 @@ pub const WALLET713_CONFIG_HELP: &str =
 # MWC MQS connection settings. By default mwc713 using thhis method for communication.
 # mwcmqs_domain = \"mqs.mwc.mw\"
 # mwcmqs_port = 443
+
+# The address to bind to for tor socks 5 proxy. By default this is set to 127.0.0.1:59051
+# socks_addr = \"127.0.0.1:59051\"
 
 # MWC MQS/GrinBox address defive index. Every new index will give you a new address that will be used for
 # communication with message queue
@@ -169,6 +173,7 @@ impl Wallet713Config {
             mwcmq_port: None,
             mwcmqs_domain: None,
             mwcmqs_port: None,
+            socks_addr: None,
             grinbox_protocol_unsecure: None,
             grinbox_address_index: None,
             mwc_node_uri: None,
@@ -252,6 +257,10 @@ impl Wallet713Config {
         f.write_all((String::from(WALLET713_CONFIG_HELP) + &toml_str).as_bytes())?;
         self.config_home = Some(config_path.to_string());
         Ok(())
+    }
+
+    pub fn get_socks_addr(&self) -> String {
+        self.socks_addr.clone().unwrap_or("127.0.0.1:59051".to_string())
     }
 
     pub fn get_mwcmqs_address(&self) -> Result<MWCMQSAddress, Error> {
