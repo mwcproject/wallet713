@@ -334,16 +334,15 @@ fn start_tor_listener(
                 let p = grin_wallet_controller::controller::init_tor_listener(winst,
                             keychain_mask, &addr, Some(&wallet_data_dir));
 
-		if p.is_err() {
-			cli_message!("Error starting tor listener: {:?}", p);
-		}
-
 		let sender = HttpSlateSender::new("https://example.com", None, Some(wallet_data_dir), false);
 		let mut sender = sender.unwrap();
 		let s = sender.start_socks(&cloned_config.get_socks_addr());
 
-		if s.is_err() {
-			cli_message!("Error starting tor sender: {:?}", s);
+		match s {
+			Err(s) => {
+				cli_message!("Error starting tor sender: {:?}", s);
+			},
+			_ => { }
 		}
 
                 let _ = match p {
