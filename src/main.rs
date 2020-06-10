@@ -333,13 +333,10 @@ fn start_tor_listener(
                 let onion_address = grin_wallet_controller::controller::get_tor_address(winst.clone(), keychain_mask.clone()).unwrap();
                 let p = grin_wallet_controller::controller::init_tor_listener(winst,
                             keychain_mask, &addr, Some(&wallet_data_dir));
-                println!("Started listener");
 
 		let sender = HttpSlateSender::new("https://example.com", None, Some(wallet_data_dir), false);
-                println!("Sender created");
 		let mut sender = sender.unwrap();
 		let _s = sender.start_socks(&cloned_config.get_socks_addr());
-                println!("Socks started!");
 
                 let _ = match p {
                      Ok(p) => {
@@ -523,7 +520,7 @@ impl Highlighter for EditorHelper {
 }
 
 fn kill_tor_if_exists() {
-    println!("killing tor");
+    debug!("killing tor");
 }
 
 #[cfg(not(target_os = "android"))]
