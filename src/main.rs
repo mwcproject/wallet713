@@ -1681,6 +1681,7 @@ fn do_command(
 
             let mut tor_config = grin_wallet_config::TorConfig::default();
             tor_config.socks_running = true;
+            tor_config.socks_proxy_addr = config.get_socks_addr();
             tor_config.send_config_dir = get_wallet_data_dir(config);
             let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &apisecret, Some(tor_config))?;
             slate = sender.send_tx(&slate)?;
