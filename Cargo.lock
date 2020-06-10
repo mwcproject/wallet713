@@ -1343,7 +1343,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#5e36e0d708ded8cd4a4edda825b644fa741d3e40"
+source = "git+https://github.com/mwcproject/mwc-wallet#3461b7e09e73f931906ac620ceffd87e24069be2"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1368,7 +1368,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#5e36e0d708ded8cd4a4edda825b644fa741d3e40"
+source = "git+https://github.com/mwcproject/mwc-wallet#3461b7e09e73f931906ac620ceffd87e24069be2"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -1383,7 +1383,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#5e36e0d708ded8cd4a4edda825b644fa741d3e40"
+source = "git+https://github.com/mwcproject/mwc-wallet#3461b7e09e73f931906ac620ceffd87e24069be2"
 dependencies = [
  "chrono",
  "colored",
@@ -1414,7 +1414,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#5e36e0d708ded8cd4a4edda825b644fa741d3e40"
+source = "git+https://github.com/mwcproject/mwc-wallet#3461b7e09e73f931906ac620ceffd87e24069be2"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1457,7 +1457,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#5e36e0d708ded8cd4a4edda825b644fa741d3e40"
+source = "git+https://github.com/mwcproject/mwc-wallet#3461b7e09e73f931906ac620ceffd87e24069be2"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1495,7 +1495,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "3.2.1"
-source = "git+https://github.com/mwcproject/mwc-wallet#5e36e0d708ded8cd4a4edda825b644fa741d3e40"
+source = "git+https://github.com/mwcproject/mwc-wallet#3461b7e09e73f931906ac620ceffd87e24069be2"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
