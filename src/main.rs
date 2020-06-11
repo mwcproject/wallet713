@@ -356,7 +356,7 @@ fn start_tor_listener(
 
                         Some(p)
                     },
-                    Err(e) => { cli_message!("error starting tor listener: {:?}", e); None},
+                    Err(e) => { cli_message!("Error: Unable to start tor listener: {}", e); None},
                 };
                 cli_message!("Tor listener has stopped.");
 
