@@ -46,6 +46,8 @@ extern crate grin_wallet_libwallet;
 extern crate grin_wallet_controller;
 extern crate grin_wallet_util;
 
+use std::sync::mpsc::Receiver;
+use std::sync::mpsc::Sender;
 use grin_wallet_impls::adapters::HttpSlateSender;
 use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
 use std::{env, thread};
@@ -316,6 +318,7 @@ fn get_wallet_data_dir(config: &Wallet713Config) -> String {
 fn start_tor_listener(
     config: &Wallet713Config,
     wallet: Arc<Mutex<Wallet>>,
+    tor_running: &mut bool,
 ) -> Result<std::sync::Arc<std::sync::Mutex<u32>>, Error> {
     let keychain_mask = Arc::new(Mutex::new(None));
 
@@ -323,6 +326,8 @@ fn start_tor_listener(
     let addr = config.foreign_api_address().clone();
     let mutex = std::sync::Arc::new(std::sync::Mutex::new(1));
     let mutex_clone = mutex.clone();
+
+    let (input, output): (Sender<bool>, Receiver<bool>) = std::sync::mpsc::channel();
 
     thread::Builder::new()
             .name("tor_listener".to_string())
@@ -334,7 +339,7 @@ fn start_tor_listener(
                 let p = grin_wallet_controller::controller::init_tor_listener(winst,
                             keychain_mask, &addr, Some(&wallet_data_dir));
 
-		let sender = HttpSlateSender::new("https://example.com", None, Some(wallet_data_dir), false);
+		let sender = HttpSlateSender::new("https://", None, Some(wallet_data_dir), false);
 		let mut sender = sender.unwrap();
 		let s = sender.start_socks(&cloned_config.get_socks_addr());
 
@@ -349,6 +354,7 @@ fn start_tor_listener(
                      Ok(p) => {
 			let url_str = &format!("http://{}.onion", onion_address);
                         cli_message!("{}", &format!("tor listener started for [{}]", url_str));
+                        input.send(true).unwrap();
                         let mut modder: u64 = 0;
                         let mut last_check_connected = true;
                         for _ in 1..2_000_000_000 {
@@ -361,15 +367,23 @@ fn start_tor_listener(
                             if modder % 200 == 0 || !last_check_connected {
                                 sender.use_socks = true;
                                 let status = sender.check_other_version(&format!("{}/v2/foreign", url_str));
-                                if status.is_err() {
-                                    if last_check_connected {
-                                        cli_message!("\nWARNING: tor is not responding, will try to reconnect");
-                                    }
-                                    last_check_connected = false;
-                                } else if !last_check_connected {
-                                    cli_message!("\nINFO: tor connection reestablished");
-                                    last_check_connected = true;
+                                match status {
+                                    Err(status) => {
+                                        if last_check_connected {
+                                            cli_message!("\nWARNING: tor is not responding, will try to reconnect, {}", status);
+                                        }
+                                        last_check_connected = false;
+                                        // sleep 30 seconds and then retry
+                                        std::thread::sleep(std::time::Duration::from_millis(30_000));
+                                    },
+                                    Ok(_) => {
+                                        if !last_check_connected {
+                                            cli_message!("\nINFO: tor connection reestablished");
+                                            last_check_connected = true;
+                                        }
+                                    },
                                 }
+
                             }
 
 
@@ -377,11 +391,19 @@ fn start_tor_listener(
 
                         Some(p)
                     },
-                    Err(e) => { cli_message!("Error: Unable to start tor listener: {}", e); None},
+                    Err(e) => {
+                        cli_message!("Error: Unable to start tor listener: {}", e);
+                        input.send(false).unwrap();
+                        None
+                    },
                 };
                 cli_message!("Tor listener has stopped.");
 
             })?;
+
+    let resp = output.recv();
+    *tor_running = resp.unwrap();
+
     Ok(mutex)
 }
 
@@ -1150,8 +1172,7 @@ fn do_command(
                 if !(*tor_running) {
                     if config.foreign_api() {
                         cli_message!("starting tor listener...");
-                        *tor_running = true;
-                        *tor_state = Some(start_tor_listener(&config, wallet.clone())?);
+                        *tor_state = Some(start_tor_listener(&config, wallet.clone(), tor_running)?);
                     } else {
                         return Err(ErrorKind::TORError("Foreign API must be enabled to use TOR.".to_string()))?;
                     }
