@@ -340,18 +340,39 @@ fn start_tor_listener(
 
 		match s {
 			Err(s) => {
-				cli_message!("Error starting tor sender: {:?}", s);
+				cli_message!("Error: Tor listener failed to start. HTTP listener must be enabled, {}", s);
 			},
 			_ => { }
 		}
 
                 let _ = match p {
                      Ok(p) => {
-                        cli_message!("tor listener started for [http://{}.onion]", onion_address);
+			let url_str = &format!("http://{}.onion", onion_address);
+                        cli_message!("{}", &format!("tor listener started for [{}]", url_str));
+                        let mut modder: u64 = 0;
+                        let mut last_check_connected = true;
                         for _ in 1..2_000_000_000 {
                             std::thread::sleep(std::time::Duration::from_millis(30));
                             let val = mutex_clone.lock().unwrap();
                             if *val == 0 { break; }
+
+                            modder = modder + 1;
+
+                            if modder % 200 == 0 || !last_check_connected {
+                                sender.use_socks = true;
+                                let status = sender.check_other_version(&format!("{}/v2/foreign", url_str));
+                                if status.is_err() {
+                                    if last_check_connected {
+                                        cli_message!("\nWARNING: tor is not responding, will try to reconnect");
+                                    }
+                                    last_check_connected = false;
+                                } else if !last_check_connected {
+                                    cli_message!("\nINFO: tor connection reestablished");
+                                    last_check_connected = true;
+                                }
+                            }
+
+
                         }
 
                         Some(p)
