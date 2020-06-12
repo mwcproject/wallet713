@@ -17,8 +17,11 @@ use grin_wallet_libwallet::{AcctPathMapping, NodeClient, Slate, TxLogEntry,
 use grin_core::core::Transaction;
 use grin_keychain::{Identifier};
 use grin_wallet_impls::keychain::Keychain;
+use grin_wallet_impls::MWCMQPublisher;
+use grin_wallet_impls::swap::dealer::SwapDealer;
 use grin_util::secp::key::{ PublicKey, SecretKey};
 use crate::common::{Arc, Mutex, Error, ErrorKind};
+use common::config::Wallet713Config;
 
 use grin_keychain::{SwitchCommitmentType, ExtKeychainPath};
 use grin_wallet_libwallet::internal::{updater,keys};
@@ -210,6 +213,39 @@ pub struct NodeInfo
 
         Ok(ret)
     }
+
+pub fn swap<'a, L, C, K>(
+    wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
+    pair: &str,
+    is_make: bool,
+    is_buy: bool,
+    rate: u64,
+    qty: u64,
+    address: Option<&str>,
+    publisher: &mut MWCMQPublisher,
+    btc_redeem: Option<&str>,
+    config: &Wallet713Config
+) -> Result<(), Error>
+    where
+        L: WalletLCProvider<'a, C, K>,
+        C: NodeClient + 'a,
+        K: Keychain + 'a,
+{
+    let swap_dealer = SwapDealer::new();
+
+    Ok(swap_dealer.swap(wallet_inst,
+                                 pair,
+                                 is_make,
+                                 is_buy,
+                                 rate,
+                                 qty,
+                                 address,
+                                 publisher,
+                                 btc_redeem,
+    &config.mwc_node_uri(),
+    config.mwc_node_secret(),
+    &config.electrum_node_client().unwrap())?)
+}
 
     pub fn retrieve_outputs<'a, L, C, K>(
         wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,

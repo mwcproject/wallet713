@@ -2,8 +2,10 @@ use uuid::Uuid;
 use common::config::Wallet713Config;
 use common::{ErrorKind, Error};
 
-use grin_wallet_libwallet::{Slate, TxLogEntry, WalletInst, OutputCommitMapping, ScannedBlockInfo, NodeClient, StatusMessage, AcctPathMapping};
+use grin_wallet_libwallet::{Slate, TxLogEntry, WalletInst, OutputCommitMapping, ScannedBlockInfo,
+                            NodeClient, StatusMessage, AcctPathMapping};
 use grin_wallet_impls::lifecycle::WalletSeed;
+use grin_wallet_impls::MWCMQPublisher;
 use grin_core::core::Transaction;
 use grin_util::secp::key::{ SecretKey, PublicKey };
 use grin_wallet_impls::node_clients::HTTPNodeClient;
@@ -351,6 +353,22 @@ impl Wallet {
         }
 
         Ok(value)
+    }
+
+    pub fn swap(&self,
+                pair: &str,
+                is_make: bool,
+                is_buy: bool,
+                rate: u64,
+                qty: u64,
+                address: Option<&str>,
+                publisher: &mut MWCMQPublisher,
+                btc_redeem: Option<&str>,
+                config: &Wallet713Config,
+    ) -> Result<(), Error> {
+        let wallet = self.get_wallet_instance()?;
+        api::swap(wallet, pair, is_make, is_buy, rate, qty, address, publisher, btc_redeem, config)?;
+        Ok(())
     }
 
     pub fn all_output_count(&self, show_spent: bool) -> Result<usize, Error> {

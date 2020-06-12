@@ -7,13 +7,13 @@ use std::path::{Path, PathBuf};
 use grin_core::global::ChainTypes;
 use grin_util::logger::LoggingConfig;
 
-use grin_wallet_libwallet::proof::crypto::{public_key_from_secret_key};
-use grin_util::secp::key::{PublicKey, SecretKey};
-use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
 use super::ErrorKind;
-use crate::contacts::{ DEFAULT_GRINBOX_PORT};
 use crate::common::Error;
+use crate::contacts::DEFAULT_GRINBOX_PORT;
+use grin_util::secp::key::{PublicKey, SecretKey};
 use grin_wallet_impls::MWCMQSAddress;
+use grin_wallet_libwallet::proof::crypto::public_key_from_secret_key;
+use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
 
 const WALLET713_HOME: &str = ".mwc713";
 const WALLET713_DEFAULT_CONFIG_FILENAME: &str = "wallet713.toml";
@@ -43,6 +43,7 @@ pub struct Wallet713Config {
     pub disable_history: Option<bool>,
     pub foreign_api_address: Option<String>,
     pub foreign_api_secret: Option<String>,
+    pub electrum_node_client: Option<String>,
 
     /// If enabled both tls_certificate_file and tls_certificate_key, TSL will be applicable to all rest API
     /// TLS certificate file
@@ -94,6 +95,9 @@ pub const WALLET713_CONFIG_HELP: &str =
 
 # MWC node secret
 # mwc_node_secret = \"11ne3EAUtOXVKwhxm84U\"
+
+# BTC Electrum Node Client
+# electrum_node_client = \"52.23.248.83:8000\"
 
 # Start Message Queue listener automatically if wallet password was provided at start.
 # grinbox_listener_auto_start = true
@@ -151,15 +155,13 @@ pub const WALLET713_CONFIG_HELP: &str =
 
 ";
 
-
-impl Default for Wallet713Config{
+impl Default for Wallet713Config {
     fn default() -> Wallet713Config {
         Wallet713Config::default(&ChainTypes::Mainnet)
     }
 }
 
 impl Wallet713Config {
-
     pub fn default(chain: &ChainTypes) -> Wallet713Config {
         Wallet713Config {
             chain: chain.clone(),
@@ -185,6 +187,7 @@ impl Wallet713Config {
             disable_history: None,
             foreign_api_address: None,
             foreign_api_secret: None,
+            electrum_node_client: None,
             tls_certificate_file: None,
             tls_certificate_key: None,
             config_home: None,
@@ -192,7 +195,6 @@ impl Wallet713Config {
             wallet_updater_frequency_sec: None,
         }
     }
-
 
     pub fn exists(config_path: Option<&str>, chain: &ChainTypes) -> Result<bool, Error> {
         let default_path_buf = Wallet713Config::default_config_path(chain)?;
@@ -232,8 +234,12 @@ impl Wallet713Config {
 
         // Android doesn't have Home dir. binary dir will be used instead of home dir
         #[cfg(target_os = "android")]
-            let mut path = match std::env::current_exe() {
-            Ok(home) => {let mut home = home; home.pop(); home}
+        let mut path = match std::env::current_exe() {
+            Ok(home) => {
+                let mut home = home;
+                home.pop();
+                home
+            }
             Err(_) => std::env::current_dir()?,
         };
 
@@ -269,27 +275,30 @@ impl Wallet713Config {
     }
 
     pub fn mwcmqs_domain(&self) -> String {
-        self.mwcmqs_domain.clone().unwrap_or("mqs.mwc.mw".to_string())
+        self.mwcmqs_domain
+            .clone()
+            .unwrap_or("mqs.mwc.mw".to_string())
     }
 
-     pub fn grinbox_address_index(&self) -> u32 {
+    pub fn grinbox_address_index(&self) -> u32 {
         self.grinbox_address_index.unwrap_or(0)
     }
 
-
     pub fn get_grinbox_public_key(&self) -> Result<PublicKey, Error> {
-        public_key_from_secret_key(&self.get_grinbox_secret_key()?)
-            .map_err(|e| ErrorKind::GetPublicKeyError(format!("Unable to tranfform public key, {}",e)).into())
+        public_key_from_secret_key(&self.get_grinbox_secret_key()?).map_err(|e| {
+            ErrorKind::GetPublicKeyError(format!("Unable to tranfform public key, {}", e)).into()
+        })
     }
 
     pub fn get_grinbox_secret_key(&self) -> Result<SecretKey, Error> {
-        self.grinbox_address_key.clone()
+        self.grinbox_address_key
+            .clone()
             .ok_or_else(|| ErrorKind::NoWallet.into())
     }
 
     // mwc-wallet using top level dir + data dir. We need to follow it
     pub fn get_top_level_directory(&self) -> Result<String, Error> {
-        let dir = String::from( self.get_data_path()?.parent().unwrap().to_str().unwrap() );
+        let dir = String::from(self.get_data_path()?.parent().unwrap().to_str().unwrap());
         Ok(dir)
     }
 
@@ -379,8 +388,15 @@ impl Wallet713Config {
         self.foreign_api.unwrap_or(false)
     }
 
+    pub fn electrum_node_client(&self) -> Result<String, Error> {
+        Ok(self
+            .electrum_node_client
+            .clone()
+            .unwrap_or(String::from("No electrum node info")))
+    }
+
     /// If enabled both tls_certificate_file and tls_certificate_key, TSL will be applicable to all rest API
-  /// TLS certificate file
+    /// TLS certificate file
     pub fn is_tls_enabled(&self) -> bool {
         self.tls_certificate_file.is_some() && self.tls_certificate_key.is_some()
     }
@@ -388,11 +404,16 @@ impl Wallet713Config {
 
 impl fmt::Display for Wallet713Config {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "wallet713_data_path={}\nmwcmq_port={}\nmwc_node_uri={}\nmwc_node_secret={}",
-               self.wallet713_data_path,
-               self.mwcmq_port.unwrap_or(DEFAULT_GRINBOX_PORT),
-               self.mwc_node_uri.clone().unwrap_or(String::from("provided by vault713")),
-               "{...}")?;
+        write!(
+            f,
+            "wallet713_data_path={}\nmwcmq_port={}\nmwc_node_uri={}\nmwc_node_secret={}",
+            self.wallet713_data_path,
+            self.mwcmq_port.unwrap_or(DEFAULT_GRINBOX_PORT),
+            self.mwc_node_uri
+                .clone()
+                .unwrap_or(String::from("provided by vault713")),
+            "{...}"
+        )?;
         Ok(())
     }
 }
@@ -401,64 +422,64 @@ impl fmt::Display for Wallet713Config {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub enum ConfigError {
-	/// Error with parsing of config file
-	ParseError(String, String),
+    /// Error with parsing of config file
+    ParseError(String, String),
 
-	/// Error with fileIO while reading config file
-	FileIOError(String, String),
+    /// Error with fileIO while reading config file
+    FileIOError(String, String),
 
-	/// No file found
-	FileNotFoundError(String),
+    /// No file found
+    FileNotFoundError(String),
 
-	/// Error serializing config values
-	SerializationError(String),
+    /// Error serializing config values
+    SerializationError(String),
 }
 
 impl fmt::Display for ConfigError {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		match *self {
-			ConfigError::ParseError(ref file_name, ref message) => write!(
-				f,
-				"Error parsing configuration file at {} - {}",
-				file_name, message
-			),
-			ConfigError::FileIOError(ref file_name, ref message) => {
-				write!(f, "{} {}", message, file_name)
-			}
-			ConfigError::FileNotFoundError(ref file_name) => {
-				write!(f, "Configuration file not found: {}", file_name)
-			}
-			ConfigError::SerializationError(ref message) => {
-				write!(f, "Error serializing configuration: {}", message)
-			}
-		}
-	}
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            ConfigError::ParseError(ref file_name, ref message) => write!(
+                f,
+                "Error parsing configuration file at {} - {}",
+                file_name, message
+            ),
+            ConfigError::FileIOError(ref file_name, ref message) => {
+                write!(f, "{} {}", message, file_name)
+            }
+            ConfigError::FileNotFoundError(ref file_name) => {
+                write!(f, "Configuration file not found: {}", file_name)
+            }
+            ConfigError::SerializationError(ref message) => {
+                write!(f, "Error serializing configuration: {}", message)
+            }
+        }
+    }
 }
 
 impl From<io::Error> for ConfigError {
-	fn from(error: io::Error) -> ConfigError {
-		ConfigError::FileIOError(
-			String::from(""),
-			String::from(format!("Error loading config file: {}", error)),
-		)
-	}
+    fn from(error: io::Error) -> ConfigError {
+        ConfigError::FileIOError(
+            String::from(""),
+            String::from(format!("Error loading config file: {}", error)),
+        )
+    }
 }
 
 /// Wallet should be split into a separate configuration file
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct GlobalWalletConfig {
-	/// Keep track of the file we've read
-	pub config_file_path: Option<PathBuf>,
-	/// Wallet members
-	pub members: Option<GlobalWalletConfigMembers>,
+    /// Keep track of the file we've read
+    pub config_file_path: Option<PathBuf>,
+    /// Wallet members
+    pub members: Option<GlobalWalletConfigMembers>,
 }
 
 /// Wallet internal members
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct GlobalWalletConfigMembers {
-	/// Wallet configuration
-	#[serde(default)]
-	pub wallet: Wallet713Config,
-	/// Logging config
-	pub logging: Option<LoggingConfig>,
+    /// Wallet configuration
+    #[serde(default)]
+    pub wallet: Wallet713Config,
+    /// Logging config
+    pub logging: Option<LoggingConfig>,
 }

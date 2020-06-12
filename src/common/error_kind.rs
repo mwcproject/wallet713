@@ -147,4 +147,5 @@ pub enum ErrorKind {
 
     #[fail(display = "unable to get public key, {}", _0)]
     GetPublicKeyError(String),
+
 }
