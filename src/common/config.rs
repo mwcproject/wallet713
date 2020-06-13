@@ -23,11 +23,9 @@ pub struct Wallet713Config {
     pub chain: ChainTypes,
     pub wallet713_data_path: String,
     pub keybase_binary: Option<String>,
-    pub mwcmq_domain: Option<String>,
     pub mwcmq_port: Option<u16>,
     pub mwcmqs_domain: Option<String>,
     pub mwcmqs_port: Option<u16>,
-    pub grinbox_protocol_unsecure: Option<bool>,
     pub grinbox_address_index: Option<u32>,
     pub socks_addr: Option<String>,
     pub mwc_node_uri: Option<String>,
@@ -73,14 +71,6 @@ pub const WALLET713_CONFIG_HELP: &str =
 
 # Path to the keybase binary
 # keybase_binary = \"keybase\"
-
-# Legacy Grin Box connection URI. Depricated unsecure method of communication, not recommended for usage
-# If you decided to use it, specify URI.
-# mwcmq_domain = \"legacy.grin.box\"
-# mwcmq_port   = 443
-
-# Use SSL for Legacy Grin Box connection.
-# grinbox_protocol_unsecure = false
 
 # MWC MQS connection settings. By default mwc713 using thhis method for communication.
 # mwcmqs_domain = \"mqs.mwc.mw\"
@@ -169,12 +159,10 @@ impl Wallet713Config {
             chain: chain.clone(),
             wallet713_data_path: "wallet713_data".to_string(),
             keybase_binary: None,
-            mwcmq_domain: None,
             mwcmq_port: None,
             mwcmqs_domain: None,
             mwcmqs_port: None,
             socks_addr: None,
-            grinbox_protocol_unsecure: None,
             grinbox_address_index: None,
             mwc_node_uri: None,
             mwc_node_secret: None,

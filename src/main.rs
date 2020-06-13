@@ -184,11 +184,6 @@ fn do_config(
         any_matches = true;
     }
 
-    if let Some(domain) = args.value_of("domain") {
-        config.mwcmq_domain = Some(domain.to_string());
-        any_matches = true;
-    }
-
     if let Some(port) = args.value_of("port") {
         let port = u16::from_str_radix(port, 10).map_err(|_| ErrorKind::NumberParsingError)?;
         config.mwcmq_port = Some(port);
@@ -451,8 +446,10 @@ fn start_wallet_api(
                                            config.tls_certificate_key.clone().unwrap() ) )
         }
         else {
-            cli_message!("{}: TLS configuration is not set, non secure HTTP connection will be used. It is recommended to use secure TLS connection.",
+            if !config.foreign_api_address().starts_with("127.0.0.1:") {
+                cli_message!("{}: TLS configuration is not set, non secure HTTP connection will be used. It is recommended to use secure TLS connection.",
                         "WARNING".bright_yellow() );
+            }
             None
         };
 
