@@ -26,7 +26,16 @@ impl Backend {
         let db_path = Path::new(data_path).join(DB_DIR);
         create_dir_all(&db_path)?;
 
-        let store = Store::new(db_path.to_str().unwrap(), None, Some(DB_DIR), None)?;
+        let store = match Store::new(db_path.to_str().unwrap(), None, Some(DB_DIR), None) {
+            Ok(store) => store,
+            Err(err) => {
+                println!("Error: Unable to open contacts DB, storage is corrupted, {}", err);
+                // Let's recreate the DB. Ignoring any cleaning up errors. The last step let's report an error
+                let _ = std::fs::remove_dir_all(&db_path);
+                let _ = create_dir_all(&db_path);
+                Store::new(db_path.to_str().unwrap(), None, Some(DB_DIR), None)?
+            },
+        };
 
         let res = Backend { db: store };
         Ok(res)
