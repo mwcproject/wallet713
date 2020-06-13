@@ -361,7 +361,7 @@ fn start_tor_listener(
 
                             if modder % 10 == 0 || !last_check_connected {
                                 sender.use_socks = true;
-                                let status = sender.check_other_version(&format!("{}/v2/foreign", url_str));
+                                let status = sender.check_other_version(&format!("{}/v2/foreign", url_str), Some(10_000));
                                 match status {
                                     Err(status) => {
                                         if last_check_connected {
@@ -373,6 +373,7 @@ fn start_tor_listener(
                                         let cloned_wallet_data_dir = wallet_data_dir.clone();
                                         p = grin_wallet_controller::controller::init_tor_listener(winst.clone(),
                                             keychain_mask.clone(), &addr, Some(&cloned_wallet_data_dir)).unwrap();
+                                        thread::sleep(std::time::Duration::from_millis(2_000));
                                     },
                                     Ok(_) => {
                                         if !last_check_connected {
