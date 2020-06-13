@@ -336,10 +336,10 @@ fn start_tor_listener(
                 let wallet_data_dir = get_wallet_data_dir(&cloned_config);
                 let winst = wallet.lock().get_wallet_instance().unwrap();
                 let onion_address = grin_wallet_controller::controller::get_tor_address(winst.clone(), keychain_mask.clone()).unwrap();
-                let p = grin_wallet_controller::controller::init_tor_listener(winst,
-                            keychain_mask, &addr, Some(&wallet_data_dir));
+                let p = grin_wallet_controller::controller::init_tor_listener(winst.clone(),
+                               keychain_mask.clone(), &addr, Some(&wallet_data_dir.clone()));
 
-		let sender = HttpSlateSender::new("https://", None, Some(wallet_data_dir), false);
+		let sender = HttpSlateSender::new("https://", None, Some(wallet_data_dir.clone()), false);
 		let mut sender = sender.unwrap();
 		let s = sender.start_socks(&cloned_config.get_socks_addr());
 
@@ -351,7 +351,7 @@ fn start_tor_listener(
 		}
 
                 let _ = match p {
-                     Ok(p) => {
+                     Ok(mut p) => {
 			let url_str = &format!("http://{}.onion", onion_address);
                         cli_message!("{}", &format!("tor listener started for [{}]", url_str));
                         input.send(true).unwrap();
@@ -364,21 +364,25 @@ fn start_tor_listener(
 
                             modder = modder + 1;
 
-                            if modder % 200 == 0 || !last_check_connected {
+                            if modder % 10 == 0 || !last_check_connected {
                                 sender.use_socks = true;
                                 let status = sender.check_other_version(&format!("{}/v2/foreign", url_str));
                                 match status {
                                     Err(status) => {
                                         if last_check_connected {
-                                            cli_message!("\nWARNING: tor is not responding, will try to reconnect, {}", status);
+                                            cli_message!("\nWARNING: tor is not responding, will try to reconnect at [{:?}], {}",
+                                                  std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs(),
+                                                  status);
                                         }
                                         last_check_connected = false;
-                                        // sleep 30 seconds and then retry
-                                        std::thread::sleep(std::time::Duration::from_millis(30_000));
+                                        let cloned_wallet_data_dir = wallet_data_dir.clone();
+                                        p = grin_wallet_controller::controller::init_tor_listener(winst.clone(),
+                                            keychain_mask.clone(), &addr, Some(&cloned_wallet_data_dir)).unwrap();
                                     },
                                     Ok(_) => {
                                         if !last_check_connected {
-                                            cli_message!("\nINFO: tor connection reestablished");
+                                            cli_message!("\nINFO: tor connection reestablished at [{:?}]",
+                                                  std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs());
                                             last_check_connected = true;
                                         }
                                     },
