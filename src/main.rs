@@ -184,11 +184,6 @@ fn do_config(
         any_matches = true;
     }
 
-    if let Some(domain) = args.value_of("domain") {
-        config.mwcmq_domain = Some(domain.to_string());
-        any_matches = true;
-    }
-
     if let Some(port) = args.value_of("port") {
         let port = u16::from_str_radix(port, 10).map_err(|_| ErrorKind::NumberParsingError)?;
         config.mwcmq_port = Some(port);
