@@ -515,7 +515,7 @@ fn start_wallet_api(
                         tls_config,
                         false)
                     {
-                        cli_message!( "{}: Foreign API Listener failed, {}", e, "ERROR".bright_red() );
+                        cli_message!( "{}: Foreign API Listener failed, {}", "ERROR".bright_red(), e );
                     }
                 })?;
         }
