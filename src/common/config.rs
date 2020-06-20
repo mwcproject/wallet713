@@ -187,32 +187,32 @@ impl Wallet713Config {
     }
 
     #[cfg(not(target_os = "android"))]
-    fn get_config_path(config_path: Option<&str>, chain: &ChainTypes) -> String {
+    fn get_config_path(config_path: Option<&str>, chain: &ChainTypes) -> Result<String,Error> {
         let default_path_buf = Wallet713Config::default_config_path(chain)?;
         let default_path = default_path_buf.to_str().unwrap();
         let config_path = config_path.unwrap_or(default_path);
-        String::from(config_path)
+        Ok(String::from(config_path))
     }
     #[cfg(target_os = "android")]
-    fn get_config_path(config_path: Option<&str>, _chain: &ChainTypes) -> String {
-        String::from(config_path.expect("Please specify --config parameter") )
+    fn get_config_path(config_path: Option<&str>, _chain: &ChainTypes) -> Result<String,Error> {
+        Ok(String::from(config_path.expect("Please specify --config parameter") ))
     }
 
     pub fn exists(config_path: Option<&str>, chain: &ChainTypes) -> Result<bool, Error> {
-        let config_path = get_config_path(config_path, chain);
-        Ok(Path::new(config_path).exists())
+        let config_path = Self::get_config_path(config_path, chain)?;
+        Ok(Path::new(&config_path).exists())
     }
 
     pub fn from_file(
         config_path: Option<&str>,
         chain: &ChainTypes,
     ) -> Result<Wallet713Config, Error> {
-        let config_path = get_config_path(config_path, chain);
-        let mut file = File::open(config_path)?;
+        let config_path = Self::get_config_path(config_path, chain)?;
+        let mut file = File::open(&config_path)?;
         let mut toml_str = String::new();
         file.read_to_string(&mut toml_str)?;
         let mut config: Wallet713Config = toml::from_str(&toml_str[..])?;
-        config.config_home = Some(config_path.to_string());
+        config.config_home = Some(config_path);
         Ok(config)
     }
 
@@ -243,11 +243,11 @@ impl Wallet713Config {
     }
 
     pub fn to_file(&mut self, config_path: Option<&str>) -> Result<(), Error> {
-        let config_path = get_config_path(config_path, chain);
+        let config_path = Self::get_config_path(config_path, &self.chain)?;
         let toml_str = toml::to_string(&self)?;
-        let mut f = File::create(config_path)?;
+        let mut f = File::create(&config_path)?;
         f.write_all((String::from(WALLET713_CONFIG_HELP) + &toml_str).as_bytes())?;
-        self.config_home = Some(config_path.to_string());
+        self.config_home = Some(config_path);
         Ok(())
     }
 
