@@ -186,11 +186,20 @@ impl Wallet713Config {
         }
     }
 
-
-    pub fn exists(config_path: Option<&str>, chain: &ChainTypes) -> Result<bool, Error> {
+    #[cfg(not(target_os = "android"))]
+    fn get_config_path(config_path: Option<&str>, chain: &ChainTypes) -> String {
         let default_path_buf = Wallet713Config::default_config_path(chain)?;
         let default_path = default_path_buf.to_str().unwrap();
         let config_path = config_path.unwrap_or(default_path);
+        String::from(config_path)
+    }
+    #[cfg(target_os = "android")]
+    fn get_config_path(config_path: Option<&str>, _chain: &ChainTypes) -> String {
+        String::from(config_path.expect("Please specify --config parameter") )
+    }
+
+    pub fn exists(config_path: Option<&str>, chain: &ChainTypes) -> Result<bool, Error> {
+        let config_path = get_config_path(config_path, chain);
         Ok(Path::new(config_path).exists())
     }
 
@@ -198,9 +207,7 @@ impl Wallet713Config {
         config_path: Option<&str>,
         chain: &ChainTypes,
     ) -> Result<Wallet713Config, Error> {
-        let default_path_buf = Wallet713Config::default_config_path(chain)?;
-        let default_path = default_path_buf.to_str().unwrap();
-        let config_path = config_path.unwrap_or(default_path);
+        let config_path = get_config_path(config_path, chain);
         let mut file = File::open(config_path)?;
         let mut toml_str = String::new();
         file.read_to_string(&mut toml_str)?;
@@ -209,12 +216,14 @@ impl Wallet713Config {
         Ok(config)
     }
 
+    #[cfg(not(target_os = "android"))]
     pub fn default_config_path(chain: &ChainTypes) -> Result<PathBuf, Error> {
         let mut path = Wallet713Config::default_home_path(chain)?;
         path.push(WALLET713_DEFAULT_CONFIG_FILENAME);
         Ok(path)
     }
 
+    #[cfg(not(target_os = "android"))]
     pub fn default_home_path(chain: &ChainTypes) -> Result<PathBuf, Error> {
         // Desktop OS case. Home dir does exist
         #[cfg(not(target_os = "android"))]
@@ -225,10 +234,7 @@ impl Wallet713Config {
 
         // Android doesn't have Home dir. binary dir will be used instead of home dir
         #[cfg(target_os = "android")]
-            let mut path = match std::env::current_exe() {
-            Ok(home) => {let mut home = home; home.pop(); home}
-            Err(_) => std::env::current_dir()?,
-        };
+            panic!("Home path doesn't exist under Android");
 
         path.push(WALLET713_HOME);
         path.push(chain.shortname());
@@ -237,9 +243,7 @@ impl Wallet713Config {
     }
 
     pub fn to_file(&mut self, config_path: Option<&str>) -> Result<(), Error> {
-        let default_path_buf = Wallet713Config::default_config_path(&self.chain)?;
-        let default_path = default_path_buf.to_str().unwrap();
-        let config_path = config_path.unwrap_or(default_path);
+        let config_path = get_config_path(config_path, chain);
         let toml_str = toml::to_string(&self)?;
         let mut f = File::create(config_path)?;
         f.write_all((String::from(WALLET713_CONFIG_HELP) + &toml_str).as_bytes())?;
