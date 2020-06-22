@@ -45,9 +45,10 @@ extern crate grin_wallet_impls;
 extern crate grin_wallet_libwallet;
 extern crate grin_wallet_controller;
 extern crate grin_wallet_util;
+extern crate lazy_static;
 
-use std::sync::mpsc::Receiver;
-use std::sync::mpsc::Sender;
+use grin_wallet_impls::adapters::http::get_tor_status;
+use grin_wallet_impls::adapters::http::set_tor_status;
 use grin_wallet_impls::adapters::HttpSlateSender;
 use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
 use std::{env, thread};
@@ -313,21 +314,16 @@ fn get_wallet_data_dir(config: &Wallet713Config) -> String {
 fn start_tor_listener(
     config: &Wallet713Config,
     wallet: Arc<Mutex<Wallet>>,
-    tor_running: &mut bool,
-) -> Result<std::sync::Arc<std::sync::Mutex<u32>>, Error> {
+) -> Result<(), Error> {
     let keychain_mask = Arc::new(Mutex::new(None));
 
     let cloned_config = config.clone();
     let addr = config.foreign_api_address().clone();
-    let mutex = std::sync::Arc::new(std::sync::Mutex::new(1));
-    let mutex_clone = mutex.clone();
-
-    let (input, output): (Sender<bool>, Receiver<bool>) = std::sync::mpsc::channel();
+    set_tor_status(1);
 
     thread::Builder::new()
             .name("tor_listener".to_string())
             .spawn(move || {
-
                 let wallet_data_dir = get_wallet_data_dir(&cloned_config);
                 let winst = wallet.lock().get_wallet_instance().unwrap();
                 let onion_address = grin_wallet_controller::controller::get_tor_address(winst.clone(), keychain_mask.clone()).unwrap();
@@ -349,13 +345,13 @@ fn start_tor_listener(
                      Ok(mut p) => {
 			let url_str = &format!("http://{}.onion", onion_address);
                         cli_message!("{}", &format!("tor listener started for [{}]", url_str));
-                        input.send(true).unwrap();
                         let mut modder: u64 = 0;
                         let mut last_check_connected = true;
+                        set_tor_status(2);
                         for _ in 1..2_000_000_000 {
                             std::thread::sleep(std::time::Duration::from_millis(30));
-                            let val = mutex_clone.lock().unwrap();
-                            if *val == 0 { break; }
+                            let val = get_tor_status().unwrap();
+                            if val == 3 { break; }
 
                             modder = modder + 1;
 
@@ -393,18 +389,15 @@ fn start_tor_listener(
                     },
                     Err(e) => {
                         cli_message!("Error: Unable to start tor listener: {}", e);
-                        input.send(false).unwrap();
                         None
                     },
                 };
+                set_tor_status(0);
                 cli_message!("Tor listener has stopped.");
 
             })?;
 
-    let resp = output.recv();
-    *tor_running = resp.unwrap();
-
-    Ok(mutex)
+    Ok(())
 }
 
 fn start_keybase_listener(
@@ -578,6 +571,22 @@ fn kill_tor_if_exists() {
 #[cfg(not(target_os = "android"))]
 impl Helper for EditorHelper {}
 
+/*
+lazy_static! {
+    static ref TOR_STATUS: std::sync::Mutex<u8> = std::sync::Mutex::new(0);
+}
+
+fn get_tor_status() -> Result<u8, Error> {
+    Ok(*TOR_STATUS.lock().unwrap())
+}
+
+fn set_tor_status(val: u8) {
+    let mut data = TOR_STATUS.lock().unwrap();
+    *data = val;
+}
+*/
+
+
 fn main() {
     enable_ansi_support();
     kill_tor_if_exists();
@@ -630,9 +639,7 @@ fn main() {
 
     let mut keybase_broker: Option<(KeybasePublisher, KeybaseSubscriber)> = None;
     let mut mwcmqs_broker: Option<(MWCMQPublisher, MWCMQSubscriber)> = None;
-    let mut tor_state: Option<std::sync::Arc<std::sync::Mutex<u32>>> = Some(std::sync::Arc::new(std::sync::Mutex::new(0)));
-    let mut tor_running: bool = false;
-
+    set_tor_status(0);
 
     let has_seed = Wallet::seed_exists(&config);
 
@@ -686,7 +693,7 @@ fn main() {
                 println!("Set an optional password to secure your wallet with. Leave blank for no password.");
                 println!();
                 let cmd = format!("init -p {}", &passphrase);
-                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker,  &mut mwcmqs_broker, &mut out_is_safe, &mut tor_state, &mut tor_running) {
+                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker,  &mut mwcmqs_broker, &mut out_is_safe) {
                     println!("{}: {}", "ERROR".bright_red(), err);
                     std::process::exit(1);
                 }
@@ -714,7 +721,7 @@ fn main() {
                 println!();
                 // TODO: refactor this
                 let cmd = format!("recover -m {} -p {}", mnemonic, &passphrase);
-                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut mwcmqs_broker, &mut out_is_safe, &mut tor_state, &mut tor_running) {
+                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut mwcmqs_broker, &mut out_is_safe) {
                     println!("{}: {}", "ERROR".bright_red(), err);
                     std::process::exit(1);
                 }
@@ -855,11 +862,32 @@ fn main() {
             };
 
         if command == "exit" {
-            let mut ptr = tor_state.as_ref().unwrap().lock().unwrap();
-            if *ptr != 0 {
-                cli_message!("Stopping TOR listener...");
-                *ptr = 0;
+            let status = get_tor_status().unwrap();
+            if status != 0 {
+                if status != 3 {
+                    set_tor_status(3);
+                }
+
+                loop {
+                   std::thread::sleep(std::time::Duration::from_millis(100));
+                   let status = get_tor_status().unwrap();
+                   if status == 0 { break; }
+                } 
             }
+
+/*
+            if status == 1 {
+                cli_message!("ERROR: TOR listener is still starting!");
+            } else if status == 3 {
+                cli_message!("ERROR: TOR listener is still stopping!");
+            } else if status == 2 {
+                set_tor_status(3);
+                cli_message!("Stopping TOR listener...");
+            } else {
+                cli_message!("ERROR: TOR listener is not running!");
+            }
+*/
+
             if mwcmqs_broker.is_some() {
                 let mut mqs = mwcmqs_broker.unwrap();
                 if mqs.1.is_running() {
@@ -881,8 +909,6 @@ fn main() {
             &mut keybase_broker,
             &mut mwcmqs_broker,
             &mut out_is_safe,
-            &mut tor_state,
-            &mut tor_running,
         );
 
         if let Err(err) = result {
@@ -995,8 +1021,6 @@ fn do_command(
     keybase_broker: &mut Option<(KeybasePublisher, KeybaseSubscriber)>,
     mwcmqs_broker: &mut Option<(MWCMQPublisher, MWCMQSubscriber)>,
     out_is_safe: &mut bool,
-    tor_state: &mut Option<std::sync::Arc<std::sync::Mutex<u32>>>,
-    tor_running: &mut bool,
 ) -> Result<(), Error> {
     *out_is_safe = true;
 
@@ -1171,15 +1195,21 @@ fn do_command(
                 }
             }
             if tor {
-                if !(*tor_running) {
+
+                let status = get_tor_status().unwrap();
+                if status == 1 {
+                    cli_message!("ERROR: TOR listener is already starting!");
+                } else if status == 3 {
+                    cli_message!("ERROR: TOR listener is still stopping!");
+                } else if status == 2 {
+                    cli_message!("ERROR: TOR listener already started!");
+                } else {
                     if config.foreign_api() {
                         cli_message!("starting tor listener...");
-                        *tor_state = Some(start_tor_listener(&config, wallet.clone(), tor_running)?);
+                        start_tor_listener(&config, wallet.clone())?;
                     } else {
                         return Err(ErrorKind::TORError("Foreign API must be enabled to use TOR.".to_string()))?;
                     }
-                } else {
-                    cli_message!("ERROR: TOR listener already started!");
                 }
             }
         }
@@ -1233,14 +1263,16 @@ fn do_command(
                 }
             }
             if tor {
-                let mut ptr = tor_state.as_ref().unwrap().lock().unwrap();
-                if *ptr != 0 {
+                let status = get_tor_status().unwrap();
+                if status == 1 {
+                    cli_message!("ERROR: TOR listener is still starting!");
+                } else if status == 3 {
+                    cli_message!("ERROR: TOR listener is still stopping!");
+                } else if status == 2 {
+                    set_tor_status(3);
                     cli_message!("Stopping TOR listener...");
-                    *ptr = 0;
-                    *tor_running = false;
                 } else {
                     cli_message!("ERROR: TOR listener is not running!");
-
                 }
             }
         }
