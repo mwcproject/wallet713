@@ -297,6 +297,9 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("-i, --id=<id> 'the transaction id'")
                     )
+                    .arg(
+                        Arg::from_usage("[fluff] -l, --fluff 'the transaction is submitted as a fluff transaction'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("cancel")
@@ -410,7 +413,7 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("-f, --file=<file> 'the slate file'")
                     )
                     .arg(
-                        Arg::from_usage("[fluff] -l, --fluff 'the transaction is submitted as a fluff transactions'")
+                        Arg::from_usage("[fluff] -l, --fluff 'the transaction is submitted as a fluff transaction'")
                     )
             )
             .subcommand(

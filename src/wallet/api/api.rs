@@ -249,7 +249,7 @@ pub struct NodeInfo
         res
     }
 
-    pub fn retrieve_txs<'a, L, C, K>(
+    pub fn _retrieve_txs<'a, L, C, K>(
         wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
         refresh_from_node: bool,
         tx_id: Option<u32>,

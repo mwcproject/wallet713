@@ -453,8 +453,13 @@ impl Wallet {
 
     pub fn repost(&self, id: u32, fluff: bool) -> Result<(), Error> {
         let wallet = self.get_wallet_instance()?;
-
-        let (_, txs) = api::retrieve_txs(wallet.clone(), true, Some(id), None)?;
+        let (_validated, txs) = api::retrieve_txs_with_proof_flag(wallet.clone(),
+                                                         false,
+                                                         Some(id),
+                                                         None,
+                                                         None,
+                                                         None)?;
+        let txs = txs.iter().map(|tpl| tpl.0.clone()).collect::<Vec<TxLogEntry>>();
         if txs.len() == 0 {
             return Err(ErrorKind::GenericError(format!(
                 "could not find transaction with id {}!",

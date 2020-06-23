@@ -1353,10 +1353,11 @@ fn do_command(
         Some("repost") => {
             let args = matches.subcommand_matches("repost").unwrap();
             let id = args.value_of("id").unwrap();
+            let fluff = args.is_present("fluff");
             let id = id
                 .parse::<u32>()
                 .map_err(|_| ErrorKind::InvalidTxId(id.to_string()))?;
-            wallet.lock().repost(id, false)?;
+            wallet.lock().repost(id, fluff)?;
         }
         Some("cancel") => {
             let args = matches.subcommand_matches("cancel").unwrap();
