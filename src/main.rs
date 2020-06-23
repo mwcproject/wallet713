@@ -347,42 +347,42 @@ fn start_tor_listener(
                         cli_message!("{}", &format!("tor listener started for [{}]", url_str));
                         let mut modder: u64 = 0;
                         let mut last_check_connected = true;
-                        set_tor_status(2);
-                        for _ in 1..2_000_000_000 {
-                            std::thread::sleep(std::time::Duration::from_millis(30));
-                            let val = get_tor_status().unwrap();
-                            if val == 3 { break; }
+                        if get_tor_status().unwrap() != 3 {
+                            set_tor_status(2);
+                            for _ in 1..2_000_000_000 {
+                                std::thread::sleep(std::time::Duration::from_millis(30));
+                                let val = get_tor_status().unwrap();
+                                if val == 3 { break; }
 
-                            modder = modder + 1;
+                                modder = modder + 1;
 
-                            if modder % 10 == 0 || !last_check_connected {
-                                sender.use_socks = true;
-                                let status = sender.check_other_version(&format!("{}/v2/foreign", url_str), Some(10_000));
-                                match status {
-                                    Err(status) => {
-                                        if last_check_connected {
-                                            cli_message!("\nWARNING: tor is not responding, will try to reconnect at [{:?}], {}",
-                                                  std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs(),
-                                                  status);
-                                        }
-                                        last_check_connected = false;
-                                        let cloned_wallet_data_dir = wallet_data_dir.clone();
-                                        p = grin_wallet_controller::controller::init_tor_listener(winst.clone(),
-                                            keychain_mask.clone(), &addr, Some(&cloned_wallet_data_dir)).unwrap();
-                                        thread::sleep(std::time::Duration::from_millis(2_000));
-                                    },
-                                    Ok(_) => {
-                                        if !last_check_connected {
-                                            cli_message!("\nINFO: tor connection reestablished at [{:?}]",
-                                                  std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs());
-                                            last_check_connected = true;
-                                        }
-                                    },
+                                if modder % 10 == 0 || !last_check_connected {
+                                    sender.use_socks = true;
+                                    let status = sender.check_other_version(&format!("{}/v2/foreign", url_str), Some(10_000));
+                                    match status {
+                                        Err(status) => {
+                                            if last_check_connected {
+                                                cli_message!("\nWARNING: tor is not responding, will try to reconnect at [{:?}], {}",
+                                                      std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs(),
+                                                      status);
+                                            }
+                                            last_check_connected = false;
+                                            let cloned_wallet_data_dir = wallet_data_dir.clone();
+                                            p = grin_wallet_controller::controller::init_tor_listener(winst.clone(),
+                                                keychain_mask.clone(), &addr, Some(&cloned_wallet_data_dir)).unwrap();
+                                            thread::sleep(std::time::Duration::from_millis(2_000));
+                                        },
+                                        Ok(_) => {
+                                            if !last_check_connected {
+                                                cli_message!("\nINFO: tor connection reestablished at [{:?}]",
+                                                      std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs());
+                                                last_check_connected = true;
+                                            }
+                                        },
+                                    }
+
                                 }
-
                             }
-
-
                         }
 
                         Some(p)
@@ -874,19 +874,6 @@ fn main() {
                    if status == 0 { break; }
                 } 
             }
-
-/*
-            if status == 1 {
-                cli_message!("ERROR: TOR listener is still starting!");
-            } else if status == 3 {
-                cli_message!("ERROR: TOR listener is still stopping!");
-            } else if status == 2 {
-                set_tor_status(3);
-                cli_message!("Stopping TOR listener...");
-            } else {
-                cli_message!("ERROR: TOR listener is not running!");
-            }
-*/
 
             if mwcmqs_broker.is_some() {
                 let mut mqs = mwcmqs_broker.unwrap();
