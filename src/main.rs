@@ -46,6 +46,7 @@ extern crate grin_wallet_libwallet;
 extern crate grin_wallet_controller;
 extern crate grin_wallet_util;
 
+use grin_wallet_libwallet::{SlateVersion, VersionedSlate};
 use std::sync::mpsc::Receiver;
 use std::sync::mpsc::Sender;
 use grin_wallet_impls::adapters::HttpSlateSender;
@@ -1526,7 +1527,21 @@ fn do_command(
             else {
                 cli_message!("{} received. amount = [{}]", input, amount);
             }
-            file.write_all(serde_json::to_string(&slate)?.as_bytes())?;
+
+            let out_slate = {
+                if slate.payment_proof.is_some() || slate.ttl_cutoff_height.is_some() {
+                    warn!("Transaction contains features that require mwc-wallet 3.0.0 or later");
+                    warn!("Please ensure the other party is running mwc-wallet v3.0.0 or later before sending");
+                    VersionedSlate::into_version(slate.clone(), SlateVersion::V3)
+                } else {
+                    let mut s = slate.clone();
+                    s.version_info.version = 2;
+                    s.version_info.orig_version = 2;
+                    VersionedSlate::into_version(s, SlateVersion::V2)
+                }
+           };
+
+            file.write_all(serde_json::to_string(&out_slate)?.as_bytes())?;
             cli_message!("{}.response created successfully.", input);
         }
         Some("showpubkeys") => {
@@ -1661,7 +1676,20 @@ fn do_command(
                     ttl_blocks,
                 )?;
 
-                file.write_all(serde_json::to_string(&slate)?.as_bytes())?;
+                let out_slate = {
+                        if slate.payment_proof.is_some() || slate.ttl_cutoff_height.is_some() {
+                                warn!("Transaction contains features that require mwc-wallet 3.0.0 or later");
+                                warn!("Please ensure the other party is running mwc-wallet v3.0.0 or later before sending");
+                                VersionedSlate::into_version(slate.clone(), SlateVersion::V3)
+                        } else {
+                                let mut s = slate.clone();
+                                s.version_info.version = 2;
+                                s.version_info.orig_version = 2;
+                                VersionedSlate::into_version(s, SlateVersion::V2)
+                        }
+                };
+
+                file.write_all(serde_json::to_string(&out_slate)?.as_bytes())?;
 
                 w.tx_lock_outputs(
                     &slate,
