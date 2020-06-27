@@ -795,7 +795,7 @@ pub struct NodeInfo
     {
         wallet_lock!(wallet_inst, w);
 
-        let (slate_res, _context) = grin_wallet_libwallet::owner::finalize_tx( &mut **w, None, slate )?;
+        let (slate_res, _context) = grin_wallet_libwallet::owner::finalize_tx( &mut **w, None, slate, true )?;
         *slate = slate_res;
 
         Ok(())
@@ -1214,6 +1214,7 @@ pub struct NodeInfo
             dest_acct_name,
             message,
             false,
+            true,
         )?;
         Ok(s)
     }
