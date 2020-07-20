@@ -49,7 +49,7 @@ extern crate grin_wallet_util;
 use grin_wallet_libwallet::{SlateVersion, VersionedSlate};
 use std::sync::mpsc::Receiver;
 use std::sync::mpsc::Sender;
-use grin_wallet_impls::adapters::HttpSlateSender;
+use grin_wallet_impls::adapters::HttpDataSender;
 use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
 use std::{env, thread};
 #[cfg(not(target_os = "android"))]
@@ -335,7 +335,7 @@ fn start_tor_listener(
                 let p = grin_wallet_controller::controller::init_tor_listener(winst.clone(),
                                keychain_mask.clone(), &addr, Some(&wallet_data_dir.clone()));
 
-		let sender = HttpSlateSender::new("https://", None, Some(wallet_data_dir.clone()), false);
+		let sender = HttpDataSender::new("https://", None, Some(wallet_data_dir.clone()), false);
 		let mut sender = sender.unwrap();
 		let s = sender.start_socks(&cloned_config.get_socks_addr());
 
