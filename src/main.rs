@@ -956,12 +956,27 @@ fn proof_ok(
         .map(|s| format!(" from [{}]", s.bright_green()))
         .unwrap_or(String::new());
 
-    println!(
-        "this file proves that [{}] MWCs was sent to [{}]{}",
-        core::amount_to_hr_string(amount, false).bright_green(),
-        receiver.bright_green(),
-        sender_message
-    );
+    let tor_sender_message = sender
+        .as_ref()
+        .map(|s| format!(" from [{}{}{}]","http://".bright_green(), s.bright_green(), ".onion".bright_green()))
+        .unwrap_or(String::new());
+
+    if receiver.len() == 56 {
+        println!(
+            "this file proves that [{}] MWCs was sent to [{}]{}",
+            core::amount_to_hr_string(amount, false).bright_green(),
+            format!("{}{}{}","http://".bright_green(), receiver.bright_green(), ".onion".bright_green()),
+            tor_sender_message
+        );
+
+    } else {
+        println!(
+            "this file proves that [{}] MWCs was sent to [{}]{}",
+            core::amount_to_hr_string(amount, false).bright_green(),
+            receiver.bright_green(),
+            sender_message
+        );
+    }
 
     if sender.is_none() {
         println!(
