@@ -1649,9 +1649,6 @@ fn do_command(
             };
             let fluff = args.is_present("fluff");
             let do_proof = args.is_present("proof");
-            if do_proof {
-                println!("Please note: payment proof will be added only if receiver wallet is supporting it");
-            }
 
             let amount = args.value_of("amount").unwrap();
             let mut ntotal = 0;

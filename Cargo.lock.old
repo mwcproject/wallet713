@@ -1387,7 +1387,11 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "3.2.2"
+<<<<<<< HEAD
 source = "git+https://github.com/mwcproject/mwc-wallet#d348e4f19e1994625d83eaa0fa93aa70408e7f57"
+=======
+source = "git+https://github.com/mwcproject/mwc-wallet#9d704e1edb083930ec4d253a8658d6a344466a31"
+>>>>>>> bcd137622d41a0ddb7ad04d11a1e1d28272ec40b
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1412,7 +1416,11 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "3.2.2"
+<<<<<<< HEAD
 source = "git+https://github.com/mwcproject/mwc-wallet#d348e4f19e1994625d83eaa0fa93aa70408e7f57"
+=======
+source = "git+https://github.com/mwcproject/mwc-wallet#9d704e1edb083930ec4d253a8658d6a344466a31"
+>>>>>>> bcd137622d41a0ddb7ad04d11a1e1d28272ec40b
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -1427,7 +1435,11 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "3.2.2"
+<<<<<<< HEAD
 source = "git+https://github.com/mwcproject/mwc-wallet#d348e4f19e1994625d83eaa0fa93aa70408e7f57"
+=======
+source = "git+https://github.com/mwcproject/mwc-wallet#9d704e1edb083930ec4d253a8658d6a344466a31"
+>>>>>>> bcd137622d41a0ddb7ad04d11a1e1d28272ec40b
 dependencies = [
  "chrono",
  "colored",
@@ -1458,7 +1470,11 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "3.2.2"
+<<<<<<< HEAD
 source = "git+https://github.com/mwcproject/mwc-wallet#d348e4f19e1994625d83eaa0fa93aa70408e7f57"
+=======
+source = "git+https://github.com/mwcproject/mwc-wallet#9d704e1edb083930ec4d253a8658d6a344466a31"
+>>>>>>> bcd137622d41a0ddb7ad04d11a1e1d28272ec40b
 dependencies = [
  "bitcoin",
  "blake2-rfc",
@@ -1503,7 +1519,11 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "3.2.2"
+<<<<<<< HEAD
 source = "git+https://github.com/mwcproject/mwc-wallet#d348e4f19e1994625d83eaa0fa93aa70408e7f57"
+=======
+source = "git+https://github.com/mwcproject/mwc-wallet#9d704e1edb083930ec4d253a8658d6a344466a31"
+>>>>>>> bcd137622d41a0ddb7ad04d11a1e1d28272ec40b
 dependencies = [
  "base64 0.9.3",
  "bitcoin",
@@ -1546,7 +1566,11 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "3.2.2"
+<<<<<<< HEAD
 source = "git+https://github.com/mwcproject/mwc-wallet#d348e4f19e1994625d83eaa0fa93aa70408e7f57"
+=======
+source = "git+https://github.com/mwcproject/mwc-wallet#9d704e1edb083930ec4d253a8658d6a344466a31"
+>>>>>>> bcd137622d41a0ddb7ad04d11a1e1d28272ec40b
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
