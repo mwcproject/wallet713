@@ -421,6 +421,7 @@ impl Wallet {
         routputs: usize,
         status_send_channel: &Option<Sender<StatusMessage>>,
 	    ttl_blocks: u64,
+        do_proof: bool,
     ) -> Result<Slate, Error> {
         let slate = api::initiate_tx(
             self.get_wallet_instance()?,
@@ -437,6 +438,7 @@ impl Wallet {
             routputs,
             status_send_channel,
             ttl_blocks,
+            do_proof,
         )?;
 
         Ok(slate)

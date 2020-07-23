@@ -1648,6 +1648,10 @@ fn do_command(
                 None => None,
             };
             let fluff = args.is_present("fluff");
+            let do_proof = args.is_present("proof");
+            if do_proof {
+                println!("Please note: payment proof will be added only if receiver wallet is supporting it");
+            }
 
             let amount = args.value_of("amount").unwrap();
             let mut ntotal = 0;
@@ -1689,6 +1693,7 @@ fn do_command(
                     routputs,
                     &status_send_channel,
                     ttl_blocks,
+                    false,
                 )?;
 
                 let out_slate = {
@@ -1757,6 +1762,7 @@ fn do_command(
                 1,
                 &status_send_channel,
                 ttl_blocks,
+                do_proof,
             )?;
 
             // Stopping updater, sync should be done by now

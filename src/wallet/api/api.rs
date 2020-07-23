@@ -710,6 +710,7 @@ pub fn initiate_tx<'a, L, C, K>(
     routputs: usize,  // Number of resulting outputs. Normally it is 1
     status_send_channel: &Option<Sender<StatusMessage>>,
     ttl_blocks: u64,
+    do_proof: bool,
 ) -> Result<Slate, Error>
     where
         L: WalletLCProvider<'a, C, K>,
@@ -724,27 +725,35 @@ pub fn initiate_tx<'a, L, C, K>(
     let ttl_blocks = if ttl_blocks == 0 { None } else { Some(ttl_blocks) };
     //for tor sending, address can also be used as payment proof address
     let mut proof_address = None;
-    if let Some(addr) = address.clone() {
-        debug!("the address in init_tx is: {}", &addr);
-        //if it is an onion address, need to remove the http:// or https:// and .onion.
-        let mut addr_change = addr;
-        if addr_change.starts_with("HTTP://") || addr_change.starts_with("HTTPS://") {
-            addr_change = addr_change.replace("HTTP://", "");
-            addr_change = addr_change.replace("HTTPS://", "");
-        }
-        if addr_change.starts_with("http://") || addr_change.starts_with("http://") {
-            addr_change = addr_change.replace("http://", "");
-            addr_change = addr_change.replace("https://", "");
-        }
-        if addr_change.ends_with(".ONION") {
-            addr_change = addr_change.replace(".ONION", "");
-        }
-        if addr_change.ends_with(".onion") {
-            addr_change = addr_change.replace(".onion", "");
-        }
-        if addr_change.len() == 56 {
-            let proof_addr = ProvableAddress::from_str(&addr_change)?;
-            proof_address = Some(proof_addr);
+    if do_proof {
+        if let Some(addr) = address.clone() {
+            debug!("the address in init_tx is: {}", &addr);
+            //if it is an onion address, need to remove the http:// or https:// and .onion.
+            let mut addr_change = addr;
+            if addr_change.starts_with("HTTP://") || addr_change.starts_with("HTTPS://") {
+                addr_change = addr_change.replace("HTTP://", "");
+                addr_change = addr_change.replace("HTTPS://", "");
+            }
+            if addr_change.starts_with("http://") || addr_change.starts_with("http://") {
+                addr_change = addr_change.replace("http://", "");
+                addr_change = addr_change.replace("https://", "");
+            }
+            if addr_change.ends_with(".ONION") {
+                addr_change = addr_change.replace(".ONION", "");
+            }
+            if addr_change.ends_with(".onion") {
+                addr_change = addr_change.replace(".onion", "");
+            }
+            if addr_change.ends_with(".ONION/") {
+                addr_change = addr_change.replace(".ONION/", "");
+            }
+            if addr_change.ends_with(".onion/") {
+                addr_change = addr_change.replace(".onion/", "");
+            }
+            if addr_change.len() == 56 {
+                let proof_addr = ProvableAddress::from_str(&addr_change)?;
+                proof_address = Some(proof_addr);
+            }
         }
     }
 

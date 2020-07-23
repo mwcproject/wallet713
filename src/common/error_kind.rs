@@ -129,7 +129,7 @@ pub enum ErrorKind {
     HasListener,
     #[fail(display = "wallet already unlocked")]
     WalletAlreadyUnlocked,
-    #[fail(display = "Error getting tx proof stored")]
+    #[fail(display = "Error: Payment proof not found - please update receiver wallet to a newer version")]
     TxStoredProof,
 
     #[fail(display = "http request error, {}", _0)]

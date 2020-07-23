@@ -274,6 +274,9 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("[fluff] -l, --fluff 'the transaction is submitted as a fluff transactions'")
                     )
+                    .arg(
+                        Arg::from_usage("[proof] -pf, --proof 'the transaction is submitted with payment_proof_address'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("invoice")
