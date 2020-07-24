@@ -475,7 +475,7 @@ pub fn txs_bulk_validate<'a, L, C, K>(
         if tx.tx_type == TxLogEntryType::ConfirmedCoinbase || tx.tx_type == TxLogEntryType::TxReceived {
             if tx_info.tx_log.num_outputs == 0 {
                 tx_info.warnings.push("Tx Has no outputs".to_string());
-                println!("WARNING: Recieve transaction id {} doesn't have any outputs. Please check why it is happaning. {:?}", tx.id, tx);
+                println!("WARNING: Receive transaction id {} doesn't have any outputs. Please check why it is happaning. {:?}", tx.id, tx);
             }
         }
 
@@ -486,7 +486,7 @@ pub fn txs_bulk_validate<'a, L, C, K>(
         if tx.tx_type == TxLogEntryType::TxSent {
             if tx.tx_slate_id.is_none() && tx.kernel_excess.is_none() {
                 tx_info.warnings.push("Transaction doesn't have UUID".to_string());
-                println!("WARNING: Sent trasaction id {} doesn't have uuid or kernel data", tx.id );
+                println!("WARNING: Sent transaction id {} doesn't have uuid or kernel data", tx.id );
             }
         }
 
