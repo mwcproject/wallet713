@@ -331,9 +331,9 @@ fn start_tor_listener(
 
                 let wallet_data_dir = get_wallet_data_dir(&cloned_config);
                 let winst = wallet.lock().get_wallet_instance().unwrap();
-                let onion_address = grin_wallet_controller::controller::get_tor_address(winst.clone(), keychain_mask.clone()).unwrap();
+                let onion_address = grin_wallet_controller::controller::get_tor_address(winst.clone(), keychain_mask.clone(), cloned_config.grinbox_address_index()).unwrap();
                 let p = grin_wallet_controller::controller::init_tor_listener(winst.clone(),
-                               keychain_mask.clone(), &addr, Some(&wallet_data_dir.clone()));
+                               keychain_mask.clone(), &addr, Some(&wallet_data_dir.clone()), cloned_config.grinbox_address_index());
 
 		let sender = HttpDataSender::new("https://", None, Some(wallet_data_dir.clone()), false);
 		let mut sender = sender.unwrap();
@@ -373,7 +373,7 @@ fn start_tor_listener(
                                         last_check_connected = false;
                                         let cloned_wallet_data_dir = wallet_data_dir.clone();
                                         p = grin_wallet_controller::controller::init_tor_listener(winst.clone(),
-                                            keychain_mask.clone(), &addr, Some(&cloned_wallet_data_dir)).unwrap();
+                                            keychain_mask.clone(), &addr, Some(&cloned_wallet_data_dir), cloned_config.grinbox_address_index()).unwrap();
                                         thread::sleep(std::time::Duration::from_millis(2_000));
                                     },
                                     Ok(_) => {
@@ -505,6 +505,7 @@ fn start_wallet_api(
             let wallet_instance = wallet.lock().get_wallet_instance()?;
             let foreign_api_address = config.foreign_api_address();
             let tls_config = tls_config.clone();
+            let address_index = config.grinbox_address_index();
 
             thread::Builder::new()
                 .name("foreign_listener".to_string())
@@ -514,7 +515,8 @@ fn start_wallet_api(
                         Arc::new(Mutex::new(None)),
                         &foreign_api_address,
                         tls_config,
-                        false)
+                        false,
+                        address_index)
                     {
                         cli_message!( "{}: Foreign API Listener failed, {}", "ERROR".bright_red(), e );
                     }

@@ -90,7 +90,7 @@ checksum = "609de2890db64f56cfde4a45a4b946f4c037e3e39fc3f5a3f0989affb06e2f9d"
 dependencies = [
  "async-trait",
  "thiserror",
- "tokio 0.2.21",
+ "tokio 0.2.22",
 ]
 
 [[package]]
@@ -1180,7 +1180,7 @@ checksum = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
 [[package]]
 name = "grin_api"
 version = "3.2.4-beta.1"
-source = "git+https://github.com/mwcproject/mwc-node#94a68e9929f639c87780ef6d41a84a50283c3563"
+source = "git+https://github.com/mwcproject/mwc-node#67a11e53c520aad17e515b80a89970283202b0cb"
 dependencies = [
  "bytes 0.5.6",
  "easy-jsonrpc-mw",
@@ -1206,7 +1206,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "tokio 0.2.21",
+ "tokio 0.2.22",
  "tokio-rustls 0.12.3",
  "url 1.7.2",
 ]
@@ -1214,7 +1214,7 @@ dependencies = [
 [[package]]
 name = "grin_chain"
 version = "3.2.4-beta.1"
-source = "git+https://github.com/mwcproject/mwc-node#94a68e9929f639c87780ef6d41a84a50283c3563"
+source = "git+https://github.com/mwcproject/mwc-node#67a11e53c520aad17e515b80a89970283202b0cb"
 dependencies = [
  "bit-vec",
  "bitflags 1.2.1",
@@ -1237,7 +1237,7 @@ dependencies = [
 [[package]]
 name = "grin_core"
 version = "3.2.4-beta.1"
-source = "git+https://github.com/mwcproject/mwc-node#94a68e9929f639c87780ef6d41a84a50283c3563"
+source = "git+https://github.com/mwcproject/mwc-node#67a11e53c520aad17e515b80a89970283202b0cb"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1263,7 +1263,7 @@ dependencies = [
 [[package]]
 name = "grin_keychain"
 version = "3.2.4-beta.1"
-source = "git+https://github.com/mwcproject/mwc-node#94a68e9929f639c87780ef6d41a84a50283c3563"
+source = "git+https://github.com/mwcproject/mwc-node#67a11e53c520aad17e515b80a89970283202b0cb"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1287,7 +1287,7 @@ dependencies = [
 [[package]]
 name = "grin_p2p"
 version = "3.2.4-beta.1"
-source = "git+https://github.com/mwcproject/mwc-node#94a68e9929f639c87780ef6d41a84a50283c3563"
+source = "git+https://github.com/mwcproject/mwc-node#67a11e53c520aad17e515b80a89970283202b0cb"
 dependencies = [
  "bitflags 1.2.1",
  "chrono",
@@ -1307,12 +1307,13 @@ dependencies = [
  "serde_derive",
  "socks",
  "tempfile",
+ "tor-stream",
 ]
 
 [[package]]
 name = "grin_pool"
 version = "3.2.4-beta.1"
-source = "git+https://github.com/mwcproject/mwc-node#94a68e9929f639c87780ef6d41a84a50283c3563"
+source = "git+https://github.com/mwcproject/mwc-node#67a11e53c520aad17e515b80a89970283202b0cb"
 dependencies = [
  "blake2-rfc",
  "chrono",
@@ -1346,7 +1347,7 @@ dependencies = [
 [[package]]
 name = "grin_store"
 version = "3.2.4-beta.1"
-source = "git+https://github.com/mwcproject/mwc-node#94a68e9929f639c87780ef6d41a84a50283c3563"
+source = "git+https://github.com/mwcproject/mwc-node#67a11e53c520aad17e515b80a89970283202b0cb"
 dependencies = [
  "byteorder",
  "croaring-mw",
@@ -1366,11 +1367,15 @@ dependencies = [
 [[package]]
 name = "grin_util"
 version = "3.2.4-beta.1"
-source = "git+https://github.com/mwcproject/mwc-node#94a68e9929f639c87780ef6d41a84a50283c3563"
+source = "git+https://github.com/mwcproject/mwc-node#67a11e53c520aad17e515b80a89970283202b0cb"
 dependencies = [
  "backtrace",
  "base64 0.9.3",
  "byteorder",
+ "data-encoding",
+ "ed25519-dalek",
+ "failure",
+ "failure_derive",
  "grin_secp256k1zkp",
  "lazy_static",
  "log",
@@ -1379,6 +1384,7 @@ dependencies = [
  "rand 0.6.5",
  "serde",
  "serde_derive",
+ "sha3",
  "walkdir",
  "zeroize 0.9.3",
  "zip",
@@ -1387,11 +1393,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "3.2.2"
-<<<<<<< HEAD
-source = "git+https://github.com/mwcproject/mwc-wallet#d348e4f19e1994625d83eaa0fa93aa70408e7f57"
-=======
-source = "git+https://github.com/mwcproject/mwc-wallet#9d704e1edb083930ec4d253a8658d6a344466a31"
->>>>>>> bcd137622d41a0ddb7ad04d11a1e1d28272ec40b
+source = "git+https://github.com/mwcproject/mwc-wallet#8453dd9dd1efd04d7271496a19d5f2a4f2260e2b"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1416,11 +1418,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "3.2.2"
-<<<<<<< HEAD
-source = "git+https://github.com/mwcproject/mwc-wallet#d348e4f19e1994625d83eaa0fa93aa70408e7f57"
-=======
-source = "git+https://github.com/mwcproject/mwc-wallet#9d704e1edb083930ec4d253a8658d6a344466a31"
->>>>>>> bcd137622d41a0ddb7ad04d11a1e1d28272ec40b
+source = "git+https://github.com/mwcproject/mwc-wallet#8453dd9dd1efd04d7271496a19d5f2a4f2260e2b"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -1435,11 +1433,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "3.2.2"
-<<<<<<< HEAD
-source = "git+https://github.com/mwcproject/mwc-wallet#d348e4f19e1994625d83eaa0fa93aa70408e7f57"
-=======
-source = "git+https://github.com/mwcproject/mwc-wallet#9d704e1edb083930ec4d253a8658d6a344466a31"
->>>>>>> bcd137622d41a0ddb7ad04d11a1e1d28272ec40b
+source = "git+https://github.com/mwcproject/mwc-wallet#8453dd9dd1efd04d7271496a19d5f2a4f2260e2b"
 dependencies = [
  "chrono",
  "colored",
@@ -1462,7 +1456,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "term",
- "tokio 0.2.21",
+ "tokio 0.2.22",
  "url 1.7.2",
  "uuid",
 ]
@@ -1470,11 +1464,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "3.2.2"
-<<<<<<< HEAD
-source = "git+https://github.com/mwcproject/mwc-wallet#d348e4f19e1994625d83eaa0fa93aa70408e7f57"
-=======
-source = "git+https://github.com/mwcproject/mwc-wallet#9d704e1edb083930ec4d253a8658d6a344466a31"
->>>>>>> bcd137622d41a0ddb7ad04d11a1e1d28272ec40b
+source = "git+https://github.com/mwcproject/mwc-wallet#8453dd9dd1efd04d7271496a19d5f2a4f2260e2b"
 dependencies = [
  "bitcoin",
  "blake2-rfc",
@@ -1511,7 +1501,7 @@ dependencies = [
  "serde_json",
  "sysinfo",
  "timer",
- "tokio 0.2.21",
+ "tokio 0.2.22",
  "url 1.7.2",
  "uuid",
 ]
@@ -1519,11 +1509,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "3.2.2"
-<<<<<<< HEAD
-source = "git+https://github.com/mwcproject/mwc-wallet#d348e4f19e1994625d83eaa0fa93aa70408e7f57"
-=======
-source = "git+https://github.com/mwcproject/mwc-wallet#9d704e1edb083930ec4d253a8658d6a344466a31"
->>>>>>> bcd137622d41a0ddb7ad04d11a1e1d28272ec40b
+source = "git+https://github.com/mwcproject/mwc-wallet#8453dd9dd1efd04d7271496a19d5f2a4f2260e2b"
 dependencies = [
  "base64 0.9.3",
  "bitcoin",
@@ -1555,6 +1541,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
+ "serial_test",
  "sha2 0.7.1",
  "sha3",
  "signature",
@@ -1566,11 +1553,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "3.2.2"
-<<<<<<< HEAD
-source = "git+https://github.com/mwcproject/mwc-wallet#d348e4f19e1994625d83eaa0fa93aa70408e7f57"
-=======
-source = "git+https://github.com/mwcproject/mwc-wallet#9d704e1edb083930ec4d253a8658d6a344466a31"
->>>>>>> bcd137622d41a0ddb7ad04d11a1e1d28272ec40b
+source = "git+https://github.com/mwcproject/mwc-wallet#8453dd9dd1efd04d7271496a19d5f2a4f2260e2b"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
@@ -1620,7 +1603,7 @@ dependencies = [
  "http 0.2.1",
  "indexmap",
  "slab",
- "tokio 0.2.21",
+ "tokio 0.2.22",
  "tokio-util",
  "tracing",
 ]
@@ -1775,7 +1758,7 @@ dependencies = [
  "pin-project",
  "socket2",
  "time",
- "tokio 0.2.21",
+ "tokio 0.2.22",
  "tower-service",
  "tracing",
  "want 0.3.0",
@@ -1793,7 +1776,7 @@ dependencies = [
  "hyper 0.13.7",
  "rustls 0.16.0",
  "rustls-native-certs",
- "tokio 0.2.21",
+ "tokio 0.2.22",
  "tokio-rustls 0.12.3",
  "webpki",
 ]
@@ -1810,7 +1793,7 @@ dependencies = [
  "hyper 0.13.7",
  "log",
  "rustls 0.17.0",
- "tokio 0.2.21",
+ "tokio 0.2.22",
  "tokio-rustls 0.13.1",
  "webpki",
  "webpki-roots",
@@ -1828,7 +1811,7 @@ dependencies = [
  "hyper 0.13.7",
  "hyper-tls 0.4.3",
  "thiserror",
- "tokio 0.2.21",
+ "tokio 0.2.22",
 ]
 
 [[package]]
@@ -1839,7 +1822,7 @@ checksum = "0d1f9b0b8258e3ef8f45928021d3ef14096c2b93b99e4b8cfcabf1f58ec84b0a"
 dependencies = [
  "bytes 0.5.6",
  "hyper 0.13.7",
- "tokio 0.2.21",
+ "tokio 0.2.22",
  "tokio-io-timeout",
 ]
 
@@ -1865,7 +1848,7 @@ dependencies = [
  "bytes 0.5.6",
  "hyper 0.13.7",
  "native-tls",
- "tokio 0.2.21",
+ "tokio 0.2.22",
  "tokio-tls",
 ]
 
@@ -2553,6 +2536,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "parking_lot"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3a704eb390aafdc107b0e392f56a82b668e3a71366993b5340f5833fd62505e"
+dependencies = [
+ "lock_api 0.3.4",
+ "parking_lot_core 0.7.2",
+]
+
+[[package]]
 name = "parking_lot_core"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2561,7 +2554,7 @@ dependencies = [
  "libc",
  "rand 0.5.6",
  "rustc_version",
- "smallvec",
+ "smallvec 0.6.13",
  "winapi 0.3.9",
 ]
 
@@ -2576,7 +2569,21 @@ dependencies = [
  "libc",
  "redox_syscall",
  "rustc_version",
- "smallvec",
+ "smallvec 0.6.13",
+ "winapi 0.3.9",
+]
+
+[[package]]
+name = "parking_lot_core"
+version = "0.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d58c7c768d4ba344e3e8d72518ac13e259d7c7ade24167003b8488e10b6740a3"
+dependencies = [
+ "cfg-if",
+ "cloudabi",
+ "libc",
+ "redox_syscall",
+ "smallvec 1.4.1",
  "winapi 0.3.9",
 ]
 
@@ -3356,6 +3363,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "serial_test"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fef5f7c7434b2f2c598adc6f9494648a1e41274a75c0ba4056f680ae0c117fd6"
+dependencies = [
+ "lazy_static",
+ "parking_lot 0.10.2",
+ "serial_test_derive",
+]
+
+[[package]]
+name = "serial_test_derive"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d08338d8024b227c62bd68a12c7c9883f5c66780abaef15c550dc56f46ee6515"
+dependencies = [
+ "proc-macro2 1.0.19",
+ "quote 1.0.7",
+ "syn 1.0.35",
+]
+
+[[package]]
 name = "sha-1"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3446,6 +3475,12 @@ checksum = "f7b0758c52e15a8b5e3691eae6cc559f08eee9406e548a4477ba4e67770a82b6"
 dependencies = [
  "maybe-uninit",
 ]
+
+[[package]]
+name = "smallvec"
+version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3757cb9d89161a2f24e1cf78efa0c1fcff485d18e3f55e0aa3480824ddaa0f3f"
 
 [[package]]
 name = "socket2"
@@ -3730,9 +3765,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "0.2.21"
+version = "0.2.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d099fa27b9702bed751524694adbe393e18b36b204da91eb1cbbbbb4a5ee2d58"
+checksum = "5d34ca54d84bf2b5b4d7d31e901a8464f7b60ac145a284fba25ceb801f2ddccd"
 dependencies = [
  "bytes 0.5.6",
  "fnv",
@@ -3823,7 +3858,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9390a43272c8a6ac912ed1d1e2b6abeafd5047e05530a2fa304deee041a06215"
 dependencies = [
  "bytes 0.5.6",
- "tokio 0.2.21",
+ "tokio 0.2.22",
 ]
 
 [[package]]
@@ -3864,7 +3899,7 @@ checksum = "3068d891551949b37681724d6b73666787cc63fa8e255c812a41d2513aff9775"
 dependencies = [
  "futures-core",
  "rustls 0.16.0",
- "tokio 0.2.21",
+ "tokio 0.2.22",
  "webpki",
 ]
 
@@ -3876,7 +3911,7 @@ checksum = "15cb62a0d2770787abc96e99c1cd98fcf17f94959f3af63ca85bdfb203f051b4"
 dependencies = [
  "futures-core",
  "rustls 0.17.0",
- "tokio 0.2.21",
+ "tokio 0.2.22",
  "webpki",
 ]
 
@@ -3940,7 +3975,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9a70f4fcd7b3b24fb194f837560168208f669ca8cb70d0c4b862944452396343"
 dependencies = [
  "native-tls",
- "tokio 0.2.21",
+ "tokio 0.2.22",
 ]
 
 [[package]]
@@ -3987,7 +4022,7 @@ dependencies = [
  "futures-sink",
  "log",
  "pin-project-lite",
- "tokio 0.2.21",
+ "tokio 0.2.22",
 ]
 
 [[package]]
@@ -4000,6 +4035,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "tor-stream"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5865109fc90e0bc0f8c299f3794ca0fd5771df988aa6b962d4c9129c39674746"
+dependencies = [
+ "lazy_static",
+ "socks",
+]
+
+[[package]]
 name = "tower-service"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4007,9 +4052,9 @@ checksum = "e987b6bf443f4b5b3b6f38704195592cca41c5bb7aedd3c3693c7081f8289860"
 
 [[package]]
 name = "tracing"
-version = "0.1.16"
+version = "0.1.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2e2a2de6b0d5cbb13fc21193a2296888eaab62b6044479aafb3c54c01c29fcd"
+checksum = "dbdf4ccd1652592b01286a5dbe1e2a77d78afaa34beadd9872a5f7396f92aaa9"
 dependencies = [
  "cfg-if",
  "log",
