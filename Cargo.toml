@@ -85,19 +85,19 @@ grin_wallet_config = { git = "https://github.com/mwcproject/mwc-wallet", branch 
 grin_wallet_util = { git = "https://github.com/mwcproject/mwc-wallet", branch = "master" }
 
 # For local testing
-#grin_api = { path = "../mwc-node/api", version= "3.2.2"}
-#grin_core = { path = "../mwc-node/core", version= "3.2.2"}
-#grin_keychain = { path = "../mwc-node/keychain", version= "3.2.2"}
-#grin_chain = {path = "../mwc-node/chain", version= "3.2.2" }
-#grin_util = { path = "../mwc-node/util", version= "3.2.2"}
-#grin_store = { path = "../mwc-node/store", version= "3.2.2"}
-#grin_p2p = { path = "../mwc-node/p2p", version= "3.2.2" }
-#grin_wallet_impls = { path = "../mwc-wallet/impls", version= "3.2.2" }
-#grin_wallet_libwallet = { path = "../mwc-wallet/libwallet", version= "3.2.2" }
-#grin_wallet_api = { path = "../mwc-wallet/api", version= "3.2.2" }
-#grin_wallet_controller = { path = "../mwc-wallet/controller", version= "3.2.2" }
-#grin_wallet_config = { path = "../mwc-wallet/config", version= "3.2.2" }
-#grin_wallet_util = { path = "../mwc-wallet/util", version= "3.2.2" }
+#grin_api = { path = "../mwc-node/api"}
+#grin_core = { path = "../mwc-node/core"}
+#grin_keychain = { path = "../mwc-node/keychain"}
+#grin_chain = {path = "../mwc-node/chain"}
+#grin_util = { path = "../mwc-node/util"}
+#grin_store = { path = "../mwc-node/store"}
+#grin_p2p = { path = "../mwc-node/p2p"}
+#grin_wallet_impls = { path = "../mwc-wallet/impls"}
+#grin_wallet_libwallet = { path = "../mwc-wallet/libwallet"}
+#grin_wallet_api = { path = "../mwc-wallet/api"}
+#grin_wallet_controller = { path = "../mwc-wallet/controller"}
+#grin_wallet_config = { path = "../mwc-wallet/config"}
+#grin_wallet_util = { path = "../mwc-wallet/util"}
 
 # OS specific dependencies
 [target.'cfg(not(target_os = "android"))'.dependencies]
