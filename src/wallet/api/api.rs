@@ -1,6 +1,7 @@
 use std::collections::{HashSet, HashMap, VecDeque};
 use uuid::Uuid;
 
+use grin_p2p::types::PeerAddr;
 pub use grin_util::secp::{Message};
 use grin_core::core::hash::{Hash};
 use grin_util::secp::pedersen;
@@ -8,6 +9,7 @@ use grin_util::secp::{ContextFlag, Secp256k1, Signature};
 use grin_p2p::types::PeerInfoDisplay;
 
 
+use grin_p2p::types::PeerInfoDisplayLegacy;
 use grin_wallet_libwallet::proof::crypto::Hex;
 use grin_wallet_libwallet::proof::tx_proof::TxProof;
 use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
@@ -894,13 +896,33 @@ pub fn node_info<'a, L, C, K>(
     }
 
     // peer info
-    let mut peers : Vec<PeerInfoDisplay> = Vec::new();
+    let mut peers : Vec<PeerInfoDisplayLegacy> = Vec::new();
     match w.w2n_client().get_connected_peer_info() {
-        Ok(p) => peers = p,
-        _ => (),
+        Ok(p) => { peers = p; },
+        _ => { 
+		match w.w2n_client().get_connected_peer_info() {
+			Ok(p2) => { peers = p2; },
+			_ => (),
+		}
+		() },
     };
 
-    Ok(NodeInfo{height,total_difficulty,peers})
+    let mut peers_ret: Vec<PeerInfoDisplay> = Vec::new();
+
+    for peer in peers {
+        let peer_display = PeerInfoDisplay {
+		capabilities: peer.capabilities,
+		user_agent: peer.user_agent,
+		version: peer.version,
+		addr: PeerAddr::from_str(&peer.addr),
+		direction: peer.direction,
+		total_difficulty: peer.total_difficulty,
+		height: peer.height,
+	};
+	peers_ret.push(peer_display);
+    }
+
+    Ok(NodeInfo{height,total_difficulty,peers:peers_ret})
 }
 
 pub fn post_tx<'a, L, C, K>(
