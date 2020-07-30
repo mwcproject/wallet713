@@ -250,7 +250,7 @@ fn do_contacts(args: &ArgMatches, address_book: Arc<Mutex<AddressBook>>) -> Resu
 
         if contacts.len() == 0 {
             cli_message!(
-                "Your contact list is empty. Consider using `contacts add` to add a new contact."
+                "your contact list is empty. consider using `contacts add` to add a new contact."
             );
         }
     }
@@ -284,7 +284,7 @@ fn start_mwcmqs_listener(
         }
     }
 
-    println!("Starting mwcmqs listener...");
+    println!("starting mwcmqs listener...");
 
     let res = grin_wallet_controller::controller::start_mwcmqs_listener(
         wallet.lock().get_wallet_instance()?,
@@ -341,7 +341,7 @@ fn start_tor_listener(
 
 		match s {
 			Err(s) => {
-				cli_message!("INFO: Tor listener failed to start. HTTP listener must be enabled, {}", s);
+				cli_message!("Error: Tor listener failed to start. HTTP listener must be enabled, {}", s);
 			},
 			_ => { }
 		}
@@ -349,7 +349,7 @@ fn start_tor_listener(
                 let _ = match p {
                      Ok(mut p) => {
 			let url_str = &format!("http://{}.onion", onion_address);
-                        cli_message!("{}", &format!("Tor listener started for [{}]", url_str));
+                        cli_message!("{}", &format!("tor listener started for [{}]", url_str));
                         input.send(true).unwrap();
                         let mut modder: u64 = 0;
                         let mut last_check_connected = true;
@@ -366,7 +366,7 @@ fn start_tor_listener(
                                 match status {
                                     Err(status) => {
                                         if last_check_connected {
-                                            cli_message!("\nWARNING: Tor is not responding. Will try to reconnect at [{:?}], {}",
+                                            cli_message!("\nWARNING: tor is not responding, will try to reconnect at [{:?}], {}",
                                                   std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs(),
                                                   status);
                                         }
@@ -378,7 +378,7 @@ fn start_tor_listener(
                                     },
                                     Ok(_) => {
                                         if !last_check_connected {
-                                            cli_message!("\nINFO: Tor connection reestablished at [{:?}]",
+                                            cli_message!("\nINFO: tor connection reestablished at [{:?}]",
                                                   std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs());
                                             last_check_connected = true;
                                         }
@@ -393,7 +393,7 @@ fn start_tor_listener(
                         Some(p)
                     },
                     Err(e) => {
-                        cli_message!("INFO: Unable to start Tor listener. {}", e);
+                        cli_message!("Error: Unable to start tor listener: {}", e);
                         input.send(false).unwrap();
                         None
                     },
@@ -419,7 +419,7 @@ fn start_keybase_listener(
         }
     }
 
-    cli_message!("Starting keybase listener...");
+    cli_message!("starting keybase listener...");
 
     let keychain_mask = Arc::new(Mutex::new(None));
     let res = grin_wallet_controller::controller::start_keybase_listener(
@@ -457,7 +457,7 @@ fn start_wallet_api(
 
         if config.owner_api.unwrap_or(false) {
             cli_message!(
-                         "Starting listener for owner api on [{}]",
+                         "starting listener for owner api on [{}]",
                          config.owner_api_address().bright_green()
                      );
             if config.owner_api_secret.is_none() {
@@ -492,7 +492,7 @@ fn start_wallet_api(
 
         if config.foreign_api.unwrap_or(false) {
             cli_message!(
-                         "Starting listener for foreign api on [{}]",
+                         "starting listener for foreign api on [{}]",
                          config.foreign_api_address().bright_green()
                      );
             if config.foreign_api_secret.is_some() {
@@ -575,7 +575,7 @@ impl Highlighter for EditorHelper {
 }
 
 fn kill_tor_if_exists() {
-    debug!("Killing Tor");
+    debug!("killing tor");
 }
 
 #[cfg(not(target_os = "android"))]
@@ -841,7 +841,7 @@ fn main() {
             let command = match rl.readline(PROMPT) {
             Ok(command) => command.trim().to_string(),
             Err(e) => {
-                cli_message!("Error: Unable to read input. {}", e);
+                cli_message!("Error: Unable to read input, {}", e);
                 break;
             }
         };
@@ -860,7 +860,7 @@ fn main() {
         if command == "exit" {
             let mut ptr = tor_state.as_ref().unwrap().lock().unwrap();
             if *ptr != 0 {
-                cli_message!("Stopping Tor listener...");
+                cli_message!("Stopping TOR listener...");
                 *ptr = 0;
             }
             if mwcmqs_broker.is_some() {
@@ -1191,13 +1191,13 @@ fn do_command(
             if tor {
                 if !(*tor_running) {
                     if config.foreign_api() {
-                        cli_message!("Starting Tor listener...");
+                        cli_message!("starting tor listener...");
                         *tor_state = Some(start_tor_listener(&config, wallet.clone(), tor_running)?);
                     } else {
-                        return Err(ErrorKind::TORError("Foreign API must be enabled to use Tor.".to_string()))?;
+                        return Err(ErrorKind::TORError("Foreign API must be enabled to use TOR.".to_string()))?;
                     }
                 } else {
-                    cli_message!("INFO: Tor listener already started.");
+                    cli_message!("ERROR: TOR listener already started!");
                 }
             }
         }
@@ -1221,7 +1221,7 @@ fn do_command(
                     _ => false,
                 };
                 if is_running {
-                    cli_message!("Stopping mwcmqs listener...");
+                    cli_message!("stopping mwcmqs listener...");
                     let mut success = false;
                     if let Some((_, subscriber)) = mwcmqs_broker {
                         success = subscriber.stop();
@@ -1241,7 +1241,7 @@ fn do_command(
                     _ => false,
                 };
                 if is_running {
-                    cli_message!("Stopping keybase listener...");
+                    cli_message!("stopping keybase listener...");
                     if let Some((_, subscriber)) = keybase_broker {
                         subscriber.stop();
                     };
@@ -1253,11 +1253,11 @@ fn do_command(
             if tor {
                 let mut ptr = tor_state.as_ref().unwrap().lock().unwrap();
                 if *ptr != 0 {
-                    cli_message!("Stopping Tor listener...");
+                    cli_message!("Stopping TOR listener...");
                     *ptr = 0;
                     *tor_running = false;
                 } else {
-                    cli_message!("INFO: Tor listener is not running.");
+                    cli_message!("ERROR: TOR listener is not running!");
 
                 }
             }
@@ -1858,7 +1858,7 @@ fn do_command(
 
             // Locking for this slate is skipped. Transaction will be received at return state
             cli_message!(
-                "Invoice slate [{}] for [{}] MWCs sent successfully to [{}]",
+                "invoice slate [{}] for [{}] MWCs sent successfully to [{}]",
                 slate.id.to_string(),
                 core::amount_to_hr_string(slate.amount, false),
                 display_to.unwrap()
@@ -1975,7 +1975,7 @@ fn do_command(
                 else {
                     cli_message!("Warning: Unable to sync wallet with a node");
                 },
-                Err(e) => cli_message!("Warning: Unable to sync wallet with a node. {}", e),
+                Err(e) => cli_message!("Warning: Unable to sync wallet with a node, {}", e),
             }
         }
         Some("dump-wallet-data") => {
