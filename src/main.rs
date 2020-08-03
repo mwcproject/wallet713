@@ -472,6 +472,7 @@ fn start_wallet_api(
             let owner_api_secret = config.owner_api_secret.clone();
             let tls_config = tls_config.clone();
             let owner_api_include_foreign = config.owner_api_include_foreign.clone();
+            let index = config.grinbox_address_index().clone();
 
             thread::Builder::new()
                 .name("owner_listener".to_string())
@@ -483,6 +484,7 @@ fn start_wallet_api(
                         owner_api_secret,
                         tls_config,
                         owner_api_include_foreign,
+                        index,
                         None)
                     {
                         cli_message!( "{}: Owner API Listener failed, {}", e, "ERROR".bright_red() );

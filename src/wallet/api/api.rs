@@ -1271,6 +1271,7 @@ pub fn receive_tx<'a, L, C, K>(
         message,
         false,
         true,
+        0,
     )?;
     Ok(s)
 }
