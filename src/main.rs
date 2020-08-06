@@ -250,7 +250,7 @@ fn do_contacts(args: &ArgMatches, address_book: Arc<Mutex<AddressBook>>) -> Resu
 
         if contacts.len() == 0 {
             cli_message!(
-                "your contact list is empty. consider using `contacts add` to add a new contact."
+                "Your contact list is empty. Consider using `contacts add` to add a new contact."
             );
         }
     }
@@ -341,7 +341,7 @@ fn start_tor_listener(
 
 		match s {
 			Err(s) => {
-				cli_message!("Error: Tor listener failed to start. HTTP listener must be enabled, {}", s);
+				cli_message!("INFO: Tor listener failed to start. HTTP listener must be enabled. {}", s);
 			},
 			_ => { }
 		}
@@ -366,7 +366,7 @@ fn start_tor_listener(
                                 match status {
                                     Err(status) => {
                                         if last_check_connected {
-                                            cli_message!("\nWARNING: tor is not responding, will try to reconnect at [{:?}], {}",
+                                            cli_message!("\nWARNING: Tor is not responding. Will try to reconnect at [{:?}], {}",
                                                   std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs(),
                                                   status);
                                         }
@@ -393,7 +393,7 @@ fn start_tor_listener(
                         Some(p)
                     },
                     Err(e) => {
-                        cli_message!("Error: Unable to start tor listener: {}", e);
+                        cli_message!("INFO: Unable to start Tor listener. {}", e);
                         input.send(false).unwrap();
                         None
                     },
@@ -462,7 +462,7 @@ fn start_wallet_api(
                      );
             if config.owner_api_secret.is_none() {
                 cli_message!(
-                             "{}: no api secret for owner api, it is recommended to set one.",
+                             "{}: No api secret for owner api. It is recommended to set one.",
                              "WARNING".bright_yellow()
                          );
             }
@@ -487,7 +487,7 @@ fn start_wallet_api(
                         index,
                         None)
                     {
-                        cli_message!( "{}: Owner API Listener failed, {}", e, "ERROR".bright_red() );
+                        cli_message!( "{}: Owner API Listener failed. {}", e, "ERROR".bright_red() );
                     }
                 })?;
         }
@@ -520,7 +520,7 @@ fn start_wallet_api(
                         false,
                         address_index)
                     {
-                        cli_message!( "{}: Foreign API Listener failed, {}", "ERROR".bright_red(), e );
+                        cli_message!( "{}: Foreign API Listener failed. {}", "ERROR".bright_red(), e );
                     }
                 })?;
         }
@@ -843,7 +843,7 @@ fn main() {
             let command = match rl.readline(PROMPT) {
             Ok(command) => command.trim().to_string(),
             Err(e) => {
-                cli_message!("Error: Unable to read input, {}", e);
+                cli_message!("Error: Unable to read input. {}", e);
                 break;
             }
         };
@@ -1199,7 +1199,7 @@ fn do_command(
                         return Err(ErrorKind::TORError("Foreign API must be enabled to use TOR.".to_string()))?;
                     }
                 } else {
-                    cli_message!("ERROR: TOR listener already started!");
+                    cli_message!("INFO: Tor listener already started.");
                 }
             }
         }
@@ -1259,7 +1259,7 @@ fn do_command(
                     *ptr = 0;
                     *tor_running = false;
                 } else {
-                    cli_message!("ERROR: TOR listener is not running!");
+                    cli_message!("INFO: Tor listener is not running.");
 
                 }
             }
@@ -1985,7 +1985,7 @@ fn do_command(
                 else {
                     cli_message!("Warning: Unable to sync wallet with a node");
                 },
-                Err(e) => cli_message!("Warning: Unable to sync wallet with a node, {}", e),
+                Err(e) => cli_message!("Warning: Unable to sync wallet with a node. {}", e),
             }
         }
         Some("dump-wallet-data") => {
@@ -2076,7 +2076,7 @@ fn do_command(
                     proof_ok(sender, receiver, amount, outputs, kernel);
                 }
                 Err(e) => {
-                    cli_message!("unable to verify proof, {}", e);
+                    cli_message!("Unable to verify proof. {}", e);
                 }
             }
         }
@@ -2098,7 +2098,7 @@ fn do_command(
                     proof_ok(sender, receiver, amount, outputs, kernel);
                 }
                 Err(e) => {
-                    cli_message!("unable to verify proof, {}", e);
+                    cli_message!("Unable to verify proof. {}", e);
                 }
             }
         }
