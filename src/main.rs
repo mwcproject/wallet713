@@ -1582,8 +1582,12 @@ fn do_command(
             let mut slate = String::new();
             file.read_to_string(&mut slate)?;
             let mut slate = Slate::deserialize_upgrade(&slate)?;
-            wallet.lock().finalize_post_slate(&mut slate, fluff)?;
-            cli_message!("{} finalized.", input);
+            if &slate.participant_data.len() -1 ==0 {
+                cli_message!("Not a valid response file!");
+            } else {
+                wallet.lock().finalize_post_slate(&mut slate, fluff)?;
+                cli_message!("{} finalized.", input);
+            }
         }
         Some("submit") => {
             let args = matches.subcommand_matches("submit").unwrap();
@@ -1680,7 +1684,11 @@ fn do_command(
             if let Some(input) = input {
                 let mut file = File::create(input.replace("~", &home_dir))?;
                 let w = wallet.lock();
-                let address = Some(String::from("file"));
+                let mut address = Some(String::from("file"));
+                if do_proof {
+                    address = Some(String::from("file_proof"));
+                }
+
                 let slate = w.initiate_send_tx(
                     address.clone(),
                     amount,
