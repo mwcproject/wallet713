@@ -284,7 +284,7 @@ fn start_mwcmqs_listener(
         }
     }
 
-    println!("starting mwcmqs listener...");
+    println!("Starting mwcmqs listener...");
 
     let res = grin_wallet_controller::controller::start_mwcmqs_listener(
         wallet.lock().get_wallet_instance()?,
@@ -349,7 +349,7 @@ fn start_tor_listener(
                 let _ = match p {
                      Ok(mut p) => {
 			let url_str = &format!("http://{}.onion", onion_address);
-                        cli_message!("{}", &format!("tor listener started for [{}]", url_str));
+                        cli_message!("{}", &format!("Tor listener started for [{}]", url_str));
                         input.send(true).unwrap();
                         let mut modder: u64 = 0;
                         let mut last_check_connected = true;
@@ -385,7 +385,7 @@ fn start_tor_listener(
                                     },
                                     Ok(_) => {
                                         if !last_check_connected {
-                                            cli_message!("\nINFO: tor connection reestablished at [{:?}]",
+                                            cli_message!("\nINFO: Tor connection reestablished at [{:?}]",
                                                   std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs());
                                             last_check_connected = true;
                                         }
@@ -426,7 +426,7 @@ fn start_keybase_listener(
         }
     }
 
-    cli_message!("starting keybase listener...");
+    cli_message!("Starting keybase listener...");
 
     let keychain_mask = Arc::new(Mutex::new(None));
     let res = grin_wallet_controller::controller::start_keybase_listener(
@@ -456,7 +456,7 @@ fn start_wallet_api(
         }
         else {
             if !config.foreign_api_address().starts_with("127.0.0.1:") {
-                cli_message!("{}: TLS configuration is not set, non secure HTTP connection will be used. It is recommended to use secure TLS connection.",
+                cli_message!("{}: TLS configuration is not set. Non-secure HTTP connection will be used. It is recommended to use secure TLS connection.",
                         "WARNING".bright_yellow() );
             }
             None
@@ -464,12 +464,12 @@ fn start_wallet_api(
 
         if config.owner_api.unwrap_or(false) {
             cli_message!(
-                         "starting listener for owner api on [{}]",
+                         "Starting listener for Owner API on [{}]",
                          config.owner_api_address().bright_green()
                      );
             if config.owner_api_secret.is_none() {
                 cli_message!(
-                             "{}: No api secret for owner api. It is recommended to set one.",
+                             "{}: No API secret for Owner API. It is recommended to set one.",
                              "WARNING".bright_yellow()
                          );
             }
@@ -501,12 +501,12 @@ fn start_wallet_api(
 
         if config.foreign_api.unwrap_or(false) {
             cli_message!(
-                         "starting listener for foreign api on [{}]",
+                         "Starting listener for Foreign API on [{}]",
                          config.foreign_api_address().bright_green()
                      );
             if config.foreign_api_secret.is_some() {
                 cli_message!(
-                             "{}: setting the foreign_api_secret will prevent mwc-wallet from sending to this wallet because it doesn't support basic auth. mwc-qt-wallet and mwc713 support it and sender need to be aware about that.",
+                             "{}: Setting a Foreign API secret will prevent mwc-wallet from sending to this wallet as mwc-wallet does not support basic authentication. However both mwc-qt-wallet and mwc713 support basic authentication.",
                              "WARNING".bright_yellow()
                          );
             }
@@ -869,7 +869,7 @@ fn main() {
         if command == "exit" {
             let mut ptr = tor_state.as_ref().unwrap().lock().unwrap();
             if *ptr != 0 {
-                cli_message!("Stopping TOR listener...");
+                cli_message!("Stopping Tor listener...");
                 *ptr = 0;
             }
             if mwcmqs_broker.is_some() {
@@ -1200,10 +1200,10 @@ fn do_command(
             if tor {
                 if !(*tor_running) {
                     if config.foreign_api() {
-                        cli_message!("starting tor listener...");
+                        cli_message!("Starting Tor listener...");
                         *tor_state = Some(start_tor_listener(&config, wallet.clone(), tor_running)?);
                     } else {
-                        return Err(ErrorKind::TORError("Foreign API must be enabled to use TOR.".to_string()))?;
+                        return Err(ErrorKind::TORError("Foreign API must be enabled to use Tor.".to_string()))?;
                     }
                 } else {
                     cli_message!("INFO: Tor listener already started.");
@@ -1230,7 +1230,7 @@ fn do_command(
                     _ => false,
                 };
                 if is_running {
-                    cli_message!("stopping mwcmqs listener...");
+                    cli_message!("Stopping mwcmqs listener...");
                     let mut success = false;
                     if let Some((_, subscriber)) = mwcmqs_broker {
                         success = subscriber.stop();
@@ -1250,7 +1250,7 @@ fn do_command(
                     _ => false,
                 };
                 if is_running {
-                    cli_message!("stopping keybase listener...");
+                    cli_message!("Stopping keybase listener...");
                     if let Some((_, subscriber)) = keybase_broker {
                         subscriber.stop();
                     };
@@ -1262,7 +1262,7 @@ fn do_command(
             if tor {
                 let mut ptr = tor_state.as_ref().unwrap().lock().unwrap();
                 if *ptr != 0 {
-                    cli_message!("Stopping TOR listener...");
+                    cli_message!("Stopping Tor listener...");
                     *ptr = 0;
                     *tor_running = false;
                 } else {
@@ -1800,7 +1800,7 @@ fn do_command(
             let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &apisecret, Some(tor_config))?;
             slate = sender.send_tx(&slate)?;
 
-            // Sender can chenge that, restoring original value
+            // Sender can change that, restoring original value
             slate.ttl_cutoff_height = original_slate.ttl_cutoff_height.clone();
             // Checking is sender didn't do any harm to slate
             Slate::compare_slates_send( &original_slate, &slate)?;
