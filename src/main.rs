@@ -372,8 +372,15 @@ fn start_tor_listener(
                                         }
                                         last_check_connected = false;
                                         let cloned_wallet_data_dir = wallet_data_dir.clone();
-                                        p = grin_wallet_controller::controller::init_tor_listener(winst.clone(),
-                                            keychain_mask.clone(), &addr, Some(&cloned_wallet_data_dir), cloned_config.grinbox_address_index()).unwrap();
+                                        loop {
+                                            let tmp = grin_wallet_controller::controller::init_tor_listener(winst.clone(),
+                                                keychain_mask.clone(), &addr, Some(&cloned_wallet_data_dir), cloned_config.grinbox_address_index());
+                                            if !tmp.is_err() {
+                                                p = tmp.unwrap();
+                                                break;
+                                            }
+                                            thread::sleep(std::time::Duration::from_millis(2_000));
+                                        }
                                         thread::sleep(std::time::Duration::from_millis(2_000));
                                     },
                                     Ok(_) => {
