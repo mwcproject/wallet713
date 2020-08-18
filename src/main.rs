@@ -347,54 +347,14 @@ fn start_tor_listener(
 		}
 
                 let _ = match p {
-                     Ok(mut p) => {
+                     Ok(p) => {
 			let url_str = &format!("http://{}.onion", onion_address);
                         cli_message!("{}", &format!("tor listener started for [{}]", url_str));
                         input.send(true).unwrap();
-                        let mut modder: u64 = 0;
-                        let mut last_check_connected = true;
-                        for _ in 1..2_000_000_000 {
+			loop {
                             std::thread::sleep(std::time::Duration::from_millis(30));
                             let val = mutex_clone.lock().unwrap();
                             if *val == 0 { break; }
-
-                            modder = modder + 1;
-
-                            if modder % 10 == 0 || !last_check_connected {
-                                sender.use_socks = true;
-                                let status = sender.check_other_version(&format!("{}/v2/foreign", url_str), Some(10_000));
-                                match status {
-                                    Err(status) => {
-                                        if last_check_connected {
-                                            cli_message!("\nWARNING: Tor is not responding. Will try to reconnect at [{:?}], {}",
-                                                  std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs(),
-                                                  status);
-                                        }
-                                        last_check_connected = false;
-                                        let cloned_wallet_data_dir = wallet_data_dir.clone();
-                                        loop {
-                                            let tmp = grin_wallet_controller::controller::init_tor_listener(winst.clone(),
-                                                keychain_mask.clone(), &addr, Some(&cloned_wallet_data_dir), cloned_config.grinbox_address_index());
-                                            if !tmp.is_err() {
-                                                p = tmp.unwrap();
-                                                break;
-                                            }
-                                            thread::sleep(std::time::Duration::from_millis(2_000));
-                                        }
-                                        thread::sleep(std::time::Duration::from_millis(2_000));
-                                    },
-                                    Ok(_) => {
-                                        if !last_check_connected {
-                                            cli_message!("\nINFO: tor connection reestablished at [{:?}]",
-                                                  std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs());
-                                            last_check_connected = true;
-                                        }
-                                    },
-                                }
-
-                            }
-
-
                         }
 
                         Some(p)
