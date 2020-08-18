@@ -209,7 +209,7 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("[mwcmqs] -s, --mwcmqs 'start the mwcmqs listener'")
                     )
                     .arg(
-                        Arg::from_usage("[tor] -t, --tor 'start the tor listener'")
+                        Arg::from_usage("[tor] -t, --tor 'start the Tor listener'")
                     )
             )
             .subcommand(
@@ -225,7 +225,7 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("[mwcmqs] -s, --mwcmqs 'stop the mwcmqs listener'")
                     )
                     .arg(
-                        Arg::from_usage("[tor] -t, --tor 'stop the tor listener'")
+                        Arg::from_usage("[tor] -t, --tor 'stop the Tor listener'")
                     )
             )
             .subcommand(
