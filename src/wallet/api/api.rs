@@ -16,6 +16,7 @@ use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
 use grin_wallet_libwallet::{AcctPathMapping, NodeClient, Slate, TxLogEntry,
                             WalletInfo, OutputCommitMapping, WalletInst, WalletLCProvider,
                             StatusMessage, TxLogEntryType, OutputData};
+use grin_wallet_libwallet::api_impl::types::SwapStartArgs;
 use grin_core::core::Transaction;
 use grin_keychain::{Identifier};
 use grin_wallet_impls::keychain::Keychain;
@@ -1274,4 +1275,56 @@ pub fn receive_tx<'a, L, C, K>(
         0,
     )?;
     Ok(s)
+}
+
+pub fn swap_create_from_offer<'a, L, C, K>(
+    wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
+    filename: String,
+)-> Result<String, Error>
+    where
+        L: WalletLCProvider<'a, C, K>,
+        C: NodeClient + 'a,
+        K: Keychain + 'a,
+{
+    let swap_id = grin_wallet_libwallet::owner_swap::swap_create_from_offer(wallet_inst, None, filename)?;
+    Ok(swap_id)
+}
+
+pub fn swap_start<'a, L, C, K>(
+    wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
+    mwc_amount: u64,
+    secondary_currency: String,
+    secondary_amount: String,
+    secondary_redeem_address: String,
+    seller_lock_first: bool,
+    minimum_confirmations: Option<u64>,
+    mwc_confirmations: u64,
+    secondary_confirmations: u64,
+    message_exchange_time_sec: u64,
+    redeem_time_sec: u64,
+    buyer_communication_method: String,
+    buyer_communication_address: String,
+)-> Result<String, Error>
+    where
+        L: WalletLCProvider<'a, C, K>,
+        C: NodeClient + 'a,
+        K: Keychain + 'a,
+{
+    let params = SwapStartArgs {
+        mwc_amount,
+        secondary_currency,
+        secondary_amount,
+        secondary_redeem_address,
+        seller_lock_first,
+        minimum_confirmations,
+        mwc_confirmations,
+        secondary_confirmations,
+        message_exchange_time_sec,
+        redeem_time_sec,
+        buyer_communication_method,
+        buyer_communication_address,
+    };
+
+    let swap_id = grin_wallet_libwallet::owner_swap::swap_start(wallet_inst, None, &params)?;
+    Ok(swap_id)
 }

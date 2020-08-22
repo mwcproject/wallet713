@@ -14,6 +14,8 @@ use super::ErrorKind;
 use crate::contacts::{ DEFAULT_GRINBOX_PORT};
 use crate::common::Error;
 use grin_wallet_impls::MWCMQSAddress;
+use grin_wallet_config::{MQSConfig, TorConfig};
+use contacts::{DEFAULT_MWCMQS_DOMAIN, DEFAULT_MWCMQS_PORT};
 
 const WALLET713_HOME: &str = ".mwc713";
 const WALLET713_DEFAULT_CONFIG_FILENAME: &str = "wallet713.toml";
@@ -56,6 +58,15 @@ pub struct Wallet713Config {
 
     // Wallet state update frequency. In none, no updates will be run in the background.
     pub wallet_updater_frequency_sec: Option<u32>,
+
+    /// Electrum node for BCH mainnet address
+    pub electrumx_mainnet_bch_node_addr: Option<String>,
+    /// Electrum node for BCH testnet address
+    pub electrumx_testnet_bch_node_addr: Option<String>,
+    /// Electrum node for BTC mainnet address
+    pub electrumx_mainnet_btc_node_addr: Option<String>,
+    /// Electrum node for BTC testnet address
+    pub electrumx_testnet_btc_node_addr: Option<String>,
 }
 
 pub const WALLET713_CONFIG_HELP: &str =
@@ -143,6 +154,22 @@ pub const WALLET713_CONFIG_HELP: &str =
 # If will be set, will run 'sync' command with defined time interval
 # wallet_updater_frequency_sec =
 
+# Electrum X servers that are used for Atomic Swap operations. Each Secondary Currency need
+# its own dedicated Electrum X instance. We highly advise to use your own instance, instead of
+# using those community servers.
+
+# Electrum node for BCH mainnet address
+# electrumx_mainnet_bch_node_addr = \"52.23.248.83:8000\"
+
+# Electrum node for BCH testnet address
+# electrumx_testnet_bch_node_addr = \"52.23.248.83:8000\"
+
+# Electrum node for BTC mainnet address
+# electrumx_mainnet_btc_node_addr = \"52.23.248.83:8000\"
+
+# Electrum node for BTC testnet address
+# electrumx_testnet_btc_node_addr = \"52.23.248.83:8000\"
+
 ";
 
 
@@ -183,6 +210,10 @@ impl Wallet713Config {
             config_home: None,
             grinbox_address_key: None,
             wallet_updater_frequency_sec: None,
+            electrumx_mainnet_bch_node_addr: None,
+            electrumx_testnet_bch_node_addr: None,
+            electrumx_mainnet_btc_node_addr: None,
+            electrumx_testnet_btc_node_addr: None,
         }
     }
 
@@ -385,6 +416,48 @@ impl Wallet713Config {
     pub fn is_tls_enabled(&self) -> bool {
         self.tls_certificate_file.is_some() && self.tls_certificate_key.is_some()
     }
+
+    pub fn get_mqs_config(&self) -> MQSConfig {
+        grin_wallet_config::MQSConfig {
+            mwcmqs_domain: self.mwcmqs_domain.clone().unwrap_or(DEFAULT_MWCMQS_DOMAIN.to_string()),
+            mwcmqs_port: self.mwcmqs_port.clone().unwrap_or(DEFAULT_MWCMQS_PORT),
+        }
+    }
+
+    pub fn get_wallet_data_dir(&self) -> String {
+        let mut top_level_dir = self.get_top_level_directory().unwrap();
+        if top_level_dir.len() == 0 {
+            top_level_dir = std::env::current_dir().unwrap().display().to_string();
+        }
+        let wallet_data_dir = top_level_dir + "/" + &self.get_wallet_data_directory().unwrap();
+
+        absolute_path(wallet_data_dir).unwrap().into_os_string().into_string().unwrap()
+    }
+
+
+    pub fn get_tor_config(&self) -> TorConfig {
+        let mut tor_config = grin_wallet_config::TorConfig::default();
+        tor_config.socks_running = true;
+        tor_config.socks_proxy_addr = self.get_socks_addr();
+        tor_config.send_config_dir = self.get_wallet_data_dir();
+        tor_config
+    }
+
+    pub fn get_tls_config(&self, print_message: bool) -> Option<grin_api::TLSConfig> {
+        if self.is_tls_enabled() {
+            if print_message {
+                cli_message!( "TLS is enabled. Wallet will use secure connection for Rest API" );
+            }
+            Some(grin_api::TLSConfig::new(self.tls_certificate_file.clone().unwrap(),
+                                          self.tls_certificate_key.clone().unwrap()))
+        } else {
+            if !self.foreign_api_address().starts_with("127.0.0.1:") && print_message {
+                cli_message!("WARNING: TLS configuration is not set. Non-secure HTTP connection will be used. It is recommended to use secure TLS connection.");
+            }
+            None
+        }
+    }
+
 }
 
 impl fmt::Display for Wallet713Config {
@@ -396,6 +469,22 @@ impl fmt::Display for Wallet713Config {
                "{...}")?;
         Ok(())
     }
+}
+
+fn absolute_path<P>(path: P) -> io::Result<PathBuf>
+    where
+        P: AsRef<Path>,
+{
+    use path_clean::PathClean;
+
+    let path = path.as_ref();
+    let absolute_path = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        std::env::current_dir()?.join(path)
+    }.clean();
+
+    Ok(absolute_path)
 }
 
 /// Error type wrapping config errors.

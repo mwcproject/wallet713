@@ -275,7 +275,7 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("[fluff] -l, --fluff 'the transaction is submitted as a fluff transactions'")
                     )
                     .arg(
-                        Arg::from_usage("[proof]  --proof 'the transaction is submitted with payment_proof_address'")
+                        Arg::from_usage("[proof] --proof 'the transaction is submitted with payment_proof_address'")
                     )
             )
             .subcommand(
@@ -489,6 +489,105 @@ impl<'a, 'b> Parser {
                     )
                     .arg(
                         Arg::from_usage("-r, --result=<file> 'resulting file with transactions in CVS format. Last column the result of validation'")
+                    )
+            )
+            .subcommand(
+                SubCommand::with_name("swap_create_from_offer")
+                    .about("Create Buyer swap from the Offer message in the specified file")
+                    .arg(
+                        Arg::from_usage("-f, --file=<file> 'Filename where message with trade offer is stored. Please review the offer before accepting it'")
+                    )
+            )
+            .subcommand(
+                SubCommand::with_name("swap_start")
+                    .about("Start MWC atomic swap trading")
+                    .arg(
+                        Arg::from_usage("-w, --mwc_amount=<amount> 'MWC amount to trade'")
+                    )
+                    .arg(
+                        Arg::from_usage("[confirmations] -c, --min_conf=<confirmations> 'Minimum number of confirmations required for an output to be spendable. Default: 10'")
+                    )
+                    .arg(
+                        Arg::from_usage("-s, --secondary_currency=<currency> 'Secondary currency name (bch, btc)'")
+                    )
+                    .arg(
+                        Arg::from_usage("-b, --secondary_amount=<amount> 'Secondary currency amount excluding fees'")
+                    )
+                    .arg(
+                        Arg::from_usage("-a, --secondary_address=<address> 'Secondary currency withdrawal address'")
+                    )
+                    .arg(
+                        Arg::from_usage("[who_lock_first] -l, --who_lock_first=<buyer|seller> 'Coins locking order. Who locks first?  Default: seller'")
+                    )
+                    .arg(
+                        Arg::from_usage("[mwc_confirmations] --mwc_confirmations=<confirmation> 'Number of confirmations required for MWC coins. Default 60'")
+                    )
+                    .arg(
+                        Arg::from_usage("[secondary_confirmations] --secondary_confirmations=<confirmations> 'Number of confirmations required for Secondary Currency. Default 3'")
+                    )
+                    .arg(
+                        Arg::from_usage("[message_exchange_time] --message_exchange_time=<minutes> 'How much time, in minutes, is reserved for every session of message exchange (Offer exchange and create redeem transaction sessions). Please reserve enough time. If you go over the time limit, your swap will automatically be cancelled. Default: 60'")
+                    )
+                    .arg(
+                        Arg::from_usage("[redeem_time] --redeem_time=<minutes> 'How much time, in minutes, is reserved for execution of redeem or refund transaction. Please reserve enough time for this operation. If you go over the time limit, your swap will automatically be cancelled. Default: 60'")
+                    )
+                    .arg(
+                        Arg::from_usage("-m, --method=<tor|file|mwcmqs> 'Method for sending the message to the Buyer'")
+                    )
+                    .arg(
+                        Arg::from_usage("-d, --dest=<destination> 'destination to send swap message to (i.e. onion address or file location)'")
+                    )
+            )
+            .subcommand(
+                SubCommand::with_name("swap")
+                    .about("Trade MWC with another currency via atomic swap")
+                    .arg(
+                        Arg::from_usage("[list] -l, --list 'List SWAP trades'")
+                    )
+                    .arg(
+                        Arg::from_usage("[remove] -r, --remove 'Remove SWAP trade. Note, be sure that you finish or cancel your trade before you delete it'")
+                    )
+                    .arg(
+                        Arg::from_usage("[check] -c, --check 'Check the status of the trade'")
+                    )
+                    .arg(
+                        Arg::from_usage("[process] -p, --process 'Process the next step of the swap trade'")
+                    )
+                    .arg(
+                        Arg::from_usage("[autoswap] -a, --autoswap 'Enter all required values now and let the swap process be carried out without any more inputs'")
+                    )
+                    .arg(
+                        Arg::from_usage("[stop_auto_swap] -t, --stop_auto_swap 'Stop all the ongoing auto swap processes'")
+                    )
+                    .arg(
+                        Arg::from_usage("[dump] -u, --dump 'Dump the contents of the swap file decrypted on screen'")
+                    )
+                    .arg(
+                        Arg::from_usage("[adjust] -j, --adjust=<cancel|destination|secondary_address|secondary_fee> 'Modify the swap trade workflow. You can use this to cancel a swap or adjust some parameters'")
+                    )
+                    .arg(
+                        Arg::from_usage("[swap_id] -i, --swap_id=<id> 'Swap trade Id. Required for commands that are specific for single trade'")
+                    )
+                    .arg(
+                        Arg::from_usage("[method] -m, --method=<tor|file|mwcmqs> 'Method for sending the message to the Buyer'")
+                    )
+                    .arg(
+                        Arg::from_usage("[dest] -d, --dest=<destination> 'destination to send swap message to (i.e. onion address or file location)'")
+                    )
+                    .arg(
+                        Arg::from_usage("[apisecret] -s, --apisecret=<apisecret> 'Swapping counterpart apisecret. Applicable to Tor address only. Default is none.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[secondary_fee] --secondary_fee=<fee> 'Fee for Secondary Currency transactions. See fee units with swap --check command'")
+                    )
+                    .arg(
+                        Arg::from_usage("[message_file_name] --message_file_name=<file> 'Filename with swap message content. Can be used for file based messages exchange process'")
+                    )
+                    .arg(
+                        Arg::from_usage("[buyer_refund_address] --buyer_refund_address=<address> 'Secondary Currency refund address for the Buyer'")
+                    )
+                    .arg(
+                        Arg::from_usage("[secondary_address] --secondary_address 'Secondary currency withdrawal address to adjust'")
                     )
             )
     }

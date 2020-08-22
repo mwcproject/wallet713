@@ -591,6 +591,44 @@ impl Wallet {
         ))
     }
 
+    pub fn swap_create_from_offer(
+        &self,
+        filename: String,
+    ) -> Result<String, Error> {
+        api::swap_create_from_offer(self.get_wallet_instance()?, filename)
+    }
+
+    pub fn swap_start(
+        &self,
+        mwc_amount: u64,
+        secondary_currency: String,
+        secondary_amount: String,
+        secondary_redeem_address: String,
+        seller_lock_first: bool,
+        minimum_confirmations: Option<u64>,
+        mwc_confirmations: u64,
+        secondary_confirmations: u64,
+        message_exchange_time_sec: u64,
+        redeem_time_sec: u64,
+        buyer_communication_method: String,
+        buyer_communication_address: String,
+    ) -> Result<String, Error> {
+        api::swap_start(self.get_wallet_instance()?,
+                        mwc_amount,
+                        secondary_currency,
+                        secondary_amount,
+                        secondary_redeem_address,
+                        seller_lock_first,
+                        minimum_confirmations,
+                        mwc_confirmations,
+                        secondary_confirmations,
+                        message_exchange_time_sec,
+                        redeem_time_sec,
+                        buyer_communication_method,
+                        buyer_communication_address)
+    }
+
+
     fn init_seed(
         &self,
         config: &Wallet713Config,
@@ -658,6 +696,20 @@ impl Wallet {
         lc.open_wallet(None, passphrase, false, false, Some(config.get_wallet_data_directory()?.as_str()) )?;
         let wallet_inst = lc.wallet_inst()?;
         wallet_inst.set_parent_key_id_by_name(account)?;
+
+        // initializing settings for swaps
+        let secondary_currency_node_addrs = grin_wallet_libwallet::swap::defaults::get_swap_support_servers(
+            &config.electrumx_mainnet_bch_node_addr,
+            &config.electrumx_testnet_bch_node_addr,
+            &config.electrumx_mainnet_btc_node_addr,
+            &config.electrumx_testnet_btc_node_addr,
+        );
+
+        grin_wallet_libwallet::swap::trades::init_swap_trade_backend(
+            wallet_inst.get_data_file_dir(),
+            secondary_currency_node_addrs,
+        );
+
         self.backend = Some(Arc::new(Mutex::new(wallet)));
 
         match config.wallet_updater_frequency_sec {

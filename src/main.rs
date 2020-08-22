@@ -45,6 +45,7 @@ extern crate grin_wallet_impls;
 extern crate grin_wallet_libwallet;
 extern crate grin_wallet_controller;
 extern crate grin_wallet_util;
+extern crate grin_wallet_config;
 
 use grin_wallet_libwallet::{SlateVersion, VersionedSlate};
 use std::sync::mpsc::Receiver;
@@ -58,7 +59,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io;
 use std::io::{Read, Write, BufReader};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use grin_core::core::Transaction;
 use grin_core::ser;
 
@@ -114,26 +115,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 use std::borrow::Borrow;
 use uuid::Uuid;
-
-
-use path_clean::PathClean;
+use grin_wallet_controller::command;
 
 #[cfg(not(target_os = "android"))]
 const CLI_HISTORY_PATH: &str = ".history";
-
-pub fn absolute_path<P>(path: P) -> io::Result<PathBuf>
-where
-    P: AsRef<Path>,
-{
-    let path = path.as_ref();
-    let absolute_path = if path.is_absolute() {
-        path.to_path_buf()
-    } else {
-        env::current_dir()?.join(path)
-    }.clean();
-
-    Ok(absolute_path)
-}
 
 fn getpassword() -> Result<String, Error> {
     let mwc_password = getenv("MWC_PASSWORD")?;
@@ -288,10 +273,7 @@ fn start_mwcmqs_listener(
 
     let res = grin_wallet_controller::controller::start_mwcmqs_listener(
         wallet.lock().get_wallet_instance()?,
-        grin_wallet_config::MQSConfig {
-            mwcmqs_domain: config.mwcmqs_domain.clone().unwrap_or(DEFAULT_MWCMQS_DOMAIN.to_string()),
-            mwcmqs_port: config.mwcmqs_port.clone().unwrap_or(DEFAULT_MWCMQS_PORT),
-        },
+        config.get_mqs_config(),
         config.grinbox_address_index.clone().unwrap_or(0),
         false,
         Arc::new(Mutex::new(None)),
@@ -301,16 +283,6 @@ fn start_mwcmqs_listener(
     Ok(res)
 }
 
-fn get_wallet_data_dir(config: &Wallet713Config) -> String {
-    let mut top_level_dir = config.get_top_level_directory().unwrap();
-    if top_level_dir.len() == 0 {
-        top_level_dir = std::env::current_dir().unwrap().display().to_string();
-    }
-    let wallet_data_dir = top_level_dir + "/" + &config.get_wallet_data_directory().unwrap();
-
-    absolute_path(wallet_data_dir).unwrap().into_os_string().into_string().unwrap()
-}
-
 fn start_tor_listener(
     config: &Wallet713Config,
     wallet: Arc<Mutex<Wallet>>,
@@ -318,26 +290,28 @@ fn start_tor_listener(
 ) -> Result<std::sync::Arc<std::sync::Mutex<u32>>, Error> {
     let keychain_mask = Arc::new(Mutex::new(None));
 
-    let cloned_config = config.clone();
-    let addr = config.foreign_api_address().clone();
+    let addr = config.foreign_api_address();
     let mutex = std::sync::Arc::new(std::sync::Mutex::new(1));
     let mutex_clone = mutex.clone();
 
     let (input, output): (Sender<bool>, Receiver<bool>) = std::sync::mpsc::channel();
 
+    // cloning for the thread
+    let config = config.clone();
+
     thread::Builder::new()
             .name("tor_listener".to_string())
             .spawn(move || {
 
-                let wallet_data_dir = get_wallet_data_dir(&cloned_config);
+                let wallet_data_dir = config.get_wallet_data_dir();
                 let winst = wallet.lock().get_wallet_instance().unwrap();
-                let onion_address = grin_wallet_controller::controller::get_tor_address(winst.clone(), keychain_mask.clone(), cloned_config.grinbox_address_index()).unwrap();
+                let onion_address = grin_wallet_controller::controller::get_tor_address(winst.clone(), keychain_mask.clone(), config.grinbox_address_index()).unwrap();
                 let p = grin_wallet_controller::controller::init_tor_listener(winst.clone(),
-                               keychain_mask.clone(), &addr, Some(&wallet_data_dir.clone()), cloned_config.grinbox_address_index());
+                               keychain_mask.clone(), &addr, Some(&wallet_data_dir.clone()), config.grinbox_address_index());
 
 		let sender = HttpDataSender::new("https://", None, Some(wallet_data_dir.clone()), false);
 		let mut sender = sender.unwrap();
-		let s = sender.start_socks(&cloned_config.get_socks_addr());
+		let s = sender.start_socks(&config.get_socks_addr());
 
 		match s {
 			Err(s) => {
@@ -409,18 +383,7 @@ fn start_wallet_api(
     }
 
     if config.owner_api() || config.foreign_api() {
-        let tls_config: Option<grin_api::TLSConfig> = if config.is_tls_enabled() {
-            cli_message!( "TLS is enabled. Wallet will use secure connection for Rest API" );
-            Some( grin_api::TLSConfig::new(config.tls_certificate_file.clone().unwrap(),
-                                           config.tls_certificate_key.clone().unwrap() ) )
-        }
-        else {
-            if !config.foreign_api_address().starts_with("127.0.0.1:") {
-                cli_message!("{}: TLS configuration is not set. Non-secure HTTP connection will be used. It is recommended to use secure TLS connection.",
-                        "WARNING".bright_yellow() );
-            }
-            None
-        };
+        let tls_config = config.get_tls_config(true);
 
         if config.owner_api.unwrap_or(false) {
             cli_message!(
@@ -1753,11 +1716,7 @@ fn do_command(
 
             let original_slate = slate.clone();
 
-            let mut tor_config = grin_wallet_config::TorConfig::default();
-            tor_config.socks_running = true;
-            tor_config.socks_proxy_addr = config.get_socks_addr();
-            tor_config.send_config_dir = get_wallet_data_dir(config);
-            let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &apisecret, Some(tor_config))?;
+            let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &apisecret, Some(config.get_tor_config()))?;
             slate = sender.send_tx(&slate)?;
 
             // Sender can change that, restoring original value
@@ -2068,6 +2027,130 @@ fn do_command(
                     cli_message!("Unable to verify proof. {}", e);
                 }
             }
+        }
+        Some("swap_create_from_offer") => {
+            let args = matches.subcommand_matches("swap_create_from_offer").unwrap();
+            let filename = args.value_of("file").unwrap();
+            let w = wallet.lock();
+            let swap_id = w.swap_create_from_offer(filename.to_string())?;
+            cli_message!("New Swap Trade created: {}", swap_id);
+        }
+        Some("swap_start") => {
+            let args = matches.subcommand_matches("swap_start").unwrap();
+
+            let mwc_amount = args.value_of("mwc_amount").unwrap();
+            let mwc_amount = core::amount_from_hr_string(mwc_amount).map_err(|_| ErrorKind::InvalidAmount(mwc_amount.to_string()))?;
+
+            let confirmations = args.value_of("confirmations").unwrap_or("10");
+            let confirmations = u64::from_str_radix(confirmations, 10)?;
+
+            let secondary_currency = args.value_of("secondary_currency").unwrap();
+            match secondary_currency {
+                "btc" | "bch" => (),
+                _ => return Err(ErrorKind::GenericError(format!("Invalid secondary_currency value. Expected btc or bch, get {}", secondary_currency)).into()),
+            }
+
+            let secondary_amount = args.value_of("secondary_amount").unwrap();
+            let secondary_address = args.value_of("secondary_address").unwrap();
+            let who_lock_first = args.value_of("who_lock_first").unwrap_or("seller");
+
+            let mwc_confirmations = args.value_of("mwc_confirmations").unwrap_or("60");
+            let mwc_confirmations = u64::from_str_radix(mwc_confirmations, 10)?;
+
+            let secondary_confirmations = args.value_of("secondary_confirmations").unwrap_or("3");
+            let secondary_confirmations = u64::from_str_radix(secondary_confirmations, 10)?;
+
+            let message_exchange_time = args.value_of("message_exchange_time").unwrap_or("60");
+            let message_exchange_time = u64::from_str_radix(message_exchange_time, 10)?;
+
+            let redeem_time = args.value_of("redeem_time").unwrap_or("60");
+            let redeem_time = u64::from_str_radix(redeem_time, 10)?;
+
+            let method = args.value_of("method").unwrap();
+            let dest = args.value_of("dest").unwrap();
+
+            let w = wallet.lock();
+            let swap_id = w.swap_start(
+                mwc_amount,
+                secondary_currency.to_string(),
+                secondary_amount.to_string(),
+                secondary_address.to_string(),
+                who_lock_first=="seller",
+                Some(confirmations),
+                mwc_confirmations,
+                secondary_confirmations,
+                message_exchange_time * 60,
+                redeem_time * 60,
+                method.to_string(),
+                dest.to_string(),
+            )?;
+            cli_message!("New Swap Trade created: {}", swap_id);
+        }
+        Some("swap") => {
+            // swap command processign is using directly mwc-wallet command call.
+            // Because of such command design we have many commands in one. That is why
+            let args = matches.subcommand_matches("swap").unwrap();
+
+            let swap_id = args.value_of("swap_id").map(|s| String::from(s));
+            let adjust = args.value_of("adjust").map(|s| String::from(s));
+            let method = args.value_of("method").map(|s| String::from(s));
+            let destination = args.value_of("dest").map(|s| String::from(s));
+            let apisecret = args.value_of("apisecret").map(|s| String::from(s));
+            let secondary_fee = match args.value_of("secondary_fee") {
+                Some(s) => Some( s.parse::<f32>().map_err(|e| ErrorKind::GenericError(format!("Unable to parse secondary_fee value {}, {}", s,e)))?),
+                None => None,
+            };
+            let message_file_name = args.value_of("message_file_name").map(|s| String::from(s));
+            let buyer_refund_address = args
+                .value_of("buyer_refund_address")
+                .map(|s| String::from(s));
+            let secondary_address = args.value_of("secondary_address").map(|s| String::from(s));
+            let start_listener = args.is_present("start_listener");
+
+            let subcommand = if args.is_present("list") {
+                command::SwapSubcommand::List
+            } else if args.is_present("remove") {
+                command::SwapSubcommand::Delete
+            } else if args.is_present("check") {
+                command::SwapSubcommand::Check
+            } else if args.is_present("process") {
+                command::SwapSubcommand::Process
+            } else if args.is_present("dump") {
+                command::SwapSubcommand::Dump
+            } else if adjust.is_some() {
+                command::SwapSubcommand::Adjust
+            } else if args.is_present("autoswap") {
+                command::SwapSubcommand::Autoswap
+            } else if args.is_present("stop_auto_swap") {
+                command::SwapSubcommand::StopAllAutoSwap
+            } else {
+                return Err(ErrorKind::GenericError("Please define some action to do".to_string()).into());
+            };
+
+            let params = command::SwapArgs {
+                subcommand,
+                swap_id,
+                adjust,
+                method,
+                destination,
+                apisecret,
+                secondary_fee,
+                message_file_name,
+                buyer_refund_address,
+                start_listener,
+                secondary_address,
+            };
+
+            grin_wallet_controller::command::swap(
+                wallet.lock().get_wallet_instance()?,
+                None,
+                config.grinbox_address_index(),
+                config.foreign_api_address(),
+                Some( config.get_mqs_config()),
+                Some(config.get_tor_config()),
+                config.get_tls_config(false),
+                params,
+                true)?;
         }
         Some(subcommand) => {
             cli_message!(
