@@ -2107,8 +2107,16 @@ fn do_command(
             let secondary_address = args.value_of("secondary_address").map(|s| String::from(s));
             let start_listener = args.is_present("start_listener");
 
+            // Flag if want to print the data in Json format
+            let json_format = args.is_present("json_format");
+
             let subcommand = if args.is_present("list") {
-                command::SwapSubcommand::List
+                if args.is_present("check") {
+                    command::SwapSubcommand::ListAndCheck
+                }
+                else {
+                    command::SwapSubcommand::List
+                }
             } else if args.is_present("remove") {
                 command::SwapSubcommand::Delete
             } else if args.is_present("check") {
@@ -2139,6 +2147,7 @@ fn do_command(
                 buyer_refund_address,
                 start_listener,
                 secondary_address,
+                json_format
             };
 
             grin_wallet_controller::command::swap(

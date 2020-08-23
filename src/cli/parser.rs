@@ -587,7 +587,10 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("[buyer_refund_address] --buyer_refund_address=<address> 'Secondary Currency refund address for the Buyer'")
                     )
                     .arg(
-                        Arg::from_usage("[secondary_address] --secondary_address 'Secondary currency withdrawal address to adjust'")
+                        Arg::from_usage("[secondary_address] --secondary_address=<address> 'Secondary currency withdrawal address to adjust'")
+                    )
+                    .arg(
+                        Arg::from_usage("[json_format] --json_format 'Print output in JSon format'")
                     )
             )
     }
