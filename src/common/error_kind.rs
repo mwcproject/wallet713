@@ -136,8 +136,6 @@ pub enum ErrorKind {
     HttpRequest(String),
     #[fail(display = "Generic error, {}", 0)]
     GenericError(String),
-    #[fail(display = "unable to verify proof, {}", _0)]
-    VerifyProof(String),
     #[fail(display = "file '{}' not found, {}", _0, _1)]
     FileNotFound(String, String),
     #[fail(display = "unable to delete the file '{}'", 0)]

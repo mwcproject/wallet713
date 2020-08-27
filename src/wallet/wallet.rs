@@ -10,7 +10,6 @@ use grin_wallet_impls::node_clients::HTTPNodeClient;
 use grin_keychain::keychain::ExtKeychain;
 use crate::common::{Arc, Mutex};
 
-use grin_wallet_libwallet::proof::crypto::Hex;
 use grin_wallet_libwallet::proof::tx_proof::TxProof;
 use crate::wallet::api::api;
 use grin_util::ZeroingString;
@@ -571,25 +570,25 @@ impl Wallet {
         Ok(res)
     }
 
-    pub fn verify_tx_proof(
-        &self,
-        tx_proof: &TxProof,
-    ) -> Result<(Option<String>, String, u64, Vec<String>, String), Error> {
-        let (sender, receiver, amount, outputs, excess_sum) = api::verify_tx_proof(tx_proof)?;
-
-        let outputs = outputs
-            .iter()
-            .map(|o| grin_util::to_hex(o.0.to_vec()))
-            .collect();
-
-        Ok((
-            sender.map(|a| a.public_key.clone()),
-            receiver.public_key.clone(),
-            amount,
-            outputs,
-            excess_sum.to_hex(),
-        ))
-    }
+    // pub fn verify_tx_proof(
+    //     &self,
+    //     tx_proof: &TxProof,
+    // ) -> Result<(Option<String>, String, u64, Vec<String>, String), Error> {
+    //     let (sender, receiver, amount, outputs, excess_sum) = api::verify_tx_proof(tx_proof)?;
+    //
+    //     let outputs = outputs
+    //         .iter()
+    //         .map(|o| grin_util::to_hex(o.0.to_vec()))
+    //         .collect();
+    //
+    //     Ok((
+    //         sender.map(|a| a.public_key.clone()),
+    //         receiver.public_key.clone(),
+    //         amount,
+    //         outputs,
+    //         excess_sum.to_hex(),
+    //     ))
+    // }
 
     pub fn swap_create_from_offer(
         &self,

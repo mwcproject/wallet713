@@ -1,10 +1,9 @@
-use std::collections::{HashSet, HashMap, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use uuid::Uuid;
 
 use grin_p2p::types::PeerAddr;
 pub use grin_util::secp::{Message};
 use grin_core::core::hash::{Hash};
-use grin_util::secp::pedersen;
 use grin_util::secp::{ContextFlag, Secp256k1, Signature};
 use grin_p2p::types::PeerInfoDisplay;
 
@@ -1117,88 +1116,88 @@ pub fn get_stored_tx_proof<'a, L, C, K>(
         .map_err(|_| ErrorKind::TxStoredProof.into())
 }
 
-pub fn verify_tx_proof(
-    tx_proof: &TxProof,
-) -> Result<
-    (
-        Option<ProvableAddress>,
-        ProvableAddress,
-        u64,
-        Vec<pedersen::Commitment>,
-        pedersen::Commitment,
-    ),
-    Error,
-> {
-    let secp = &Secp256k1::with_caps(ContextFlag::Commit);
-
-    let (destination, slate) = tx_proof
-        .verify_extract(None)
-        .map_err(|e| ErrorKind::VerifyProof(format!("{}",e)))?;
-
-    let inputs_ex = tx_proof.inputs.iter().collect::<HashSet<_>>();
-
-    let mut inputs: Vec<pedersen::Commitment> = slate
-        .tx
-        .inputs()
-        .iter()
-        .map(|i| i.commitment())
-        .filter(|c| !inputs_ex.contains(c))
-        .collect();
-
-    let outputs_ex = tx_proof.outputs.iter().collect::<HashSet<_>>();
-
-    let outputs: Vec<pedersen::Commitment> = slate
-        .tx
-        .outputs()
-        .iter()
-        .map(|o| o.commitment())
-        .filter(|c| !outputs_ex.contains(c))
-        .collect();
-
-    let excess = &slate.participant_data[1].public_blind_excess;
-
-    let excess_parts: Vec<&PublicKey> = slate
-        .participant_data
-        .iter()
-        .map(|p| &p.public_blind_excess)
-        .collect();
-    let excess_sum =
-        PublicKey::from_combination(secp, excess_parts).map_err(|e| ErrorKind::VerifyProof(format!("Unable to combile public keys, {}", e)) )?;
-
-    let commit_amount = secp.commit_value(tx_proof.amount)?;
-    inputs.push(commit_amount);
-
-    let commit_excess = secp.commit_sum(outputs.clone(), inputs)?;
-    let pubkey_excess = commit_excess.to_pubkey(secp)?;
-
-    if excess != &pubkey_excess {
-        return Err(ErrorKind::VerifyProof("Excess pub keys mismatch".to_string()).into());
-    }
-
-    let mut input_com: Vec<pedersen::Commitment> =
-        slate.tx.inputs().iter().map(|i| i.commitment()).collect();
-
-    let mut output_com: Vec<pedersen::Commitment> =
-        slate.tx.outputs().iter().map(|o| o.commitment()).collect();
-
-    input_com.push(secp.commit(0, slate.tx.offset.secret_key(secp)?)?);
-
-    output_com.push(secp.commit_value(slate.fee)?);
-
-    let excess_sum_com = secp.commit_sum(output_com, input_com)?;
-
-    if excess_sum_com.to_pubkey(secp)? != excess_sum {
-        return Err(ErrorKind::VerifyProof("Excess sum mismatch".to_string()).into());
-    }
-
-    return Ok((
-        Some(destination),
-        tx_proof.address.clone(),
-        tx_proof.amount,
-        outputs,
-        excess_sum_com,
-    ));
-}
+// pub fn verify_tx_proof(
+//     tx_proof: &TxProof,
+// ) -> Result<
+//     (
+//         Option<ProvableAddress>,
+//         ProvableAddress,
+//         u64,
+//         Vec<pedersen::Commitment>,
+//         pedersen::Commitment,
+//     ),
+//     Error,
+// > {
+//     let secp = &Secp256k1::with_caps(ContextFlag::Commit);
+//
+//     let (destination, slate) = tx_proof
+//         .verify_extract(None)
+//         .map_err(|e| ErrorKind::VerifyProof(format!("{}",e)))?;
+//
+//     let inputs_ex = tx_proof.inputs.iter().collect::<HashSet<_>>();
+//
+//     let mut inputs: Vec<pedersen::Commitment> = slate
+//         .tx
+//         .inputs()
+//         .iter()
+//         .map(|i| i.commitment())
+//         .filter(|c| !inputs_ex.contains(c))
+//         .collect();
+//
+//     let outputs_ex = tx_proof.outputs.iter().collect::<HashSet<_>>();
+//
+//     let outputs: Vec<pedersen::Commitment> = slate
+//         .tx
+//         .outputs()
+//         .iter()
+//         .map(|o| o.commitment())
+//         .filter(|c| !outputs_ex.contains(c))
+//         .collect();
+//
+//     let excess = &slate.participant_data[1].public_blind_excess;
+//
+//     let excess_parts: Vec<&PublicKey> = slate
+//         .participant_data
+//         .iter()
+//         .map(|p| &p.public_blind_excess)
+//         .collect();
+//     let excess_sum =
+//         PublicKey::from_combination(secp, excess_parts).map_err(|e| ErrorKind::VerifyProof(format!("Unable to combile public keys, {}", e)) )?;
+//
+//     let commit_amount = secp.commit_value(tx_proof.amount)?;
+//     inputs.push(commit_amount);
+//
+//     let commit_excess = secp.commit_sum(outputs.clone(), inputs)?;
+//     let pubkey_excess = commit_excess.to_pubkey(secp)?;
+//
+//     if excess != &pubkey_excess {
+//         return Err(ErrorKind::VerifyProof("Excess pub keys mismatch".to_string()).into());
+//     }
+//
+//     let mut input_com: Vec<pedersen::Commitment> =
+//         slate.tx.inputs().iter().map(|i| i.commitment()).collect();
+//
+//     let mut output_com: Vec<pedersen::Commitment> =
+//         slate.tx.outputs().iter().map(|o| o.commitment()).collect();
+//
+//     input_com.push(secp.commit(0, slate.tx.offset.secret_key(secp)?)?);
+//
+//     output_com.push(secp.commit_value(slate.fee)?);
+//
+//     let excess_sum_com = secp.commit_sum(output_com, input_com)?;
+//
+//     if excess_sum_com.to_pubkey(secp)? != excess_sum {
+//         return Err(ErrorKind::VerifyProof("Excess sum mismatch".to_string()).into());
+//     }
+//
+//     return Ok((
+//         Some(destination),
+//         tx_proof.address.clone(),
+//         tx_proof.amount,
+//         outputs,
+//         excess_sum_com,
+//     ));
+// }
 
 pub fn derive_address_key<'a, L, C, K>(
     wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,

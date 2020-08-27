@@ -71,7 +71,6 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 use colored::*;
 use grin_core::core;
 use grin_core::libtx::tx_fee;
-use grin_core::global;
 use grin_core::global::{set_mining_mode, ChainTypes};
 #[cfg(not(target_os = "android"))]
 use rustyline::completion::{Completer, FilenameCompleter, Pair};
@@ -116,6 +115,8 @@ use std::sync::mpsc;
 use std::borrow::Borrow;
 use uuid::Uuid;
 use grin_wallet_controller::command;
+use grin_wallet_libwallet::proof::tx_proof;
+
 
 #[cfg(not(target_os = "android"))]
 const CLI_HISTORY_PATH: &str = ".history";
@@ -878,64 +879,64 @@ fn password_prompt(opt: Option<&str>) -> String {
     })
 }
 
-fn proof_ok(
-    sender: Option<String>,
-    receiver: String,
-    amount: u64,
-    outputs: Vec<String>,
-    kernel: String,
-) {
-    let sender_message = sender
-        .as_ref()
-        .map(|s| format!(" from [{}]", s.bright_green()))
-        .unwrap_or(String::new());
-
-    let tor_sender_message = sender
-        .as_ref()
-        .map(|s| format!(" from [{}{}{}]","http://".bright_green(), s.bright_green(), ".onion".bright_green()))
-        .unwrap_or(String::new());
-
-    if receiver.len() == 56 {
-        println!(
-            "this file proves that [{}] MWCs was sent to [{}]{}",
-            core::amount_to_hr_string(amount, false).bright_green(),
-            format!("{}{}{}","http://".bright_green(), receiver.bright_green(), ".onion".bright_green()),
-            tor_sender_message
-        );
-
-    } else {
-        println!(
-            "this file proves that [{}] MWCs was sent to [{}]{}",
-            core::amount_to_hr_string(amount, false).bright_green(),
-            receiver.bright_green(),
-            sender_message
-        );
-    }
-
-    if sender.is_none() {
-        println!(
-            "{}: this proof does not prove which address sent the funds, only which received it",
-            "WARNING".bright_yellow()
-        );
-    }
-
-    println!("\noutputs:");
-    if global::is_mainnet() {
-        for output in outputs {
-            println!("   {}: https://explorer.mwc.mw/#o{}", output.bright_magenta(), output);
-        }
-        println!("kernel:");
-        println!("   {}: https://explorer.mwc.mw/#k{}", kernel.bright_magenta(), kernel);
-    } else {
-        for output in outputs {
-            println!("   {}: https://explorer.floonet.mwc.mw/#o{}", output.bright_magenta(), output);
-        }
-        println!("kernel:");
-        println!("   {}: https://explorer.floonet.mwc.mw/#k{}", kernel.bright_magenta(), kernel);
-    }
-    println!("\n{}: this proof should only be considered valid if the kernel is actually on-chain with sufficient confirmations", "WARNING".bright_yellow());
-    println!("please use a mwc block explorer to verify this is the case.");
-}
+// fn proof_ok(
+//     sender: Option<String>,
+//     receiver: String,
+//     amount: u64,
+//     outputs: Vec<String>,
+//     kernel: String,
+// ) {
+//     let sender_message = sender
+//         .as_ref()
+//         .map(|s| format!(" from [{}]", s.bright_green()))
+//         .unwrap_or(String::new());
+//
+//     let tor_sender_message = sender
+//         .as_ref()
+//         .map(|s| format!(" from [{}{}{}]","http://".bright_green(), s.bright_green(), ".onion".bright_green()))
+//         .unwrap_or(String::new());
+//
+//     if receiver.len() == 56 {
+//         println!(
+//             "this file proves that [{}] MWCs was sent to [{}]{}",
+//             core::amount_to_hr_string(amount, false).bright_green(),
+//             format!("{}{}{}","http://".bright_green(), receiver.bright_green(), ".onion".bright_green()),
+//             tor_sender_message
+//         );
+//
+//     } else {
+//         println!(
+//             "this file proves that [{}] MWCs was sent to [{}]{}",
+//             core::amount_to_hr_string(amount, false).bright_green(),
+//             receiver.bright_green(),
+//             sender_message
+//         );
+//     }
+//
+//     if sender.is_none() {
+//         println!(
+//             "{}: this proof does not prove which address sent the funds, only which received it",
+//             "WARNING".bright_yellow()
+//         );
+//     }
+//
+//     println!("\noutputs:");
+//     if global::is_mainnet() {
+//         for output in outputs {
+//             println!("   {}: https://explorer.mwc.mw/#o{}", output.bright_magenta(), output);
+//         }
+//         println!("kernel:");
+//         println!("   {}: https://explorer.mwc.mw/#k{}", kernel.bright_magenta(), kernel);
+//     } else {
+//         for output in outputs {
+//             println!("   {}: https://explorer.floonet.mwc.mw/#o{}", output.bright_magenta(), output);
+//         }
+//         println!("kernel:");
+//         println!("   {}: https://explorer.floonet.mwc.mw/#k{}", kernel.bright_magenta(), kernel);
+//     }
+//     println!("\n{}: this proof should only be considered valid if the kernel is actually on-chain with sufficient confirmations", "WARNING".bright_yellow());
+//     println!("please use a mwc block explorer to verify this is the case.");
+// }
 
 fn do_command(
     command: &str,
@@ -1994,12 +1995,12 @@ fn do_command(
                 .map_err(|_| ErrorKind::InvalidTxId(id.to_string()))?;
             let w = wallet.lock();
             let tx_proof = w.get_tx_proof(id)?;
-            match w.verify_tx_proof(&tx_proof) {
+            match tx_proof::verify_tx_proof_wrapper(&tx_proof) {
                 Ok((sender, receiver, amount, outputs, kernel)) => {
                     let mut file = File::create(input.replace("~", &home_dir))?;
                     file.write_all(serde_json::to_string(&tx_proof)?.as_bytes())?;
                     println!("proof written to {}", input);
-                    proof_ok(sender, receiver, amount, outputs, kernel);
+                    tx_proof::proof_ok(sender, receiver, amount, outputs, kernel);
                 }
                 Err(e) => {
                     cli_message!("Unable to verify proof. {}", e);
@@ -2016,12 +2017,11 @@ fn do_command(
             let mut file = File::open(path)?;
             let mut proof = String::new();
             file.read_to_string(&mut proof)?;
-            let tx_proof: TxProof = serde_json::from_str(&proof)?;
+            let tx_pf: TxProof = serde_json::from_str(&proof)?;
 
-            let wallet = wallet.lock();
-            match wallet.verify_tx_proof(&tx_proof) {
+            match tx_proof::verify_tx_proof_wrapper(&tx_pf) {
                 Ok((sender, receiver, amount, outputs, kernel)) => {
-                    proof_ok(sender, receiver, amount, outputs, kernel);
+                    tx_proof::proof_ok(sender, receiver, amount, outputs, kernel);
                 }
                 Err(e) => {
                     cli_message!("Unable to verify proof. {}", e);
