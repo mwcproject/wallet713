@@ -489,8 +489,18 @@ impl Wallet {
     }
 
     pub fn restore_state(&self) -> Result<(), Error> {
-        api::restore(self.get_wallet_instance()?)?;
-        Ok(())
+        match api::restore(self.get_wallet_instance()?) {
+            Ok(_) => return Ok(()),
+            Err(e) => {
+                if e.to_string().contains("Node not ready or not available") {
+                    return Ok(());
+                }
+                else {
+                    return Err(e);
+                }
+            },
+        }
+
     }
 
     pub fn check_repair(&self, start_height: u64, delete_unconfirmed: bool) -> Result<(), Error> {
