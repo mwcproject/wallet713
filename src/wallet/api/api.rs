@@ -727,11 +727,12 @@ pub fn initiate_tx<'a, L, C, K>(
     let ttl_blocks = if ttl_blocks == 0 { None } else { Some(ttl_blocks) };
     //for tor sending, address can also be used as payment proof address
     let mut proof_address = None;
+    let mut address_decorated = address.clone();
     if do_proof {
-        if let Some(addr) = address.clone() {
+        if let Some(addr) = address {
             debug!("the address in init_tx is: {}", &addr);
             //if it is an onion address, need to remove the http:// or https:// and .onion.
-            let mut addr_change = addr;
+            let mut addr_change = addr.clone();
             if addr_change.starts_with("HTTP://") || addr_change.starts_with("HTTPS://") {
                 addr_change = addr_change.replace("HTTP://", "");
                 addr_change = addr_change.replace("HTTPS://", "");
@@ -755,6 +756,9 @@ pub fn initiate_tx<'a, L, C, K>(
             if addr_change.len() == 56 {
                 let proof_addr = ProvableAddress::from_str(&addr_change)?;
                 proof_address = Some(proof_addr);
+            } else {
+                //this is specially for http sending
+                address_decorated = Some(String::from("file_proof"));//mark it as file_proof so proof file will be generated.
             }
         }
     }
@@ -786,7 +790,7 @@ pub fn initiate_tx<'a, L, C, K>(
         /// locked without actually locking outputs or creating the transaction. Note if this is set to
         /// 'true', the amount field in the slate will contain the total amount locked, not the provided
         /// transaction amount
-        address,
+        address: address_decorated,
         estimate_only: None,
         /// Sender arguments. If present, the underlying function will also attempt to send the
         /// transaction to a destination and optionally finalize the result
