@@ -142,7 +142,4 @@ pub enum ErrorKind {
     FileUnableToDelete(String),
     #[fail(display = "unable to create the file '{}', {}", _0, _1)]
     FileUnableToCreate(String, String),
-
-    #[fail(display = "unable to get public key, {}", _0)]
-    GetPublicKeyError(String),
 }

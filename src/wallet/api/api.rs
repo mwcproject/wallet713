@@ -11,7 +11,7 @@ use grin_p2p::types::PeerInfoDisplay;
 use grin_p2p::types::PeerInfoDisplayLegacy;
 use grin_wallet_libwallet::proof::crypto::Hex;
 use grin_wallet_libwallet::proof::tx_proof::TxProof;
-use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
+use grin_wallet_libwallet::proof::proofaddress;
 use grin_wallet_libwallet::{AcctPathMapping, NodeClient, Slate, TxLogEntry,
                             WalletInfo, OutputCommitMapping, WalletInst, WalletLCProvider,
                             StatusMessage, TxLogEntryType, OutputData};
@@ -25,7 +25,6 @@ use crate::common::{Arc, Mutex, Error, ErrorKind};
 use grin_keychain::{SwitchCommitmentType, ExtKeychainPath};
 use grin_wallet_libwallet::internal::{updater,keys};
 use std::sync::mpsc;
-use grin_wallet_libwallet::proof::hasher;
 use std::sync::mpsc::Sender;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::JoinHandle;
@@ -754,7 +753,7 @@ pub fn initiate_tx<'a, L, C, K>(
                 addr_change = addr_change.replace(".onion/", "");
             }
             if addr_change.len() == 56 {
-                let proof_addr = ProvableAddress::from_str(&addr_change)?;
+                let proof_addr = proofaddress::ProvableAddress::from_str(&addr_change)?;
                 proof_address = Some(proof_addr);
             } else {
                 //this is specially for http sending
@@ -1203,10 +1202,10 @@ pub fn get_stored_tx_proof<'a, L, C, K>(
 //     ));
 // }
 
-pub fn derive_address_key<'a, L, C, K>(
+pub fn get_provable_address<'a, L, C, K>(
     wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
-    index: u32
-) -> Result<SecretKey, Error>
+    addr_type: proofaddress::ProofAddressType,
+) -> Result<proofaddress::ProvableAddress, Error>
     where
         L: WalletLCProvider<'a, C, K>,
         C: NodeClient + 'a,
@@ -1214,7 +1213,35 @@ pub fn derive_address_key<'a, L, C, K>(
 {
     wallet_lock!(wallet_inst, w);
     let keychain = w.keychain(None)?;
-    hasher::derive_address_key(&keychain, index).map_err(|e| e.into())
+
+    proofaddress::payment_proof_address(&keychain, addr_type)
+        .map_err(|e| ErrorKind::GenericError( format!("Unable to get payment proof addess, {}", e) ).into())
+}
+
+pub fn get_payment_proof_address_pubkey<'a, L, C, K>(
+    wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
+) -> Result<PublicKey, Error>     where
+    L: WalletLCProvider<'a, C, K>,
+    C: NodeClient + 'a,
+    K: Keychain + 'a,
+{
+    wallet_lock!(wallet_inst, w);
+    let keychain = w.keychain(None)?;
+    proofaddress::payment_proof_address_pubkey(&keychain)
+        .map_err(|e| ErrorKind::GenericError( format!("Unable to get payment proof public key, {}", e) ).into())
+}
+
+pub fn get_payment_proof_address_secret<'a, L, C, K>(
+    wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
+) -> Result<SecretKey, Error>     where
+    L: WalletLCProvider<'a, C, K>,
+    C: NodeClient + 'a,
+    K: Keychain + 'a,
+{
+    wallet_lock!(wallet_inst, w);
+    let keychain = w.keychain(None)?;
+    proofaddress::payment_proof_address_secret(&keychain)
+        .map_err(|e| ErrorKind::GenericError( format!("Unable to get payment proof secret, {}", e) ).into())
 }
 
 pub fn initiate_receive_tx<'a, L, C, K>(
@@ -1275,7 +1302,6 @@ pub fn receive_tx<'a, L, C, K>(
         message,
         false,
         true,
-        0,
     )?;
     Ok(s)
 }

@@ -21,6 +21,7 @@ use std::time::Duration;
 use std::thread;
 use std::thread::JoinHandle;
 use std::sync::mpsc::Sender;
+use grin_wallet_libwallet::proof::proofaddress::{ProvableAddress,ProofAddressType};
 
 pub struct Wallet {
     backend: Option< Arc<Mutex<Box<dyn WalletInst<'static,
@@ -570,11 +571,6 @@ impl Wallet {
         Ok(result)
     }
 
-    pub fn derive_address_key(&self, index: u32) -> Result<SecretKey, Error> {
-        let res = api::derive_address_key(self.get_wallet_instance()?, index)?;
-        Ok(res)
-    }
-
     pub fn get_tx_proof(&self, id: u32) -> Result<TxProof, Error> {
         let res = api::get_stored_tx_proof(self.get_wallet_instance()?, id)?;
         Ok(res)
@@ -637,6 +633,20 @@ impl Wallet {
                         buyer_communication_address)
     }
 
+    pub fn get_provable_address(
+        &self,
+        addr_type: ProofAddressType
+    ) -> Result<ProvableAddress, Error> {
+        api::get_provable_address(self.get_wallet_instance()?, addr_type)
+    }
+
+    pub fn get_payment_proof_address_pubkey(&self) -> Result<PublicKey, Error> {
+        api::get_payment_proof_address_pubkey(self.get_wallet_instance()?)
+    }
+
+    pub fn get_payment_proof_address_secret(&self) -> Result<SecretKey, Error> {
+        api::get_payment_proof_address_secret(self.get_wallet_instance()?)
+    }
 
     fn init_seed(
         &self,

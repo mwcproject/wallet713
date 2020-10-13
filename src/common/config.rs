@@ -7,10 +7,8 @@ use std::path::{Path, PathBuf};
 use grin_core::global::ChainTypes;
 use grin_util::logger::LoggingConfig;
 
-use grin_wallet_libwallet::proof::crypto::{public_key_from_secret_key};
-use grin_util::secp::key::{PublicKey, SecretKey};
+use grin_util::secp::key::PublicKey;
 use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
-use super::ErrorKind;
 use crate::contacts::{ DEFAULT_GRINBOX_PORT};
 use crate::common::Error;
 use grin_wallet_impls::MWCMQSAddress;
@@ -53,8 +51,6 @@ pub struct Wallet713Config {
 
     #[serde(skip)]
     pub config_home: Option<String>,
-    #[serde(skip)]
-    pub grinbox_address_key: Option<SecretKey>,
 
     // Wallet state update frequency. In none, no updates will be run in the background.
     pub wallet_updater_frequency_sec: Option<u32>,
@@ -92,7 +88,7 @@ pub const WALLET713_CONFIG_HELP: &str =
 
 # MWC MQS/GrinBox address defive index. Every new index will give you a new address that will be used for
 # communication with message queue
-# grinbox_address_index = 1
+# grinbox_address_index = 0
 
 # MWC node connection URI. Please make sure that you are connecting to the node from correct network.
 # mwc_node_uri = \"https://mwc713.floonet.mwc.mw\"
@@ -208,7 +204,6 @@ impl Wallet713Config {
             tls_certificate_file: None,
             tls_certificate_key: None,
             config_home: None,
-            grinbox_address_key: None,
             wallet_updater_frequency_sec: None,
             electrumx_mainnet_bch_node_addr: None,
             electrumx_testnet_bch_node_addr: None,
@@ -286,10 +281,9 @@ impl Wallet713Config {
         self.socks_addr.clone().unwrap_or("127.0.0.1:59051".to_string())
     }
 
-    pub fn get_mwcmqs_address(&self) -> Result<MWCMQSAddress, Error> {
-        let public_key = self.get_grinbox_public_key()?;
+    pub fn get_mwcmqs_address(&self, address_public_key: &PublicKey) -> Result<MWCMQSAddress, Error> {
         Ok(MWCMQSAddress::new(
-            ProvableAddress::from_pub_key(&public_key),
+            ProvableAddress::from_pub_key(&address_public_key),
             Some(self.mwcmqs_domain()),
             self.mwcmqs_port,
         ))
@@ -302,21 +296,6 @@ impl Wallet713Config {
 
     pub fn mwcmqs_domain(&self) -> String {
         self.mwcmqs_domain.clone().unwrap_or("mqs.mwc.mw".to_string())
-    }
-
-     pub fn grinbox_address_index(&self) -> u32 {
-        self.grinbox_address_index.unwrap_or(0)
-    }
-
-
-    pub fn get_grinbox_public_key(&self) -> Result<PublicKey, Error> {
-        public_key_from_secret_key(&self.get_grinbox_secret_key()?)
-            .map_err(|e| ErrorKind::GetPublicKeyError(format!("Unable to tranfform public key, {}",e)).into())
-    }
-
-    pub fn get_grinbox_secret_key(&self) -> Result<SecretKey, Error> {
-        self.grinbox_address_key.clone()
-            .ok_or_else(|| ErrorKind::NoWallet.into())
     }
 
     // mwc-wallet using top level dir + data dir. We need to follow it

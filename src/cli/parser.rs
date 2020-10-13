@@ -61,6 +61,12 @@ impl<'a, 'b> Parser {
             .subcommand(
                 SubCommand::with_name("address")
                     .about("shows your current mwc address")
+                    .arg(
+                        Arg::from_usage("[provable-address] -p, --provable-address 'show wallet address that is used for file/http transactions'")
+                    )
+                    .arg(
+                        Arg::from_usage("[mqs-address] -m, --mqs-address 'show mwcmqs wallet address (default)'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("init")

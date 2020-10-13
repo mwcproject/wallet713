@@ -116,6 +116,7 @@ use std::borrow::Borrow;
 use uuid::Uuid;
 use grin_wallet_controller::command;
 use grin_wallet_libwallet::proof::tx_proof;
+use grin_wallet_libwallet::proof::proofaddress;
 
 
 #[cfg(not(target_os = "android"))]
@@ -200,6 +201,9 @@ fn do_config(
         cli_message!("{}", config);
     }
 
+    // Allways update the wallet address index, This method called for every update of the config
+    proofaddress::set_address_index(config.grinbox_address_index.unwrap_or(0));
+
     Ok(config)
 }
 
@@ -275,7 +279,6 @@ fn start_mwcmqs_listener(
     let res = grin_wallet_controller::controller::start_mwcmqs_listener(
         wallet.lock().get_wallet_instance()?,
         config.get_mqs_config(),
-        config.grinbox_address_index.clone().unwrap_or(0),
         false,
         Arc::new(Mutex::new(None)),
         false,
@@ -306,9 +309,9 @@ fn start_tor_listener(
 
                 let wallet_data_dir = config.get_wallet_data_dir();
                 let winst = wallet.lock().get_wallet_instance().unwrap();
-                let onion_address = grin_wallet_controller::controller::get_tor_address(winst.clone(), keychain_mask.clone(), config.grinbox_address_index()).unwrap();
+                let onion_address = grin_wallet_controller::controller::get_tor_address(winst.clone(), keychain_mask.clone() ).unwrap();
                 let p = grin_wallet_controller::controller::init_tor_listener(winst.clone(),
-                               keychain_mask.clone(), &addr, Some(&wallet_data_dir.clone()), config.grinbox_address_index());
+                               keychain_mask.clone(), &addr, Some(&wallet_data_dir.clone()) );
 
 		let sender = HttpDataSender::new("https://", None, Some(wallet_data_dir.clone()), false);
 		let mut sender = sender.unwrap();
@@ -403,7 +406,6 @@ fn start_wallet_api(
             let owner_api_secret = config.owner_api_secret.clone();
             let tls_config = tls_config.clone();
             let owner_api_include_foreign = config.owner_api_include_foreign.clone();
-            let index = config.grinbox_address_index().clone();
 
             thread::Builder::new()
                 .name("owner_listener".to_string())
@@ -415,7 +417,6 @@ fn start_wallet_api(
                         owner_api_secret,
                         tls_config,
                         owner_api_include_foreign,
-                        index,
                         None)
                     {
                         cli_message!( "{}: Owner API Listener failed. {}", e, "ERROR".bright_red() );
@@ -438,7 +439,6 @@ fn start_wallet_api(
             let wallet_instance = wallet.lock().get_wallet_instance()?;
             let foreign_api_address = config.foreign_api_address();
             let tls_config = tls_config.clone();
-            let address_index = config.grinbox_address_index();
 
             thread::Builder::new()
                 .name("foreign_listener".to_string())
@@ -448,8 +448,7 @@ fn start_wallet_api(
                         Arc::new(Mutex::new(None)),
                         &foreign_api_address,
                         tls_config,
-                        false,
-                        address_index)
+                        false)
                     {
                         cli_message!( "{}: Foreign API Listener failed. {}", "ERROR".bright_red(), e );
                     }
@@ -692,7 +691,7 @@ fn main() {
         };
 
         if has_wallet {
-            if let Err(e) = derive_address_key(&mut config, wallet.clone()) {
+            if let Err(e) = show_address(&mut config, wallet.clone(), false) {
                 cli_message!("{}: {}", "ERROR".bright_red(), e);
             }
             if let Err(e) = start_wallet_api(&config, wallet.clone()) {
@@ -846,28 +845,19 @@ fn main() {
         }
 }
 
-fn derive_address_key(
-    config: &mut Wallet713Config,
-    wallet: Arc<Mutex<Wallet>>,
-) -> Result<(), Error> {
-    let index = config.grinbox_address_index();
-    let key = wallet.lock().derive_address_key(index)?;
-    config.grinbox_address_key = Some(key);
-    show_address(config, false)?;
-    Ok(())
-}
+fn show_address(config: &Wallet713Config, wallet: Arc<Mutex<Wallet>>, include_index: bool) -> Result<(), Error> {
 
+    let address_pub_key = wallet.lock().get_payment_proof_address_pubkey()?;
 
-fn show_address(config: &Wallet713Config, include_index: bool) -> Result<(), Error> {
     println!(
         "{}: {}",
         "Your mwcmqs address".bright_yellow(),
-        config.get_mwcmqs_address()?.get_stripped().bright_green()
+        config.get_mwcmqs_address(&address_pub_key)?.get_stripped().bright_green()
     );
     if include_index {
         println!(
             "Derived with index [{}]",
-            config.grinbox_address_index().to_string().bright_blue()
+            proofaddress::get_address_index().to_string().bright_blue()
         );
     }
     Ok(())
@@ -972,9 +962,10 @@ fn do_command(
                     let index = match args.value_of("generate-address-index") {
                         Some(index) => u32::from_str_radix(index, 10)
                             .map_err(|_| ErrorKind::NumberParsingError)?,
-                        None => config.grinbox_address_index() + 1,
+                        None => config.grinbox_address_index.unwrap_or(0) + 1,
                     };
                     config.grinbox_address_index = Some(index);
+                    proofaddress::set_address_index(index);
                     index
                 }),
             };
@@ -988,15 +979,31 @@ fn do_command(
             )?;
 
             if new_address_index.is_some() {
-                derive_address_key(config, wallet)?;
-                cli_message!(
-                    "Derived with index [{}]",
-                    config.grinbox_address_index().to_string().bright_blue()
-                );
+                show_address(config, wallet, true)?;
             }
         }
         Some("address") => {
-            show_address(config, true)?;
+            let args = matches.subcommand_matches("address").unwrap();
+
+            let mut show_mqs = args.is_present("mqs-address");
+            let show_addr = args.is_present("provable-address");
+            if !show_mqs && !show_addr {
+                show_mqs = true;
+            }
+
+            if show_addr {
+                let address = wallet.lock().get_provable_address(proofaddress::ProofAddressType::Onion)?;
+                println!(
+                    "{}: {}",
+                    "Your file/http wallet address ".bright_yellow(),
+                    address.to_string().bright_green()
+                );
+            }
+
+            if show_mqs {
+                // printing mqs address
+                show_address(config, wallet, true)?;
+            }
         }
         Some("init") => {
             *out_is_safe = false;
@@ -1031,7 +1038,7 @@ fn do_command(
                 wallet_inst.complete(seed, config, "default", passphrase, true)?;
                 wallet_inst.update_tip_as_last_scanned()?;
             }
-            derive_address_key(config, wallet)?;
+            show_address(config, wallet, false)?;
 
             return Ok(());
         }
@@ -1052,7 +1059,7 @@ fn do_command(
                 w.unlock(config, account, ZeroingString::from(passphrase.as_str()))?;
             }
 
-            derive_address_key(config, wallet.clone())?;
+            show_address(config, wallet.clone(), false)?;
 
             start_wallet_api(config, wallet)?;
 
@@ -1347,8 +1354,9 @@ fn do_command(
                         let slate = publisher.encrypt_slate(&slate, mwcmqs_address.borrow())?;
 			println!("slate='{}'", slate);
 		} else {
-            let mwcmqs_address_for_publisher = config.get_mwcmqs_address()?;
-            let mwcmqs_secret_key = config.get_grinbox_secret_key()?;
+            let address_pub_key = wallet.lock().get_payment_proof_address_pubkey()?;
+            let mwcmqs_address_for_publisher = config.get_mwcmqs_address(&address_pub_key)?;
+            let mwcmqs_secret_key = wallet.lock().get_payment_proof_address_secret()?;
             let addr_name = mwcmqs_address.get_stripped();
 
             let keychain_mask = Arc::new(Mutex::new(None));
@@ -1377,7 +1385,7 @@ fn do_command(
 	Some("decryptslate") => {
 		let args = matches.subcommand_matches("decryptslate").unwrap();
 		let slate = args.value_of("slate").unwrap();
-		let public_key = config.get_grinbox_public_key()?;
+        let public_key = wallet.lock().get_payment_proof_address_pubkey()?;
 		let source_address = ProvableAddress::from_pub_key(&public_key);
 		let mut data = "http://example.com/?".to_string();
 		data.push_str(slate);
@@ -1402,8 +1410,8 @@ fn do_command(
 		}
         else
         {
-            let mwcmqs_address = config.get_mwcmqs_address()?;
-            let mwcmqs_secret_key = config.get_grinbox_secret_key()?;
+            let mwcmqs_address = config.get_mwcmqs_address(&public_key)?;
+            let mwcmqs_secret_key = wallet.lock().get_payment_proof_address_secret()?;
             let addr_name = mwcmqs_address.get_stripped();
 
             let keychain_mask = Arc::new(Mutex::new(None));
@@ -1825,7 +1833,7 @@ fn do_command(
                 w.update_tip_as_last_scanned()?;
             }
 
-            derive_address_key(config, wallet)?;
+            show_address(config, wallet, false)?;
             if passphrase.is_empty() {
                 println!("{}: wallet with no passphrase.", "WARNING".bright_yellow());
             }
@@ -1875,7 +1883,7 @@ fn do_command(
                     }
                 }
 
-                derive_address_key(config, wallet)?;
+                show_address(config, wallet, false)?;
                 if passphrase.is_empty() {
                     println!("{}: wallet with no passphrase.", "WARNING".bright_yellow());
                 }
@@ -2153,7 +2161,6 @@ fn do_command(
             grin_wallet_controller::command::swap(
                 wallet.lock().get_wallet_instance()?,
                 None,
-                config.grinbox_address_index(),
                 config.foreign_api_address(),
                 Some( config.get_mqs_config()),
                 Some(config.get_tor_config()),
