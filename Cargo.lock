@@ -1457,7 +1457,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet#e14fb7c5380c1f76355bfad70772ff9872934e61"
+source = "git+https://github.com/mwcproject/mwc-wallet#85afa7c48c41b554563476759c6b7239e1f0042c"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1482,7 +1482,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet#e14fb7c5380c1f76355bfad70772ff9872934e61"
+source = "git+https://github.com/mwcproject/mwc-wallet#85afa7c48c41b554563476759c6b7239e1f0042c"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -1497,7 +1497,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet#e14fb7c5380c1f76355bfad70772ff9872934e61"
+source = "git+https://github.com/mwcproject/mwc-wallet#85afa7c48c41b554563476759c6b7239e1f0042c"
 dependencies = [
  "chrono",
  "colored",
@@ -1528,7 +1528,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet#e14fb7c5380c1f76355bfad70772ff9872934e61"
+source = "git+https://github.com/mwcproject/mwc-wallet#85afa7c48c41b554563476759c6b7239e1f0042c"
 dependencies = [
  "bitcoin",
  "blake2-rfc",
@@ -1573,7 +1573,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet#e14fb7c5380c1f76355bfad70772ff9872934e61"
+source = "git+https://github.com/mwcproject/mwc-wallet#85afa7c48c41b554563476759c6b7239e1f0042c"
 dependencies = [
  "base64 0.9.3",
  "bitcoin",
@@ -1618,7 +1618,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet#e14fb7c5380c1f76355bfad70772ff9872934e61"
+source = "git+https://github.com/mwcproject/mwc-wallet#85afa7c48c41b554563476759c6b7239e1f0042c"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
@@ -2745,9 +2745,9 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
 name = "pkg-config"
-version = "0.3.18"
+version = "0.3.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d36492546b6af1463394d46f0c834346f31548646f6ba10849802c9c9a27ac33"
+checksum = "3831453b3449ceb48b6d9c7ad7c96d5ea673e9b470a1dc578c2ce6521230884c"
 
 [[package]]
 name = "ppv-lite86"
@@ -3062,9 +3062,9 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.4.0"
+version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "36f45b719a674bf4b828ff318906d6c133264c793eff7a41e30074a45b5099e2"
+checksum = "8963b85b8ce3074fecffde43b4b0dded83ce2f367dc8d363afc56679f3ee820b"
 dependencies = [
  "aho-corasick",
  "memchr 2.3.3",
@@ -3074,9 +3074,9 @@ dependencies = [
 
 [[package]]
 name = "regex-syntax"
-version = "0.6.19"
+version = "0.6.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c17be88d9eaa858870aa5e48cc406c206e4600e983fc4f06bbe5750d93d09761"
+checksum = "8cab7a364d15cde1e505267766a2d3c4e22a843e1a601f0fa7564c0f82ced11c"
 
 [[package]]
 name = "remove_dir_all"
