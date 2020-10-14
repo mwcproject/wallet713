@@ -995,7 +995,7 @@ fn do_command(
                 let address = wallet.lock().get_provable_address(proofaddress::ProofAddressType::Onion)?;
                 println!(
                     "{}: {}",
-                    "Your file/http wallet address ".bright_yellow(),
+                    "Your file/http wallet address".bright_yellow(),
                     address.to_string().bright_green()
                 );
             }
