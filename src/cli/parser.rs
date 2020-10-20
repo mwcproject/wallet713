@@ -254,6 +254,9 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("[apisecret] -a, --apisecret=<apisecret> 'receiver wallet apisecret. Applicable to http/https address only. Default: none'")
                     )
                     .arg(
+                        Arg::from_usage("[expectedproof] -e, --expectedproof=<expectedproof> 'expected proof address of listener wallet. Default: none'")
+                    )
+                    .arg(
                         Arg::from_usage("[strategy] -s, --strategy=<strategy> 'the input selection strategy (all/smallest/custom). Default: smallest'")
                     )
                     .arg(
@@ -460,6 +463,13 @@ impl<'a, 'b> Parser {
                     .about("verifies a transaction proof")
                     .arg(
                         Arg::from_usage("-f, --file=<file> 'the file to read from'")
+                    )
+            )
+            .subcommand(
+                SubCommand::with_name("check-proof")
+                    .about("checks the proof address of listening wallet")
+                    .arg(
+                        Arg::from_usage("-t, --to=<address> 'the http address of listening wallet'")
                     )
             )
             .subcommand(

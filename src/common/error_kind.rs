@@ -17,6 +17,11 @@ pub enum ErrorKind {
         display = "--outputs must be specified when selection strategy is 'custom'"
     )]
     CustomWithNoOutputs,
+
+    #[fail(
+    display = "proof address of receiver address should match {},{}", 0, 1
+    )]
+    ProofAddresMismatch(String, String),
     #[fail(
         display = "--outputs must not be specified unless selection strategy is 'custom'"
     )]

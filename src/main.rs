@@ -1542,9 +1542,26 @@ fn do_command(
         Some("nodeinfo") => {
             wallet.lock().node_info()?;
         }
+        Some("check-proof") => {
+            let args = matches.subcommand_matches("check-proof").unwrap();
+            let to = args.value_of("to");
+            let to = to.unwrap().to_string();
+            let apisecret = args.value_of("apisecret").map(|s| s.to_string());
+
+            let http_sender = HttpDataSender::new(&to, apisecret.clone(), None, false)?;
+            let trailing = match &to.to_string().ends_with('/') {
+                true => "",
+                false => "/",
+            };
+            let url_str = format!("{}{}v2/foreign", &to.to_string(), trailing);
+
+            let proof_key= http_sender.check_receiver_proof_address(&url_str, None)?;
+            cli_message!("Proof pub key of the listening wallet: {}", proof_key);
+        }
         Some("send") => {
             let args = matches.subcommand_matches("send").unwrap();
             let to = args.value_of("to");
+            let expected_proof_address = args.value_of("expectedproof");
             let input = args.value_of("file");
             let message = args.value_of("message").map(|s| s.to_string());
             let apisecret = args.value_of("apisecret").map(|s| s.to_string());
@@ -1727,6 +1744,17 @@ fn do_command(
 
             let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &apisecret, Some(config.get_tor_config()))?;
             slate = sender.send_tx(&slate)?;
+            //check the expected proof address
+            //compare the expected listening wallet proof address  to the value the returned slate. If they don't match, return error
+            if let Some(expected_addr) = expected_proof_address {
+                if let Some(ref p) = slate.payment_proof {
+                    let receiver_a = p.clone().receiver_address;
+                    if receiver_a.public_key.len() ==56 &&  receiver_a.public_key!= expected_addr {
+                        return Err(ErrorKind::ProofAddresMismatch(receiver_a.public_key, expected_addr.to_string()).into());
+                    }
+                }
+            }
+
 
             // Sender can change that, restoring original value
             slate.ttl_cutoff_height = original_slate.ttl_cutoff_height.clone();
