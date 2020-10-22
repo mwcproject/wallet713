@@ -2130,7 +2130,7 @@ fn do_command(
             let swap_id = args.value_of("swap_id").map(|s| String::from(s));
             let adjust = args.value_of("adjust").map(|s| String::from(s));
             let method = args.value_of("method").map(|s| String::from(s));
-            let destination = args.value_of("dest").map(|s| String::from(s));
+            let mut destination = args.value_of("dest").map(|s| String::from(s));
             let apisecret = args.value_of("apisecret").map(|s| String::from(s));
             let secondary_fee = match args.value_of("secondary_fee") {
                 Some(s) => Some( s.parse::<f32>().map_err(|e| ErrorKind::GenericError(format!("Unable to parse secondary_fee value {}, {}", s,e)))?),
@@ -2161,6 +2161,12 @@ fn do_command(
                 command::SwapSubcommand::Process
             } else if args.is_present("dump") {
                 command::SwapSubcommand::Dump
+            } else if args.is_present("trade_export") {
+                destination = args.value_of("trade_export").map(|s| String::from(s));
+                command::SwapSubcommand::TradeExport
+            } else if args.is_present("trade_import") {
+                destination = args.value_of("trade_import").map(|s| String::from(s));
+                command::SwapSubcommand::TradeImport
             } else if adjust.is_some() {
                 command::SwapSubcommand::Adjust
             } else if args.is_present("autoswap") {

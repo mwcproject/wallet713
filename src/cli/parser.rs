@@ -579,6 +579,12 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("[dump] -u, --dump 'Dump the contents of the swap file decrypted on screen'")
                     )
                     .arg(
+                        Arg::from_usage("[trade_export] --trade_export=<file> 'Export/Backup the trade data'")
+                    )
+                    .arg(
+                        Arg::from_usage("[trade_import] --trade_import=<file> 'Import the trade data'")
+                    )
+                    .arg(
                         Arg::from_usage("[adjust] -j, --adjust=<cancel|destination|secondary_address|secondary_fee> 'Modify the swap trade workflow. You can use this to cancel a swap or adjust some parameters'")
                     )
                     .arg(
