@@ -187,8 +187,10 @@ impl Wallet {
         let wallet_inst = self.get_wallet_instance()?;
         wallet_lock!(wallet_inst, w);
         let (tip_height, tip_hash, _) = w.w2n_client().get_chain_tip()?;
+        let parent_key_id = w.parent_key_id();
         let mut batch = w.batch(None)?;
         batch.save_last_scanned_blocks(0, &vec![ScannedBlockInfo::new(tip_height, tip_hash.clone())] )?;
+        batch.save_last_confirmed_height(&parent_key_id, tip_height)?;
         batch.commit()?;
         Ok(())
     }
