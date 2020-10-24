@@ -162,6 +162,7 @@ fn do_config(
     let exists = Wallet713Config::exists(config_path, chain)?;
     if exists {
         config = Wallet713Config::from_file(config_path, chain)?;
+        println!("Using wallet configuration file at {}", config.config_home.clone().unwrap_or("UNKNOWN".to_string()));
     } else {
         config = Wallet713Config::default(chain);
         any_matches = true;

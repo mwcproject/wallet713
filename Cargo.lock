@@ -84,9 +84,9 @@ dependencies = [
 
 [[package]]
 name = "arrayvec"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cff77d8686867eceff3105329d4698d96c2391c176d5d03adc90c7389162b5b8"
+checksum = "23b62fc65de8e4e7f52534fb52b0f3ed04746ae267519eef2a83941e8085068b"
 
 [[package]]
 name = "async-socks5"
@@ -276,7 +276,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d8fb2d74254a3a0b5cac33ac9f8ed0e44aa50378d9dbb2e5d83bd21ed1dc2c8a"
 dependencies = [
  "arrayref",
- "arrayvec 0.5.1",
+ "arrayvec 0.5.2",
  "constant_time_eq",
 ]
 
@@ -1124,9 +1124,9 @@ checksum = "4c7e4c2612746b0df8fed4ce0c69156021b704c9aefa360311c04e6e9e002eed"
 
 [[package]]
 name = "futures"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d8e3078b7b2a8a671cb7a3d17b4760e4181ea243227776ba83fd043b4ca034e"
+checksum = "95314d38584ffbfda215621d723e0a3906f032e03ae5551e650058dac83d4797"
 dependencies = [
  "futures-channel",
  "futures-core",
@@ -1139,9 +1139,9 @@ dependencies = [
 
 [[package]]
 name = "futures-channel"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a7a4d35f7401e948629c9c3d6638fb9bf94e0b2121e96c3b428cc4e631f3eb74"
+checksum = "0448174b01148032eed37ac4aed28963aaaa8cfa93569a08e5b479bbc6c2c151"
 dependencies = [
  "futures-core",
  "futures-sink",
@@ -1149,9 +1149,9 @@ dependencies = [
 
 [[package]]
 name = "futures-core"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d674eaa0056896d5ada519900dbf97ead2e46a7b6621e8160d79e2f2e1e2784b"
+checksum = "18eaa56102984bed2c88ea39026cff3ce3b4c7f508ca970cedf2450ea10d4e46"
 
 [[package]]
 name = "futures-cpupool"
@@ -1165,9 +1165,9 @@ dependencies = [
 
 [[package]]
 name = "futures-executor"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc709ca1da6f66143b8c9bec8e6260181869893714e9b5a490b169b0414144ab"
+checksum = "f5f8e0c9258abaea85e78ebdda17ef9666d390e987f006be6080dfe354b708cb"
 dependencies = [
  "futures-core",
  "futures-task",
@@ -1176,15 +1176,15 @@ dependencies = [
 
 [[package]]
 name = "futures-io"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fc94b64bb39543b4e432f1790b6bf18e3ee3b74653c5449f63310e9a74b123c"
+checksum = "6e1798854a4727ff944a7b12aa999f58ce7aa81db80d2dfaaf2ba06f065ddd2b"
 
 [[package]]
 name = "futures-macro"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f57ed14da4603b2554682e9f2ff3c65d7567b53188db96cb71538217fc64581b"
+checksum = "e36fccf3fc58563b4a14d265027c627c3b665d7fed489427e88e7cc929559efe"
 dependencies = [
  "proc-macro-hack",
  "proc-macro2 1.0.24",
@@ -1194,24 +1194,24 @@ dependencies = [
 
 [[package]]
 name = "futures-sink"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d8764258ed64ebc5d9ed185cf86a95db5cac810269c5d20ececb32e0088abbd"
+checksum = "0e3ca3f17d6e8804ae5d3df7a7d35b2b3a6fe89dac84b31872720fc3060a0b11"
 
 [[package]]
 name = "futures-task"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4dd26820a9f3637f1302da8bceba3ff33adbe53464b54ca24d4e2d4f1db30f94"
+checksum = "96d502af37186c4fef99453df03e374683f8a1eec9dcc1e66b3b82dc8278ce3c"
 dependencies = [
  "once_cell",
 ]
 
 [[package]]
 name = "futures-util"
-version = "0.3.6"
+version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a894a0acddba51a2d49a6f4263b1e64b8c579ece8af50fa86503d52cd1eea34"
+checksum = "abcb44342f62e6f3e8ac427b8aa815f724fd705dfad060b18ac7866c15bb8e34"
 dependencies = [
  "futures-channel",
  "futures-core",
@@ -1220,7 +1220,7 @@ dependencies = [
  "futures-sink",
  "futures-task",
  "memchr 2.3.3",
- "pin-project",
+ "pin-project 1.0.1",
  "pin-utils",
  "proc-macro-hack",
  "proc-macro-nested",
@@ -1287,13 +1287,13 @@ checksum = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
 [[package]]
 name = "grin_api"
 version = "4.1.0"
-source = "git+https://github.com/mwcproject/mwc-node#5726e2c8337a8b4bf085a1aa6b1befefd67ef4d8"
+source = "git+https://github.com/mwcproject/mwc-node#e9750304fe5fd389ba7c4426c82efd51b89a5abf"
 dependencies = [
  "bytes 0.5.6",
  "easy-jsonrpc-mw",
  "failure",
  "failure_derive",
- "futures 0.3.6",
+ "futures 0.3.7",
  "grin_chain",
  "grin_core",
  "grin_p2p",
@@ -1321,7 +1321,7 @@ dependencies = [
 [[package]]
 name = "grin_chain"
 version = "4.1.0"
-source = "git+https://github.com/mwcproject/mwc-node#5726e2c8337a8b4bf085a1aa6b1befefd67ef4d8"
+source = "git+https://github.com/mwcproject/mwc-node#e9750304fe5fd389ba7c4426c82efd51b89a5abf"
 dependencies = [
  "bit-vec",
  "bitflags 1.2.1",
@@ -1344,7 +1344,7 @@ dependencies = [
 [[package]]
 name = "grin_core"
 version = "4.1.0"
-source = "git+https://github.com/mwcproject/mwc-node#5726e2c8337a8b4bf085a1aa6b1befefd67ef4d8"
+source = "git+https://github.com/mwcproject/mwc-node#e9750304fe5fd389ba7c4426c82efd51b89a5abf"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1370,7 +1370,7 @@ dependencies = [
 [[package]]
 name = "grin_keychain"
 version = "4.1.0"
-source = "git+https://github.com/mwcproject/mwc-node#5726e2c8337a8b4bf085a1aa6b1befefd67ef4d8"
+source = "git+https://github.com/mwcproject/mwc-node#e9750304fe5fd389ba7c4426c82efd51b89a5abf"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1394,7 +1394,7 @@ dependencies = [
 [[package]]
 name = "grin_p2p"
 version = "4.1.0"
-source = "git+https://github.com/mwcproject/mwc-node#5726e2c8337a8b4bf085a1aa6b1befefd67ef4d8"
+source = "git+https://github.com/mwcproject/mwc-node#e9750304fe5fd389ba7c4426c82efd51b89a5abf"
 dependencies = [
  "bitflags 1.2.1",
  "chrono",
@@ -1420,7 +1420,7 @@ dependencies = [
 [[package]]
 name = "grin_pool"
 version = "4.1.0"
-source = "git+https://github.com/mwcproject/mwc-node#5726e2c8337a8b4bf085a1aa6b1befefd67ef4d8"
+source = "git+https://github.com/mwcproject/mwc-node#e9750304fe5fd389ba7c4426c82efd51b89a5abf"
 dependencies = [
  "blake2-rfc",
  "chrono",
@@ -1454,7 +1454,7 @@ dependencies = [
 [[package]]
 name = "grin_store"
 version = "4.1.0"
-source = "git+https://github.com/mwcproject/mwc-node#5726e2c8337a8b4bf085a1aa6b1befefd67ef4d8"
+source = "git+https://github.com/mwcproject/mwc-node#e9750304fe5fd389ba7c4426c82efd51b89a5abf"
 dependencies = [
  "byteorder",
  "croaring-mw",
@@ -1474,7 +1474,7 @@ dependencies = [
 [[package]]
 name = "grin_util"
 version = "4.1.0"
-source = "git+https://github.com/mwcproject/mwc-node#5726e2c8337a8b4bf085a1aa6b1befefd67ef4d8"
+source = "git+https://github.com/mwcproject/mwc-node#e9750304fe5fd389ba7c4426c82efd51b89a5abf"
 dependencies = [
  "backtrace",
  "base64 0.9.3",
@@ -1500,7 +1500,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet#3ce93b3091911415c18fb21738e1b519e5cb8a29"
+source = "git+https://github.com/mwcproject/mwc-wallet#16562788952b7f5408f9380fde8946d9f2716b2e"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1525,7 +1525,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet#3ce93b3091911415c18fb21738e1b519e5cb8a29"
+source = "git+https://github.com/mwcproject/mwc-wallet#16562788952b7f5408f9380fde8946d9f2716b2e"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -1540,14 +1540,14 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet#3ce93b3091911415c18fb21738e1b519e5cb8a29"
+source = "git+https://github.com/mwcproject/mwc-wallet#16562788952b7f5408f9380fde8946d9f2716b2e"
 dependencies = [
  "chrono",
  "colored",
  "easy-jsonrpc-mw",
  "failure",
  "failure_derive",
- "futures 0.3.6",
+ "futures 0.3.7",
  "grin_wallet_api",
  "grin_wallet_config",
  "grin_wallet_impls",
@@ -1571,7 +1571,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet#3ce93b3091911415c18fb21738e1b519e5cb8a29"
+source = "git+https://github.com/mwcproject/mwc-wallet#16562788952b7f5408f9380fde8946d9f2716b2e"
 dependencies = [
  "bitcoin",
  "blake2-rfc",
@@ -1582,7 +1582,7 @@ dependencies = [
  "ed25519-dalek",
  "failure",
  "failure_derive",
- "futures 0.3.6",
+ "futures 0.3.7",
  "grin_api",
  "grin_core",
  "grin_keychain",
@@ -1616,7 +1616,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet#3ce93b3091911415c18fb21738e1b519e5cb8a29"
+source = "git+https://github.com/mwcproject/mwc-wallet#16562788952b7f5408f9380fde8946d9f2716b2e"
 dependencies = [
  "base64 0.9.3",
  "bitcoin",
@@ -1661,7 +1661,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet#3ce93b3091911415c18fb21738e1b519e5cb8a29"
+source = "git+https://github.com/mwcproject/mwc-wallet#16562788952b7f5408f9380fde8946d9f2716b2e"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
@@ -1699,9 +1699,9 @@ dependencies = [
 
 [[package]]
 name = "h2"
-version = "0.2.6"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "993f9e0baeed60001cf565546b0d3dbe6a6ad23f2bd31644a133c641eccf6d53"
+checksum = "5e4728fd124914ad25e99e3d15a9361a879f6620f63cb56bbb08f95abb97a535"
 dependencies = [
  "bytes 0.5.6",
  "fnv",
@@ -1714,6 +1714,7 @@ dependencies = [
  "tokio 0.2.22",
  "tokio-util",
  "tracing",
+ "tracing-futures",
 ]
 
 [[package]]
@@ -1861,13 +1862,13 @@ dependencies = [
  "futures-channel",
  "futures-core",
  "futures-util",
- "h2 0.2.6",
+ "h2 0.2.7",
  "http 0.2.1",
  "http-body 0.3.1",
  "httparse",
  "httpdate",
  "itoa",
- "pin-project",
+ "pin-project 0.4.27",
  "socket2",
  "tokio 0.2.22",
  "tower-service",
@@ -1917,7 +1918,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b04745c5e7e8f4f93209f411644659055ce99f1973bd615015e3a7321ec2771"
 dependencies = [
  "async-socks5",
- "futures 0.3.6",
+ "futures 0.3.7",
  "http 0.2.1",
  "hyper 0.13.8",
  "hyper-tls 0.4.3",
@@ -2760,7 +2761,16 @@ version = "0.4.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2ffbc8e94b38ea3d2d8ba92aea2983b503cd75d0888d75b86bb37970b5698e15"
 dependencies = [
- "pin-project-internal",
+ "pin-project-internal 0.4.27",
+]
+
+[[package]]
+name = "pin-project"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee41d838744f60d959d7074e3afb6b35c7456d0f61cad38a24e35e6553f73841"
+dependencies = [
+ "pin-project-internal 1.0.1",
 ]
 
 [[package]]
@@ -2768,6 +2778,17 @@ name = "pin-project-internal"
 version = "0.4.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "65ad2ae56b6abe3a1ee25f15ee605bacadb9a764edaba9c2bf4103800d4a1895"
+dependencies = [
+ "proc-macro2 1.0.24",
+ "quote 1.0.7",
+ "syn 1.0.46",
+]
+
+[[package]]
+name = "pin-project-internal"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81a4ffa594b66bff340084d4081df649a7dc049ac8d7fc458d8e628bfbbb2f86"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.7",
@@ -4192,6 +4213,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f50de3927f93d202783f4513cda820ab47ef17f624b03c096e86ef00c67e6b5f"
 dependencies = [
  "lazy_static",
+]
+
+[[package]]
+name = "tracing-futures"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab7bb6f14721aa00656086e9335d363c5c8747bae02ebe32ea2c7dece5689b4c"
+dependencies = [
+ "pin-project 0.4.27",
+ "tracing",
 ]
 
 [[package]]
