@@ -553,6 +553,12 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("-d, --dest=<destination> 'destination to send swap message to (i.e. onion address or file location)'")
                     )
+                    .arg(
+                        Arg::from_usage("[electrum_uri1] --electrum_uri1=<uri> 'primary private ElectrumX node URI. If never setup, community node will be used'")
+                    )
+                    .arg(
+                        Arg::from_usage("[electrum_uri2] --electrum_uri2=<uri> 'secondary private ElectrumX node URI. If never setup, community node will be used'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("swap")
@@ -613,6 +619,12 @@ impl<'a, 'b> Parser {
                     )
                     .arg(
                         Arg::from_usage("[json_format] --json_format 'Print output in JSon format'")
+                    )
+                    .arg(
+                        Arg::from_usage("[electrum_uri1] --electrum_uri1=<uri> 'primary private ElectrumX node URI. If never setup, community node will be used'")
+                    )
+                    .arg(
+                        Arg::from_usage("[electrum_uri2] --electrum_uri2=<uri> 'secondary private ElectrumX node URI. If never setup, community node will be used'")
                     )
             )
     }

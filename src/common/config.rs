@@ -14,6 +14,7 @@ use crate::common::Error;
 use grin_wallet_impls::MWCMQSAddress;
 use grin_wallet_config::{MQSConfig, TorConfig};
 use contacts::{DEFAULT_MWCMQS_DOMAIN, DEFAULT_MWCMQS_PORT};
+use std::collections::BTreeMap;
 
 const WALLET713_HOME: &str = ".mwc713";
 const WALLET713_DEFAULT_CONFIG_FILENAME: &str = "wallet713.toml";
@@ -55,14 +56,10 @@ pub struct Wallet713Config {
     // Wallet state update frequency. In none, no updates will be run in the background.
     pub wallet_updater_frequency_sec: Option<u32>,
 
-    /// Electrum node for BCH mainnet address
-    pub electrumx_mainnet_bch_node_addr: Option<String>,
-    /// Electrum node for BCH testnet address
-    pub electrumx_testnet_bch_node_addr: Option<String>,
-    /// Electrum node for BTC mainnet address
-    pub electrumx_mainnet_btc_node_addr: Option<String>,
-    /// Electrum node for BTC testnet address
-    pub electrumx_testnet_btc_node_addr: Option<String>,
+    /// Electrum nodes for secondary coins
+    /// Key: <coin>_[main|test]_[1|2]
+    /// Value: url
+    pub swap_electrumx_addr: Option<BTreeMap<String,String>>,
 }
 
 pub const WALLET713_CONFIG_HELP: &str =
@@ -153,18 +150,20 @@ pub const WALLET713_CONFIG_HELP: &str =
 # Electrum X servers that are used for Atomic Swap operations. Each Secondary Currency need
 # its own dedicated Electrum X instance. We highly advise to use your own instance, instead of
 # using those community servers.
+# For every secondary currency expected 4 instances:
+# mainnet primary, mainnet secondary, testnet primary, testnet secondary,
+# Key: <coin>_[main|test]_[1|2]
+# value: URI
 
-# Electrum node for BCH mainnet address
-# electrumx_mainnet_bch_node_addr = \"52.23.248.83:8000\"
-
-# Electrum node for BCH testnet address
-# electrumx_testnet_bch_node_addr = \"52.23.248.83:8000\"
-
-# Electrum node for BTC mainnet address
-# electrumx_mainnet_btc_node_addr = \"52.23.248.83:8000\"
-
-# Electrum node for BTC testnet address
-# electrumx_testnet_btc_node_addr = \"52.23.248.83:8000\"
+# [swap_electrumx_addr]
+# bch_main_1 = \"bch.main1.swap.mwc.mw:8000\"
+# bch_main_2 = \"bch.main2.swap.mwc.mw:8000\"
+# bch_test_1 = \"bch.test1.swap.mwc.mw:8000\"
+# bch_test_2 = \"bch.test2.swap.mwc.mw:8000\"
+# btc_main_1 = \"btc.main1.swap.mwc.mw:8000\"
+# btc_main_2 = \"btc.main2.swap.mwc.mw:8000\"
+# btc_test_1 = \"btc.test1.swap.mwc.mw:8000\"
+# btc_test_2 = \"btc.test1.swap.mwc.mw:8000\"
 
 ";
 
@@ -205,10 +204,20 @@ impl Wallet713Config {
             tls_certificate_key: None,
             config_home: None,
             wallet_updater_frequency_sec: None,
-            electrumx_mainnet_bch_node_addr: None,
-            electrumx_testnet_bch_node_addr: None,
-            electrumx_mainnet_btc_node_addr: None,
-            electrumx_testnet_btc_node_addr: None,
+            swap_electrumx_addr: Some(
+                [
+                    ("btc_main_1", "btc.main1.swap.mwc.mw:8000"),
+                    ("btc_main_2", "btc.main2.swap.mwc.mw:8000"),
+                    ("btc_test_1", "btc.test1.swap.mwc.mw:8000"),
+                    ("btc_test_2", "btc.test2.swap.mwc.mw:8000"),
+                    ("bch_main_1", "bch.main1.swap.mwc.mw:8000"),
+                    ("bch_main_2", "bch.main2.swap.mwc.mw:8000"),
+                    ("bch_test_1", "bch.test1.swap.mwc.mw:8000"),
+                    ("bch_test_2", "bch.test1.swap.mwc.mw:8000"),
+                ].iter().cloned()
+                    .map(|i| (i.0.to_string(), i.1.to_string()) )
+                    .collect::<BTreeMap<String,String>>()
+            )
         }
     }
 

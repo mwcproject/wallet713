@@ -1576,7 +1576,7 @@ fn do_command(
 
             let outputs_arg = args.value_of("outputs");
 
-            let output_list = if outputs_arg.is_none() {
+            let output_list : Option<Vec<String>> = if outputs_arg.is_none() {
                 if strategy == "custom" {
                     return Err(ErrorKind::CustomWithNoOutputs.into());
                 }
@@ -1587,7 +1587,7 @@ fn do_command(
                 if strategy != "custom" {
                     return Err(ErrorKind::NonCustomWithOutputs.into());
                 }
-                let ret: Vec<_> = outputs_arg.unwrap().split(",").collect();
+                let ret: Vec<String> = outputs_arg.unwrap().split(",").map(|s| s.to_string()).collect();
                 Some(ret)
             };
 
@@ -1619,8 +1619,8 @@ fn do_command(
             let mut ntotal = 0;
             if amount == "ALL" {
                 // Update from the node once. No reasons to do that twice in tthe row
-                let max_available = wallet.lock().output_count(true, confirmations, output_list.clone())?;
-                let total_value = wallet.lock().total_value(false, confirmations, output_list.clone())?;
+                let max_available = wallet.lock().output_count(true, confirmations, &output_list)?;
+                let total_value = wallet.lock().total_value(false, confirmations, &output_list)?;
                 let fee = tx_fee(max_available, 1, 1, None);
                 ntotal = if total_value >= fee { total_value - fee } else { 0 };
             }
@@ -2106,6 +2106,9 @@ fn do_command(
             let method = args.value_of("method").unwrap();
             let dest = args.value_of("dest").unwrap();
 
+            let electrum_node_uri1 = args.value_of("electrum_uri1").map(|s| String::from(s));
+            let electrum_node_uri2 = args.value_of("electrum_uri1").map(|s| String::from(s));
+
             let w = wallet.lock();
             let swap_id = w.swap_start(
                 mwc_amount,
@@ -2120,6 +2123,8 @@ fn do_command(
                 redeem_time * 60,
                 method.to_string(),
                 dest.to_string(),
+                electrum_node_uri1,
+                electrum_node_uri2,
             )?;
             cli_message!("New Swap Trade created: {}", swap_id);
         }
@@ -2146,6 +2151,9 @@ fn do_command(
 
             // Flag if want to print the data in Json format
             let json_format = args.is_present("json_format");
+
+            let electrum_node_uri1 = args.value_of("electrum_uri1").map(|s| String::from(s));
+            let electrum_node_uri2 = args.value_of("electrum_uri1").map(|s| String::from(s));
 
             let subcommand = if args.is_present("list") {
                 if args.is_present("check") {
@@ -2190,7 +2198,9 @@ fn do_command(
                 buyer_refund_address,
                 start_listener,
                 secondary_address,
-                json_format
+                json_format,
+                electrum_node_uri1,
+                electrum_node_uri2,
             };
 
             grin_wallet_controller::command::swap(

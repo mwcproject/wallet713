@@ -327,7 +327,7 @@ impl Wallet {
     }
 
 
-    pub fn total_value(&self, refresh_from_node: bool, minimum_confirmations: u64, output_list: Option<Vec<&str>>) -> Result<u64, Error> {
+    pub fn total_value(&self, refresh_from_node: bool, minimum_confirmations: u64, output_list: &Option<Vec<String>>) -> Result<u64, Error> {
         let mut value = 0;
         let w = self.get_wallet_instance()?;
 
@@ -360,7 +360,7 @@ impl Wallet {
         Ok(outputs.len())
     }
 
-    pub fn output_count(&self, refresh_from_node: bool, minimum_confirmations: u64, output_list: Option<Vec<&str>>) -> Result<usize, Error> {
+    pub fn output_count(&self, refresh_from_node: bool, minimum_confirmations: u64, output_list: &Option<Vec<String>>) -> Result<usize, Error> {
         let wallet = self.get_wallet_instance()?;
 
         let mut count = 0;
@@ -418,7 +418,7 @@ impl Wallet {
         change_outputs: u32,
         max_outputs: u32,
         message: Option<String>,
-        outputs: Option<Vec<&str>>,
+        outputs: Option<Vec<String>>,
         version: Option<u16>,
         routputs: usize,
         status_send_channel: &Option<Sender<StatusMessage>>,
@@ -619,6 +619,8 @@ impl Wallet {
         redeem_time_sec: u64,
         buyer_communication_method: String,
         buyer_communication_address: String,
+        electrum_node_uri1: Option<String>,
+        electrum_node_uri2: Option<String>,
     ) -> Result<String, Error> {
         api::swap_start(self.get_wallet_instance()?,
                         mwc_amount,
@@ -632,7 +634,9 @@ impl Wallet {
                         message_exchange_time_sec,
                         redeem_time_sec,
                         buyer_communication_method,
-                        buyer_communication_address)
+                        buyer_communication_address,
+                        electrum_node_uri1,
+                        electrum_node_uri2)
     }
 
     pub fn get_provable_address(
@@ -718,17 +722,9 @@ impl Wallet {
         let wallet_inst = lc.wallet_inst()?;
         wallet_inst.set_parent_key_id_by_name(account)?;
 
-        // initializing settings for swaps
-        let secondary_currency_node_addrs = grin_wallet_libwallet::swap::defaults::get_swap_support_servers(
-            &config.electrumx_mainnet_bch_node_addr,
-            &config.electrumx_testnet_bch_node_addr,
-            &config.electrumx_mainnet_btc_node_addr,
-            &config.electrumx_testnet_btc_node_addr,
-        );
-
         grin_wallet_libwallet::swap::trades::init_swap_trade_backend(
             wallet_inst.get_data_file_dir(),
-            secondary_currency_node_addrs,
+            &config.swap_electrumx_addr,
         );
 
         self.backend = Some(Arc::new(Mutex::new(wallet)));

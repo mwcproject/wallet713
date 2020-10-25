@@ -706,7 +706,7 @@ pub fn initiate_tx<'a, L, C, K>(
     num_change_outputs: u32,
     selection_strategy_is_use_all: bool,
     message: Option<String>,
-    outputs: Option<Vec<&str>>,  // outputs to include into the transaction
+    outputs: Option<Vec<String>>,  // outputs to include into the transaction
     version: Option<u16>, // Slate version
     routputs: usize,  // Number of resulting outputs. Normally it is 1
     status_send_channel: &Option<Sender<StatusMessage>>,
@@ -798,11 +798,12 @@ pub fn initiate_tx<'a, L, C, K>(
         /// Number of confirmations for change outputs, default fine, not used in mwc713.
         minimum_confirmations_change_outputs: 1,
         send_args: None,
+        outputs,
     };
 
     let s = grin_wallet_libwallet::owner::init_send_tx( &mut **w,
                                                         None, params , false,
-                                                        outputs, routputs)?;
+                                                        routputs)?;
     Ok(s)
 }
 
@@ -1333,6 +1334,8 @@ pub fn swap_start<'a, L, C, K>(
     redeem_time_sec: u64,
     buyer_communication_method: String,
     buyer_communication_address: String,
+    electrum_node_uri1: Option<String>,
+    electrum_node_uri2: Option<String>,
 )-> Result<String, Error>
     where
         L: WalletLCProvider<'a, C, K>,
@@ -1352,6 +1355,8 @@ pub fn swap_start<'a, L, C, K>(
         redeem_time_sec,
         buyer_communication_method,
         buyer_communication_address,
+        electrum_node_uri1,
+        electrum_node_uri2,
     };
 
     let swap_id = grin_wallet_libwallet::owner_swap::swap_start(wallet_inst, None, &params)?;
