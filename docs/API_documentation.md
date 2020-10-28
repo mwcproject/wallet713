@@ -23,7 +23,6 @@ In order to run both API you have to use 'owner_api_include_foreign' flag, for y
 ```
 chain = "Floonet"
 wallet713_data_path = "wallet713_data"
-default_keybase_ttl = "24h"
 owner_api = true
 owner_api_address = "0.0.0.0:13415"
 owner_api_secret = "password"
@@ -46,13 +45,10 @@ A sample, configuration may look like this:
 ```
 chain = "Floonet"
 wallet713_data_path = "wallet713_data"
-keybase_listener_auto_start = true
-default_keybase_ttl = "24h"
 owner_api = true
 owner_api_address = "127.0.0.1:13415"
 owner_api_secret = "password"
 ```
-Optionally, if you would like to send via keybase, you must configure the keybase listener to auto start using the keybase_listener_auto_start parameter (see above).
 
 Below is the documentation for the individual API end points:
 
@@ -101,15 +97,12 @@ Below is the documentation for the individual API end points:
 
 <table>
   <tr><td>End Point</td><td>Description</td></tr>
-  <tr><td>/v1/wallet/owner/issue_send_tx</td><td>The issue send tx API sends payments via your mwc713 wallet instance. As shown in the curl example, you can specify the following values: method (mwcmqs http and keybase are the supported methods for sending at the moment), amount (amount in nanomwc 1 billion nanomwc = 1 mwc.), minimum confirmations (only select from outputs that have at least this many confirmations), max_outputs (the maximum number of outputs to use in this transaction), num_change_outputs (the number of change outputs to specify in this transaction), selection_strategy_is_use_all (whether or not to use all outputs in this transaction), dest (the destination for mwcmqs, it is an mwcmqs address of the recipient, for keybase it is the user's keybase id). The response, if successful, will be the slate that was sent.</td></tr>
-  <tr><td colspan=2>NOTE  methods 'mwcmqs', 'keybase' and 'http' will finalize transaction automatically when they get a respond.</td></tr>
+  <tr><td>/v1/wallet/owner/issue_send_tx</td><td>The issue send tx API sends payments via your mwc713 wallet instance. As shown in the curl example, you can specify the following values: method (mwcmqs and http are the supported methods for sending at the moment), amount (amount in nanomwc 1 billion nanomwc = 1 mwc.), minimum confirmations (only select from outputs that have at least this many confirmations), max_outputs (the maximum number of outputs to use in this transaction), num_change_outputs (the number of change outputs to specify in this transaction), selection_strategy_is_use_all (whether or not to use all outputs in this transaction), dest (the destination for mwcmqs, it is an mwcmqs address of the recipient). The response, if successful, will be the slate that was sent.</td></tr>
+  <tr><td colspan=2>NOTE  methods 'mwcmqs' and 'http' will finalize transaction automatically when they get a respond.</td></tr>
   <tr><td colspan=2><code># curl -u mwc -X POST http://127.0.0.1:13415//v1/wallet/owner/issue_send_tx -d '{"method": "mwcmqs", "amount": 100000000, "minimum_confirmations": 1, "max_outputs": 10, "num_change_outputs": 1, "selection_strategy_is_use_all": true, "dest": "xmgEvZ4MCCGMJnRnNXKHBbHmSGWQchNr9uZpY5J1XXnsCFS45fsU"}'
    </code>
  <tr><td colspan=2><code>  
 # curl -u mwc -X POST http://127.0.0.1:13415//v1/wallet/owner/issue_send_tx -d '{"method": "http", "amount": 100000000, "minimum_confirmations": 1, "max_outputs": 10, "num_change_outputs": 1, "selection_strategy_is_use_all": true, "dest": "https://www.example.com"}'
-  </code>
-  <tr><td colspan=2><code>
-# curl -u mwc -X POST http://127.0.0.1:13415//v1/wallet/owner/issue_send_tx -d '{"method": "keybase", "amount": 100000000, "minimum_confirmations": 1, "max_outputs": 10, "num_change_outputs": 1, "selection_strategy_is_use_all": true, "dest": "keybase://electrum78"}'
   </code>
   <tr><td colspan=2><code>
 # curl -u mwc -X POST http://127.0.0.1:13415//v1/wallet/owner/issue_send_tx -d '{"method": "file", "amount": 100000000, "minimum_confirmations": 1, "max_outputs": 10, "num_change_outputs": 1, "selection_strategy_is_use_all": true, "dest": "/path/to/file"}'
@@ -152,8 +145,6 @@ A sample, configuration may look like this:
 ```
 chain = "Floonet"
 wallet713_data_path = "wallet713_data"
-keybase_listener_auto_start = true
-default_keybase_ttl = "24h"
 foreign_api = true
 foreign_api_address = "127.0.0.1:13416"
 foreign_api_secret = "password"

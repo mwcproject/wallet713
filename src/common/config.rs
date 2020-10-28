@@ -23,7 +23,6 @@ const WALLET713_DEFAULT_CONFIG_FILENAME: &str = "wallet713.toml";
 pub struct Wallet713Config {
     pub chain: ChainTypes,
     pub wallet713_data_path: String,
-    pub keybase_binary: Option<String>,
     pub mwcmq_port: Option<u16>,
     pub mwcmqs_domain: Option<String>,
     pub mwcmqs_port: Option<u16>,
@@ -32,9 +31,7 @@ pub struct Wallet713Config {
     pub mwc_node_uri: Option<String>,
     pub mwc_node_secret: Option<String>,
     pub grinbox_listener_auto_start: Option<bool>,
-    pub keybase_listener_auto_start: Option<bool>,
     pub max_auto_accept_invoice: Option<u64>,
-    pub default_keybase_ttl: Option<String>,
     pub owner_api: Option<bool>,
     pub owner_api_address: Option<String>,
     pub owner_api_secret: Option<String>,
@@ -73,8 +70,6 @@ pub const WALLET713_CONFIG_HELP: &str =
 # Path for mwc713 wallet data
 # wallet713_data_path = \"wallet713_data\"
 
-# Path to the keybase binary
-# keybase_binary = \"keybase\"
 
 # MWC MQS connection settings. By default mwc713 using thhis method for communication.
 # mwcmqs_domain = \"mqs.mwc.mw\"
@@ -96,16 +91,11 @@ pub const WALLET713_CONFIG_HELP: &str =
 # Start Message Queue listener automatically if wallet password was provided at start.
 # grinbox_listener_auto_start = true
 
-# Start KeyBase listener automatically if wallet password was provided at start.
-# keybase_listener_auto_start = true
 
 # Specify maximum amount in nano MWC if you want this wallet automatically accept invoices.
 # Example for 5 MWCs:  max_auto_accept_invoice = 50000000000
 # Note! Change it if you really understand what you are going!
 # max_auto_accept_invoice =
-
-# KetBase TTL period
-# default_keybase_ttl = \"24h\"
 
 # Enable Owner API for this wallet. See for details: https://github.com/mwcproject/mwc713/blob/master/docs/API_documentation.md
 # owner_api = false
@@ -180,7 +170,6 @@ impl Wallet713Config {
         Wallet713Config {
             chain: chain.clone(),
             wallet713_data_path: "wallet713_data".to_string(),
-            keybase_binary: None,
             mwcmq_port: None,
             mwcmqs_domain: None,
             mwcmqs_port: None,
@@ -189,9 +178,7 @@ impl Wallet713Config {
             mwc_node_uri: None,
             mwc_node_secret: None,
             grinbox_listener_auto_start: None,
-            keybase_listener_auto_start: None,
             max_auto_accept_invoice: None,
-            default_keybase_ttl: Some("24h".to_string()),
             owner_api: None,
             owner_api_address: None,
             owner_api_secret: None,
@@ -365,9 +352,6 @@ impl Wallet713Config {
         self.grinbox_listener_auto_start.unwrap_or(true)
     }
 
-    pub fn keybase_listener_auto_start(&self) -> bool {
-        self.keybase_listener_auto_start.unwrap_or(false)
-    }
 
     pub fn owner_api_address(&self) -> String {
         let chain_type = self.chain.clone();

@@ -33,14 +33,11 @@ Here we document a standard setup which may be useful.
 ```
 chain = "Floonet"
 wallet713_data_path = "wallet713_data"
-keybase_binary = "keybase"
-default_keybase_ttl = "24h"
 foreign_api = true
 foreign_api_address = "0.0.0.0:8443"
 tls_certificate_file = "/path/to/certs/fullchain.pem"
 tls_certificate_key = "/path/to/certs/privkey.pem"
 ```
-Note: this install assumes you have keybase installed. If you do not have keybase installed and don't wish to support keybase, you can remove keybase_binary line above.
 
 10.) Execute mwc713 with this configuration file.
 

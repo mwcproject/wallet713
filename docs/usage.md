@@ -8,7 +8,6 @@ While running, mwc713 works with an internal command prompt. You type commands i
     + [Getting started](#getting-started)
     + [Transacting](#transacting)
       - [Transacting using grinbox](#transacting-using-grinbox)
-      - [Transacting using Keybase](#transacting-using-keybase)
       - [Transacting using https](#transacting-using-https)
         * [Sending via https](#sending-via-https)
         * [Receiving via http](#receiving-via-http)
@@ -42,7 +41,6 @@ While running, mwc713 works with an internal command prompt. You type commands i
     + [Grinbox](#grinbox)
       - [Address derivation](#address-derivation)
       - [Switching address](#switching-address)
-    + [Keybase](#keybase)
   * [Command documentation](#command-documentation)
 
 ## Common use cases
@@ -98,22 +96,6 @@ wallet713> $ send 10 --to xmiUWCTh4Rpme5hbZJhNUFAWGLMgXTvS2pqWk6yNZv8fhV1PyHmQ
 To receive grins you simply keep mwc713 running and transactions are processed automatically. Any transactions received while being offline are fetched once you initiate `listen`. 
 
 
-#### Transacting using Keybase
-
-First ensure you are logged into your account on keybase.io via the keybase command line interface or their desktop client.
-
-Start a keybase listener on mwc713:
-```
-wallet713> $ listen --keybase
-```
-
-You are now ready to receive grins to your keybase @username, by having senders send to `keybase://username`.
-If you are currently offline, the wallet will process your transactions the next time you run a listener.
-
-To send 10 mwc to Igno on keybase:
-```
-wallet713> $ send 10 --to keybase://ignotus
-```
 
 #### Transacting using https
 
@@ -250,17 +232,13 @@ Once again, as per the output note above, the proof **is only valid if the kerne
 
 ### Using Contacts
 
-To make it easier to transact with parties without having to deal with their grinbox addresses or keybase profiles, you can assign them nicknames that are stored locally in your contacts. **These contacts are stored locally on your machine and are not synced or shared with us.**
+To make it easier to transact with parties without having to deal with their grinbox addresses  profiles, you can assign them nicknames that are stored locally in your contacts. **These contacts are stored locally on your machine and are not synced or shared with us.**
 
 To add the grinbox address `xmiUWCTh4Rpme5hbZJhNUFAWGLMgXTvS2pqWk6yNZv8fhV1PyHmQ` to your contacts as `faucet`:
 ```
 wallet713> $ contacts add faucet mwcmqs://xmiUWCTh4Rpme5hbZJhNUFAWGLMgXTvS2pqWk6yNZv8fhV1PyHmQ
 ```
 
-Similarly, to add the keybase address `keybase://ignotus` to your contacts as `igno`:
-```
-wallet713> $ contacts add igno keybase://ignotus
-```
 
 You can list your contacts:
 ```
@@ -376,11 +354,10 @@ owner_api_include_foreign = <true|false>
 
 MWC713 Owner API supports the default grin's wallet owner API. Additionally `issue_send_tx` supports `grinbox` method where `dest` argument is a grinbox address.
 
-Note that in order to utilize `keybase` and `mwcmq` methods, the grinbox and keybase listeners must be initialized automatically at start by using the following configuration parameters in `mwc713.toml`:
+Note that in order to utilize  `mwcmq` methods, the grinbox listeners must be initialized automatically at start by using the following configuration parameters in `mwc713.toml`:
 
 ```
 grinbox_listener_auto_start = true
-keybase_listener_auto_start = true
 ```
 
 ## Recovering your wallet
@@ -422,9 +399,6 @@ If instead you would like more control over which address to use, you can specif
 
 The index will persist in between mwc713 sessions and is stored in your configuration file.
 
-### Keybase
-Your username on [Keybase](https://keybase.io).
-Typical address format: `keybase://ignotus`
 
 ## Command documentation
 

@@ -104,7 +104,7 @@ use contacts::DEFAULT_MWCMQS_DOMAIN;
 use grin_wallet_libwallet::proof::tx_proof::TxProof;
 use grin_wallet_libwallet::Slate;
 use grin_util::secp::key::PublicKey;
-use grin_wallet_impls::{MWCMQPublisher, MWCMQSubscriber, MWCMQSAddress, Publisher, Subscriber, Address, AddressType, KeybasePublisher, KeybaseSubscriber};
+use grin_wallet_impls::{MWCMQPublisher, MWCMQSubscriber, MWCMQSAddress, Publisher, Subscriber, Address, AddressType};
 
 use contacts::{AddressBook, Backend, Contact,};
 
@@ -353,32 +353,6 @@ fn start_tor_listener(
 
     Ok(mutex)
 }
-
-fn start_keybase_listener(
-    config: &Wallet713Config,
-    wallet: Arc<Mutex<Wallet>>,
-) -> Result<(KeybasePublisher, KeybaseSubscriber), Error> {
-    // make sure wallet is not locked, if it is try to unlock with no passphrase
-    {
-        if wallet.lock().is_locked() {
-            return Err(ErrorKind::WalletIsLocked)?;
-        }
-    }
-
-    cli_message!("Starting keybase listener...");
-
-    let keychain_mask = Arc::new(Mutex::new(None));
-    let res = grin_wallet_controller::controller::start_keybase_listener(
-        wallet.lock().get_wallet_instance()?,
-        config.default_keybase_ttl.clone(),
-        config.keybase_binary.clone(),
-        false,
-        keychain_mask,
-        false)?;
-
-    Ok(res)
-}
-
 fn start_wallet_api(
     config: &Wallet713Config,
     wallet: Arc<Mutex<Wallet>>,
@@ -564,7 +538,6 @@ fn main() {
 
     let wallet = Arc::new(Mutex::new(Wallet::new() ));
 
-    let mut keybase_broker: Option<(KeybasePublisher, KeybaseSubscriber)> = None;
     let mut mwcmqs_broker: Option<(MWCMQPublisher, MWCMQSubscriber)> = None;
     let mut tor_state: Option<std::sync::Arc<std::sync::Mutex<u32>>> = Some(std::sync::Arc::new(std::sync::Mutex::new(0)));
     let mut tor_running: bool = false;
@@ -622,7 +595,7 @@ fn main() {
                 println!("Set an optional password to secure your wallet with. Leave blank for no password.");
                 println!();
                 let cmd = format!("init -p {}", &passphrase);
-                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker,  &mut mwcmqs_broker, &mut out_is_safe, &mut tor_state, &mut tor_running) {
+                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut mwcmqs_broker, &mut out_is_safe, &mut tor_state, &mut tor_running) {
                     println!("{}: {}", "ERROR".bright_red(), err);
                     std::process::exit(1);
                 }
@@ -650,7 +623,7 @@ fn main() {
                 println!();
                 // TODO: refactor this
                 let cmd = format!("recover -m {} -p {}", mnemonic, &passphrase);
-                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut keybase_broker, &mut mwcmqs_broker, &mut out_is_safe, &mut tor_state, &mut tor_running) {
+                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(),  &mut mwcmqs_broker, &mut out_is_safe, &mut tor_state, &mut tor_running) {
                     println!("{}: {}", "ERROR".bright_red(), err);
                     std::process::exit(1);
                 }
@@ -722,15 +695,7 @@ fn main() {
 
     }
 
-    if config.keybase_listener_auto_start() {
-        let result = start_keybase_listener(&config, wallet.clone());
-        match result {
-            Err(e) => cli_message!("{}: {}", "ERROR".bright_red(), e),
-            Ok((publisher, subscriber)) => {
-                keybase_broker = Some((publisher, subscriber));
-            },
-        }
-    }
+
 
     #[cfg(not(target_os = "android"))]
         let mut rl = {
@@ -814,7 +779,6 @@ fn main() {
             &mut config,
             wallet.clone(),
             address_book.clone(),
-            &mut keybase_broker,
             &mut mwcmqs_broker,
             &mut out_is_safe,
             &mut tor_state,
@@ -934,7 +898,6 @@ fn do_command(
     config: &mut Wallet713Config,
     wallet: Arc<Mutex<Wallet>>,
     address_book: Arc<Mutex<AddressBook>>,
-    keybase_broker: &mut Option<(KeybasePublisher, KeybaseSubscriber)>,
     mwcmqs_broker: &mut Option<(MWCMQPublisher, MWCMQSubscriber)>,
     out_is_safe: &mut bool,
     tor_state: &mut Option<std::sync::Arc<std::sync::Mutex<u32>>>,
@@ -1008,9 +971,6 @@ fn do_command(
         }
         Some("init") => {
             *out_is_safe = false;
-            if keybase_broker.is_some() {
-                return Err(ErrorKind::HasListener.into());
-            }
             let args = matches.subcommand_matches("init").unwrap();
             let passphrase = match args.is_present("passphrase") {
                 true => password_prompt(args.value_of("passphrase")),
@@ -1095,15 +1055,11 @@ fn do_command(
                 .subcommand_matches("listen")
                 .unwrap()
                 .is_present("mwcmqs");
-            let keybase = matches
-                .subcommand_matches("listen")
-                .unwrap()
-                .is_present("keybase");
             let tor = matches
                 .subcommand_matches("listen")
                 .unwrap()
                 .is_present("tor");
-            if mwcmqs || (!keybase && !tor) {
+            if mwcmqs ||  !tor {
                 let is_running = match mwcmqs_broker {
                     Some((_, subscriber)) => subscriber.is_running(),
                     _ => false,
@@ -1114,19 +1070,6 @@ fn do_command(
                     let (publisher, subscriber) =
                         start_mwcmqs_listener(&config, wallet.clone())?;
                     *mwcmqs_broker = Some((publisher, subscriber));
-                }
-            }
-            if keybase {
-                let is_running = match keybase_broker {
-                    Some((_, subscriber)) => subscriber.is_running(),
-                    _ => false,
-                };
-                if is_running {
-                    Err(ErrorKind::AlreadyListening("keybase".to_string()))?
-                } else {
-                    let (publisher, subscriber) =
-                        start_keybase_listener(&config, wallet.clone())?;
-                    *keybase_broker = Some((publisher, subscriber));
                 }
             }
             if tor {
@@ -1147,16 +1090,12 @@ fn do_command(
                 .subcommand_matches("stop")
                 .unwrap()
                 .is_present("mwcmqs");
-            let keybase = matches
-                .subcommand_matches("stop")
-                .unwrap()
-                .is_present("keybase");
             let tor = matches
                 .subcommand_matches("stop")
                 .unwrap()
                 .is_present("tor");
 
-            if mwcmqs || (!keybase && !tor) {
+            if mwcmqs ||  !tor {
                 let is_running = match mwcmqs_broker {
                     Some((_, subscriber)) => subscriber.is_running(),
                     _ => false,
@@ -1174,21 +1113,6 @@ fn do_command(
                     }
                 } else {
                     Err(ErrorKind::ClosedListener("mwcmqs".to_string()))?
-                }
-            }
-            if keybase {
-                let is_running = match keybase_broker {
-                    Some((_, subscriber)) => subscriber.is_running(),
-                    _ => false,
-                };
-                if is_running {
-                    cli_message!("Stopping keybase listener...");
-                    if let Some((_, subscriber)) = keybase_broker {
-                        subscriber.stop();
-                    };
-                    *keybase_broker = None;
-                } else {
-                    Err(ErrorKind::ClosedListener("keybase".to_string()))?
                 }
             }
             if tor {
@@ -1737,7 +1661,6 @@ fn do_command(
 
             let method = match to.address_type() {
                 AddressType::MWCMQS => "mwcmqs",
-                AddressType::Keybase => "keybase",
                 AddressType::Https => "http",
             };
 
@@ -1811,11 +1734,10 @@ fn do_command(
 
             let method = match to.address_type() {
                 AddressType::MWCMQS => "mwcmqs",
-                AddressType::Keybase => "keybase",
                 AddressType::Https => return Err(ErrorKind::HttpRequest(format!("Invoice doesn't support address type: {:?}", to.address_type())).into()),
             };
 
-            // Invoices supported by MQS and Keybase only. HTTP based transport works differently, no invoice processing on them.
+            // Invoices supported by MQS  only. HTTP based transport works differently, no invoice processing on them.
             let original_slate = slate.clone();
             let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &None, None)?;
             slate = sender.send_tx(&slate)?;
@@ -1840,9 +1762,6 @@ fn do_command(
         }
         Some("restore") => {
             *out_is_safe = false;
-            if keybase_broker.is_some() {
-                return Err(ErrorKind::HasListener.into());
-            }
             let args = matches.subcommand_matches("restore").unwrap();
             let passphrase = match args.is_present("passphrase") {
                 true => password_prompt(args.value_of("passphrase")),
@@ -1872,9 +1791,6 @@ fn do_command(
         }
         Some("recover") => {
             *out_is_safe = false;
-            if keybase_broker.is_some()  {
-                return Err(ErrorKind::HasListener.into());
-            }
             let args = matches.subcommand_matches("recover").unwrap();
             let passphrase = match args.is_present("passphrase") {
                 true => password_prompt(args.value_of("passphrase")),
@@ -1933,9 +1849,6 @@ fn do_command(
             let start_height = u64::from_str_radix(start_height, 10)
                 .map_err(|_| ErrorKind::InvalidNumOutputs(start_height.to_string()))?;
 
-            if keybase_broker.is_some() || mwcmqs_broker.is_some() {
-                return Err(ErrorKind::HasListener.into());
-            }
             println!("checking and repairing... please wait as this could take a few minutes to complete.");
             let wallet = wallet.lock();
             wallet.check_repair( start_height, !args.is_present("--no-delete_unconfirmed"))?;
