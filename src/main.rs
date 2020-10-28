@@ -339,7 +339,7 @@ fn start_tor_listener(
                         Some(p)
                     },
                     Err(e) => {
-                        cli_message!("INFO: Unable to start Tor listener. {}", e);
+                        cli_message!("ERROR: Unable to start Tor listener. {}", e);
                         input.send(false).unwrap();
                         None
                     },
