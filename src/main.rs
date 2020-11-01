@@ -353,6 +353,7 @@ fn start_tor_listener(
 
     Ok(mutex)
 }
+
 fn start_wallet_api(
     config: &Wallet713Config,
     wallet: Arc<Mutex<Wallet>>,
@@ -1059,7 +1060,7 @@ fn do_command(
                 .subcommand_matches("listen")
                 .unwrap()
                 .is_present("tor");
-            if mwcmqs ||  !tor {
+            if mwcmqs {
                 let is_running = match mwcmqs_broker {
                     Some((_, subscriber)) => subscriber.is_running(),
                     _ => false,
@@ -1095,7 +1096,7 @@ fn do_command(
                 .unwrap()
                 .is_present("tor");
 
-            if mwcmqs ||  !tor {
+            if mwcmqs {
                 let is_running = match mwcmqs_broker {
                     Some((_, subscriber)) => subscriber.is_running(),
                     _ => false,
@@ -1849,6 +1850,9 @@ fn do_command(
             let start_height = u64::from_str_radix(start_height, 10)
                 .map_err(|_| ErrorKind::InvalidNumOutputs(start_height.to_string()))?;
 
+            if mwcmqs_broker.is_some() {
+                return Err(ErrorKind::HasListener.into());
+            }
             println!("checking and repairing... please wait as this could take a few minutes to complete.");
             let wallet = wallet.lock();
             wallet.check_repair( start_height, !args.is_present("--no-delete_unconfirmed"))?;

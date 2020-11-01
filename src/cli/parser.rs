@@ -204,10 +204,7 @@ impl<'a, 'b> Parser {
             )
             .subcommand(
                 SubCommand::with_name("listen")
-                    .about("listens to incoming slates to your mwcmq address, mwcmqs address  account")
-                    .arg(
-                        Arg::from_usage("[grinbox] -m, --mwcmq 'start the mwcmq listener'")
-                    )
+                    .about("listens to incoming slates to your mwcmq address, mwcmqs address or keybase account")
                     .arg(
                         Arg::from_usage("[mwcmqs] -s, --mwcmqs 'start the mwcmqs listener'")
                     )
@@ -218,9 +215,6 @@ impl<'a, 'b> Parser {
             .subcommand(
                 SubCommand::with_name("stop")
                     .about("stops the slate listener")
-                    .arg(
-                        Arg::from_usage("[grinbox] -m, --mwcmq 'stop the mwcmq listener'")
-                    )
                     .arg(
                         Arg::from_usage("[mwcmqs] -s, --mwcmqs 'stop the mwcmqs listener'")
                     )
