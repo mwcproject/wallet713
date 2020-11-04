@@ -117,6 +117,7 @@ use uuid::Uuid;
 use grin_wallet_controller::command;
 use grin_wallet_libwallet::proof::tx_proof;
 use grin_wallet_libwallet::proof::proofaddress;
+use std::fs;
 
 
 #[cfg(not(target_os = "android"))]
@@ -1564,7 +1565,8 @@ fn do_command(
 
             // Store slate in a file
             if let Some(input) = input {
-                let mut file = File::create(input.replace("~", &home_dir))?;
+                let temp_file_name = input.to_owned() + ".bak"; //to be deleted if things go smooth
+                let mut file = File::create(temp_file_name.replace("~", &home_dir))?;
                 let w = wallet.lock();
                 let mut address = Some(String::from("file"));
                 if do_proof {
@@ -1585,7 +1587,15 @@ fn do_command(
                     &status_send_channel,
                     ttl_blocks,
                     false,
-                )?;
+                );
+
+
+                let slate = match slate {
+                    Ok(slate) => slate,
+                    Err(error) => {
+                        fs::remove_file(temp_file_name)?;
+                        return Err(error);} //delete the temp file.
+                };
 
                 let out_slate = {
                         if slate.payment_proof.is_some() || slate.ttl_cutoff_height.is_some() {
@@ -1601,6 +1611,9 @@ fn do_command(
                 };
 
                 file.write_all(serde_json::to_string(&out_slate)?.as_bytes())?;
+                //copy the .bak file to the file name without .bak, and delete the .bak file
+                fs::copy(&temp_file_name,input)?;
+                fs::remove_file(temp_file_name)?;
 
                 w.tx_lock_outputs(
                     &slate,
