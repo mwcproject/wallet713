@@ -7,8 +7,6 @@ use grin_core::core::hash::{Hash};
 use grin_util::secp::{ContextFlag, Secp256k1, Signature};
 use grin_p2p::types::PeerInfoDisplay;
 
-
-use grin_p2p::types::PeerInfoDisplayLegacy;
 use grin_wallet_libwallet::proof::crypto::Hex;
 use grin_wallet_libwallet::proof::tx_proof::TxProof;
 use grin_wallet_libwallet::proof::proofaddress;
@@ -30,6 +28,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::JoinHandle;
 use std::fs::File;
 use std::io::{Write, BufReader, BufRead};
+use grin_wallet_impls::Address;
 
 // struct for sending back node information
 pub struct NodeInfo
@@ -891,42 +890,36 @@ pub fn node_info<'a, L, C, K>(
     // first get height
     let mut height = 0;
     let mut total_difficulty = 0;
+    let mut peers: Vec<PeerInfoDisplay> = Vec::new();
+
     match w.w2n_client().get_chain_tip() {
         Ok( (hght, _, total_diff) ) => {
             height=hght;
             total_difficulty=total_diff;
         },
-        _ => (),
-    }
-
-    // peer info
-    let mut peers : Vec<PeerInfoDisplayLegacy> = Vec::new();
-    match w.w2n_client().get_connected_peer_info() {
-        Ok(p) => { peers = p; },
-        _ => { 
-		match w.w2n_client().get_connected_peer_info() {
-			Ok(p2) => { peers = p2; },
-			_ => (),
-		}
-		() },
+        _ => return Ok(NodeInfo{height,total_difficulty,peers})
     };
 
-    let mut peers_ret: Vec<PeerInfoDisplay> = Vec::new();
+    // peer info
+    let peers_info;
+    match w.w2n_client().get_connected_peer_info() {
+        Ok(p) => { peers_info = p; },
+        _ => return Ok(NodeInfo{height,total_difficulty,peers}),
+    };
 
-    for peer in peers {
-        let peer_display = PeerInfoDisplay {
-		capabilities: peer.capabilities,
-		user_agent: peer.user_agent,
-		version: peer.version,
-		addr: PeerAddr::from_str(&peer.addr),
-		direction: peer.direction,
-		total_difficulty: peer.total_difficulty,
-		height: peer.height,
-	};
-	peers_ret.push(peer_display);
+    for p in peers_info {
+        peers.push( PeerInfoDisplay {
+            capabilities: p.capabilities,
+            user_agent: p.user_agent,
+            version: p.version,
+            addr: PeerAddr::from_str(&p.addr),
+            direction: p.direction,
+            total_difficulty: p.total_difficulty,
+            height: p.height,
+        });
     }
 
-    Ok(NodeInfo{height,total_difficulty,peers:peers_ret})
+    Ok(NodeInfo{height,total_difficulty,peers})
 }
 
 pub fn post_tx<'a, L, C, K>(
@@ -1336,12 +1329,36 @@ pub fn swap_start<'a, L, C, K>(
     buyer_communication_address: String,
     electrum_node_uri1: Option<String>,
     electrum_node_uri2: Option<String>,
+    dry_run: bool,
 )-> Result<String, Error>
     where
         L: WalletLCProvider<'a, C, K>,
         C: NodeClient + 'a,
         K: Keychain + 'a,
 {
+    // We have to verify address here because of all access issues,
+    match buyer_communication_method.as_str() {
+        "mwcmqs" => {
+            // Validating destination address
+            let _ = grin_wallet_impls::MWCMQSAddress::from_str(&buyer_communication_address).map_err(|e| {
+                ErrorKind::ArgumentError(format!("Invalid destination address, {}", e))
+            })?;
+        }
+        "tor" => {
+            let _ = grin_wallet_impls::adapters::validate_tor_address(&buyer_communication_address).map_err(|e| {
+                ErrorKind::ArgumentError(format!("Invalid destination address, {}", e))
+            })?;
+        }
+        "file" => (), // not validating the fine name. Files are secondary and testing method.
+        _ => {
+            return Err(ErrorKind::ArgumentError(format!(
+                "Invalid communication method '{}'. Valid methods: mwcmqs, tor, file",
+                buyer_communication_method
+            )).into())
+        }
+    }
+
+
     let params = SwapStartArgs {
         mwc_amount,
         secondary_currency,
@@ -1357,6 +1374,7 @@ pub fn swap_start<'a, L, C, K>(
         buyer_communication_address,
         electrum_node_uri1,
         electrum_node_uri2,
+        dry_run,
     };
 
     let swap_id = grin_wallet_libwallet::owner_swap::swap_start(wallet_inst, None, &params)?;

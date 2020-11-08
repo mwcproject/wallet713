@@ -2039,6 +2039,8 @@ fn do_command(
             let electrum_node_uri1 = args.value_of("electrum_uri1").map(|s| String::from(s));
             let electrum_node_uri2 = args.value_of("electrum_uri1").map(|s| String::from(s));
 
+            let dry_run = args.is_present("dry_run");
+
             let w = wallet.lock();
             let swap_id = w.swap_start(
                 mwc_amount,
@@ -2055,6 +2057,7 @@ fn do_command(
                 dest.to_string(),
                 electrum_node_uri1,
                 electrum_node_uri2,
+                dry_run,
             )?;
             cli_message!("New Swap Trade created: {}", swap_id);
         }

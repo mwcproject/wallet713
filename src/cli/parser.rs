@@ -547,6 +547,9 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("[electrum_uri2] --electrum_uri2=<uri> 'secondary private ElectrumX node URI. If never setup, community node will be used'")
                     )
+                    .arg(
+                        Arg::from_usage("[dry_run] --dry_run 'verify parameters, do not create a new swap trade'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("swap")

@@ -147,4 +147,7 @@ pub enum ErrorKind {
     FileUnableToDelete(String),
     #[fail(display = "unable to create the file '{}', {}", _0, _1)]
     FileUnableToCreate(String, String),
+
+    #[fail(display = "Invalid argument: {}", _0)]
+    ArgumentError(String),
 }

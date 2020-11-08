@@ -146,14 +146,14 @@ pub const WALLET713_CONFIG_HELP: &str =
 # value: URI
 
 # [swap_electrumx_addr]
-# bch_main_1 = \"bch.main1.swap.mwc.mw:8000\"
-# bch_main_2 = \"bch.main2.swap.mwc.mw:8000\"
-# bch_test_1 = \"bch.test1.swap.mwc.mw:8000\"
-# bch_test_2 = \"bch.test2.swap.mwc.mw:8000\"
-# btc_main_1 = \"btc.main1.swap.mwc.mw:8000\"
-# btc_main_2 = \"btc.main2.swap.mwc.mw:8000\"
-# btc_test_1 = \"btc.test1.swap.mwc.mw:8000\"
-# btc_test_2 = \"btc.test1.swap.mwc.mw:8000\"
+# bch_main_1 = \"bch.main1.swap.mwc.mw:18333\"
+# bch_main_2 = \"bch.main2.swap.mwc.mw:18333\"
+# bch_test_1 = \"bch.test1.swap.mwc.mw:18335\"
+# bch_test_2 = \"bch.test1.swap.mwc.mw:18335\"
+# btc_main_1 = \"btc.main1.swap.mwc.mw:18337\"
+# btc_main_2 = \"btc.main2.swap.mwc.mw:18337\"
+# btc_test_1 = \"btc.test1.swap.mwc.mw:18339\"
+# btc_test_2 = \"btc.test2.swap.mwc.mw:18339\"
 
 ";
 
@@ -193,14 +193,14 @@ impl Wallet713Config {
             wallet_updater_frequency_sec: None,
             swap_electrumx_addr: Some(
                 [
-                    ("btc_main_1", "btc.main1.swap.mwc.mw:8000"),
-                    ("btc_main_2", "btc.main2.swap.mwc.mw:8000"),
-                    ("btc_test_1", "btc.test1.swap.mwc.mw:8000"),
-                    ("btc_test_2", "btc.test2.swap.mwc.mw:8000"),
-                    ("bch_main_1", "bch.main1.swap.mwc.mw:8000"),
-                    ("bch_main_2", "bch.main2.swap.mwc.mw:8000"),
-                    ("bch_test_1", "bch.test1.swap.mwc.mw:8000"),
-                    ("bch_test_2", "bch.test1.swap.mwc.mw:8000"),
+                    ("btc_main_1", "btc.main1.swap.mwc.mw:18337"),
+                    ("btc_main_2", "btc.main2.swap.mwc.mw:18337"),
+                    ("btc_test_1", "btc.test1.swap.mwc.mw:18339"),
+                    ("btc_test_2", "btc.test2.swap.mwc.mw:18339"),
+                    ("bch_main_1", "bch.main1.swap.mwc.mw:18333"),
+                    ("bch_main_2", "bch.main2.swap.mwc.mw:18333"),
+                    ("bch_test_1", "bch.test1.swap.mwc.mw:18335"),
+                    ("bch_test_2", "bch.test1.swap.mwc.mw:18335"),
                 ].iter().cloned()
                     .map(|i| (i.0.to_string(), i.1.to_string()) )
                     .collect::<BTreeMap<String,String>>()

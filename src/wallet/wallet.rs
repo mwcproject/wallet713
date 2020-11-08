@@ -621,6 +621,7 @@ impl Wallet {
         buyer_communication_address: String,
         electrum_node_uri1: Option<String>,
         electrum_node_uri2: Option<String>,
+        dry_run: bool,
     ) -> Result<String, Error> {
         api::swap_start(self.get_wallet_instance()?,
                         mwc_amount,
@@ -636,7 +637,8 @@ impl Wallet {
                         buyer_communication_method,
                         buyer_communication_address,
                         electrum_node_uri1,
-                        electrum_node_uri2)
+                        electrum_node_uri2,
+                        dry_run)
     }
 
     pub fn get_provable_address(
