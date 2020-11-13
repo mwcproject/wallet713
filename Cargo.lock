@@ -175,7 +175,7 @@ checksum = "3441f0f7b02788e948e47f457ca01f1d7e6d92c693bc132c22b087d3141c03ff"
 [[package]]
 name = "bch"
 version = "0.2.0"
-source = "git+https://github.com/mwcproject/rust-bch?branch=master#359373be6156c561e039ca361a3ac4241f28e231"
+source = "git+https://github.com/mwcproject/rust-bch?branch=master#4f4e9e2237bfaa9f9ab1a499ec107d1d2465bfd8"
 dependencies = [
  "byteorder",
  "digest 0.7.6",
@@ -189,7 +189,7 @@ dependencies = [
  "ripemd160",
  "rust-base58",
  "rust-crypto",
- "secp256k1 0.12.0",
+ "secp256k1 0.19.0",
  "snowflake",
 ]
 
@@ -1538,7 +1538,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#a51fe6b853dd5d484c647e2abea1560fb4bda7b8"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#5d57dc906391f144a1942039f8da9192dab8434c"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1563,7 +1563,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#a51fe6b853dd5d484c647e2abea1560fb4bda7b8"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#5d57dc906391f144a1942039f8da9192dab8434c"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -1578,7 +1578,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#a51fe6b853dd5d484c647e2abea1560fb4bda7b8"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#5d57dc906391f144a1942039f8da9192dab8434c"
 dependencies = [
  "chrono",
  "colored",
@@ -1609,7 +1609,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#a51fe6b853dd5d484c647e2abea1560fb4bda7b8"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#5d57dc906391f144a1942039f8da9192dab8434c"
 dependencies = [
  "bitcoin",
  "blake2-rfc",
@@ -1654,7 +1654,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#a51fe6b853dd5d484c647e2abea1560fb4bda7b8"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#5d57dc906391f144a1942039f8da9192dab8434c"
 dependencies = [
  "base64 0.9.3",
  "bch",
@@ -1700,7 +1700,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#a51fe6b853dd5d484c647e2abea1560fb4bda7b8"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#5d57dc906391f144a1942039f8da9192dab8434c"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
@@ -3508,12 +3508,20 @@ dependencies = [
 
 [[package]]
 name = "secp256k1"
-version = "0.12.0"
+version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4070f3906e65249228094cf97b04a90799fba04468190bbbcfa812309cf86e32"
+checksum = "c6179428c22c73ac0fbb7b5579a56353ce78ba29759b3b8575183336ea74cdfb"
+dependencies = [
+ "secp256k1-sys",
+]
+
+[[package]]
+name = "secp256k1-sys"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11553d210db090930f4432bea123b31f70bbf693ace14504ea2a35e796c28dd2"
 dependencies = [
  "cc",
- "libc",
 ]
 
 [[package]]
