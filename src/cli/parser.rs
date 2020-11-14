@@ -521,6 +521,9 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("-a, --secondary_address=<address> 'Secondary currency withdrawal address'")
                     )
                     .arg(
+                        Arg::from_usage("[secondary_fee] --secondary_fee=<fee> 'Tx fee for secondary currency (satoshi per byte)'")
+                    )
+                    .arg(
                         Arg::from_usage("[who_lock_first] -l, --who_lock_first=<buyer|seller> 'Coins locking order. Who locks first?  Default: seller'")
                     )
                     .arg(

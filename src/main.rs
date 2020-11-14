@@ -2041,12 +2041,21 @@ fn do_command(
 
             let dry_run = args.is_present("dry_run");
 
+            let secondary_fee = match args.value_of("secondary_fee") {
+                Some(fee_str) => Some(
+                    fee_str.parse::<f32>()
+                        .map_err(|e| ErrorKind::ArgumentError(format!("Invalid secondary_fee value, {}", e)))?
+                ),
+                None => None,
+            };
+
             let w = wallet.lock();
             let swap_id = w.swap_start(
                 mwc_amount,
                 secondary_currency.to_string(),
                 secondary_amount.to_string(),
                 secondary_address.to_string(),
+                secondary_fee,
                 who_lock_first=="seller",
                 Some(confirmations),
                 mwc_confirmations,
