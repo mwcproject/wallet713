@@ -1538,7 +1538,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#881788461dc04f2f192a39f7faaec26caedf6732"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#d40952600d80cf05d5c55c6ba91268bc7b43d91e"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1563,7 +1563,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#881788461dc04f2f192a39f7faaec26caedf6732"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#d40952600d80cf05d5c55c6ba91268bc7b43d91e"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -1578,7 +1578,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#881788461dc04f2f192a39f7faaec26caedf6732"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#d40952600d80cf05d5c55c6ba91268bc7b43d91e"
 dependencies = [
  "chrono",
  "colored",
@@ -1609,7 +1609,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#881788461dc04f2f192a39f7faaec26caedf6732"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#d40952600d80cf05d5c55c6ba91268bc7b43d91e"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1653,7 +1653,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#881788461dc04f2f192a39f7faaec26caedf6732"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#d40952600d80cf05d5c55c6ba91268bc7b43d91e"
 dependencies = [
  "base64 0.9.3",
  "bch",
@@ -1699,7 +1699,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#881788461dc04f2f192a39f7faaec26caedf6732"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#d40952600d80cf05d5c55c6ba91268bc7b43d91e"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
@@ -2332,7 +2332,7 @@ checksum = "0840c1c50fd55e521b247f949c241c9997709f23bd7f023b9762cd561e935656"
 dependencies = [
  "log",
  "mio",
- "miow 0.3.5",
+ "miow 0.3.6",
  "winapi 0.3.9",
 ]
 
@@ -2361,9 +2361,9 @@ dependencies = [
 
 [[package]]
 name = "miow"
-version = "0.3.5"
+version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07b88fb9795d4d36d62a012dfbf49a8f5cf12751f36d31a9dbe66d528e58979e"
+checksum = "5a33c1b55807fbed163481b5ba66db4b2fa6cde694a5027be10fb724206c5897"
 dependencies = [
  "socket2",
  "winapi 0.3.9",
