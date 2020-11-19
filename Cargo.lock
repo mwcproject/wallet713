@@ -401,9 +401,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.0.62"
+version = "1.0.63"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1770ced377336a88a67c473594ccc14eca6f4559217c34f64aac8f83d641b40"
+checksum = "ad9c6140b5a2c7db40ea56eb1821245e5362b44385c05b76288b1a599934ac87"
 
 [[package]]
 name = "cexpr"
@@ -1258,7 +1258,7 @@ dependencies = [
  "futures-sink",
  "futures-task",
  "memchr 2.3.4",
- "pin-project 1.0.1",
+ "pin-project 1.0.2",
  "pin-utils",
  "proc-macro-hack",
  "proc-macro-nested",
@@ -1538,7 +1538,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#d40952600d80cf05d5c55c6ba91268bc7b43d91e"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#fbcc1acca70b9d380bf3fcb12ad5d882da8573ad"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1563,7 +1563,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#d40952600d80cf05d5c55c6ba91268bc7b43d91e"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#fbcc1acca70b9d380bf3fcb12ad5d882da8573ad"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -1578,7 +1578,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#d40952600d80cf05d5c55c6ba91268bc7b43d91e"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#fbcc1acca70b9d380bf3fcb12ad5d882da8573ad"
 dependencies = [
  "chrono",
  "colored",
@@ -1609,7 +1609,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#d40952600d80cf05d5c55c6ba91268bc7b43d91e"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#fbcc1acca70b9d380bf3fcb12ad5d882da8573ad"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1653,7 +1653,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#d40952600d80cf05d5c55c6ba91268bc7b43d91e"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#fbcc1acca70b9d380bf3fcb12ad5d882da8573ad"
 dependencies = [
  "base64 0.9.3",
  "bch",
@@ -1680,6 +1680,7 @@ dependencies = [
  "lazy_static",
  "libc",
  "log",
+ "native-tls",
  "rand 0.6.5",
  "regex",
  "ring",
@@ -1699,7 +1700,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "3.2.2"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#d40952600d80cf05d5c55c6ba91268bc7b43d91e"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#fbcc1acca70b9d380bf3fcb12ad5d882da8573ad"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
@@ -1906,7 +1907,7 @@ dependencies = [
  "httparse",
  "httpdate",
  "itoa",
- "pin-project 1.0.1",
+ "pin-project 1.0.2",
  "socket2",
  "tokio 0.2.23",
  "tower-service",
@@ -2804,7 +2805,7 @@ dependencies = [
  "cloudabi",
  "libc",
  "redox_syscall",
- "smallvec 1.4.2",
+ "smallvec 1.5.0",
  "winapi 0.3.9",
 ]
 
@@ -2859,11 +2860,11 @@ dependencies = [
 
 [[package]]
 name = "pin-project"
-version = "1.0.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ee41d838744f60d959d7074e3afb6b35c7456d0f61cad38a24e35e6553f73841"
+checksum = "9ccc2237c2c489783abd8c4c80e5450fc0e98644555b1364da68cc29aa151ca7"
 dependencies = [
- "pin-project-internal 1.0.1",
+ "pin-project-internal 1.0.2",
 ]
 
 [[package]]
@@ -2879,9 +2880,9 @@ dependencies = [
 
 [[package]]
 name = "pin-project-internal"
-version = "1.0.1"
+version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81a4ffa594b66bff340084d4081df649a7dc049ac8d7fc458d8e628bfbbb2f86"
+checksum = "f8e8d2bf0b23038a4424865103a4df472855692821aab4e4f5c3312d461d9e5f"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.7",
@@ -3290,9 +3291,9 @@ dependencies = [
 
 [[package]]
 name = "ring"
-version = "0.16.15"
+version = "0.16.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "952cd6b98c85bbc30efa1ba5783b8abf12fec8b3287ffa52605b9432313e34e4"
+checksum = "b72b84d47e8ec5a4f2872e8262b8f8256c5be1c938a7d6d3a867a3ba8f722f74"
 dependencies = [
  "cc",
  "libc",
@@ -3763,9 +3764,9 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "1.4.2"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fbee7696b84bbf3d89a1c2eccff0850e3047ed46bfcd2e92c29a2d074d57e252"
+checksum = "7acad6f34eb9e8a259d3283d1e8c1d34d7415943d4895f65cc73813c7396fc85"
 
 [[package]]
 name = "snowflake"
@@ -3940,9 +3941,9 @@ dependencies = [
 
 [[package]]
 name = "termcolor"
-version = "1.1.0"
+version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb6bfa289a4d7c5766392812c0a1f4c1ba45afa1ad47803c11e1f407d846d75f"
+checksum = "bf11676eb135389f21fcda654382c4859bbfc1d2f36e4425a2f829bb41b1e20e"
 dependencies = [
  "winapi-util",
 ]
@@ -4438,9 +4439,9 @@ dependencies = [
 
 [[package]]
 name = "unicode-normalization"
-version = "0.1.14"
+version = "0.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b7f98e67a4d84f730d343392f9bfff7d21e3fca562b9cb7a43b768350beeddc6"
+checksum = "a13e63ab62dbe32aeee58d1c5408d35c36c392bba5d9d3142287219721afe606"
 dependencies = [
  "tinyvec",
 ]
