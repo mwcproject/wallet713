@@ -1,10 +1,10 @@
 steps:
-  - script: 'cargo test --all'
+  - script: '.ci\win64_cargo.bat  test --all'
     displayName: Cargo Test All
-    condition:  and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/'), eq(variables['CI_JOB'], 'release' ))
-  - script: 'cargo build --release'
+  - script: '.ci\win64_cargo.bat clean'
+    displayName: Cargo Clean
+  - script: '.ci\win64_cargo.bat build --release'
     displayName: Build Release
-    condition:  and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/'), eq(variables['CI_JOB'], 'release' ))
   - script: |
       SET MY_TAG=$(Build.SourceBranch)
       SET MY_TAG=%MY_TAG:~10%
@@ -29,10 +29,10 @@ steps:
       archiveType: 'zip'
       archiveFile: '$(Build.ArtifactStagingDirectory)\mwc713-$(build.my_tag)-$(build.platform).zip'
   - script: |
-      powershell -Command "get-filehash -algorithm sha256 $(Build.ArtifactStagingDirectory)\mwc713-$(build.my_tag)-$(build.platform).zip | Format-List |  Out-String | ForEach-Object { $_.Trim() } > $(Build.ArtifactStagingDirectory)\mwc713-$(build.my_tag)-$(build.platform)-sha256sum.txt"
+      powershell -Command "cd $(Build.ArtifactStagingDirectory); get-filehash -algorithm sha256 mwc713-$(build.my_tag)-$(build.platform).zip | Format-List |  Out-String | ForEach-Object { $_.Trim() } > mwc713-$(build.my_tag)-$(build.platform)-sha256sum.txt"
     displayName: Create Checksum
     condition:  and(succeeded(), contains(variables['Build.SourceBranch'], 'refs/tags/'), eq(variables['CI_JOB'], 'release' ))
-  - task: GithubRelease@1
+  - task: GithubRelease@0
     displayName: Github release
     condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'), eq(variables['CI_JOB'], 'release' ))
     inputs:
@@ -44,5 +44,6 @@ steps:
       assets: |
         $(Build.ArtifactStagingDirectory)\mwc713-$(build.my_tag)-$(build.platform).zip
         $(Build.ArtifactStagingDirectory)\mwc713-$(build.my_tag)-$(build.platform)-sha256sum.txt
+      title: '$(build.my_tag)'
       assetUploadMode: 'replace'
       addChangeLog: true

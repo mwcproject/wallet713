@@ -24,43 +24,45 @@ pr:
     include: ['*']
 
 variables:
-  RUST_BACKTRACE: 'FULL'
-  RUST_FLAGS: '-C debug-assertions'
+  RUST_BACKTRACE: '1'
+  RUSTFLAGS: '-C debug-assertions'
 
 jobs:
 - job: linux
+  timeoutInMinutes: 120
   pool:
-    vmImage: ubuntu-16.04
+    vmImage: ubuntu-latest
   strategy:
     matrix:
       release:
         CI_JOB: release
         PLATFORM: linux-amd64
   steps:
-    - template: '.ci/install.yml'
-    - template: '.ci/test.yml'
     - template: '.ci/release.yml'
 - job: macos
+  timeoutInMinutes: 120
   pool:
-    vmImage: macos-10.14
+    vmImage: macos-latest
   strategy:
     matrix:
       release:
         CI_JOB: release
         PLATFORM: macos
   steps:
-    - template: '.ci/install.yml'
-    - template: '.ci/test.yml'
+    - script: |
+        brew uninstall llvm
+      displayName: macOS Uninstall LLVM
     - template: '.ci/release.yml'
 - job: windows
   pool:
-    vmImage: vs2017-win2016
+    vmImage: windows-latest
   strategy:
     matrix:
       release:
         CI_JOB: release
         PLATFORM: win-x64
   steps:
-    - template: '.ci/install.yml'
-    - template: '.ci/test.yml'
+    - script: |
+        choco install -y llvm
+      displayName: Windows Install LLVM
     - template: '.ci/windows-release.yml'
