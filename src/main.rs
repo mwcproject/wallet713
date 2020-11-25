@@ -2094,8 +2094,8 @@ fn do_command(
             // Flag if want to print the data in Json format
             let json_format = args.is_present("json_format");
 
-            let electrum_node_uri1 = args.value_of("electrum_uri1").map(|s| String::from(s));
-            let electrum_node_uri2 = args.value_of("electrum_uri1").map(|s| String::from(s));
+            let electrum_node_uri1 = args.value_of("electrum_uri1").map(|s| String::from(s)).filter(|s| !s.is_empty());
+            let electrum_node_uri2 = args.value_of("electrum_uri1").map(|s| String::from(s)).filter(|s| !s.is_empty());
 
             let subcommand = if args.is_present("list") {
                 if args.is_present("check") {
