@@ -620,6 +620,9 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("[electrum_uri2] --electrum_uri2=<uri> 'secondary private ElectrumX node URI. If never setup, community node will be used'")
                     )
+                    .arg(
+                        Arg::from_usage("[wait_for_backup1] --wait_for_backup1 'stop before locking steps, so the first backup can be enforced'")
+                    )
             )
     }
 }

@@ -2143,6 +2143,7 @@ fn do_command(
                 json_format,
                 electrum_node_uri1,
                 electrum_node_uri2,
+                wait_for_backup1: args.is_present("wait_for_backup1"),
             };
 
             grin_wallet_controller::command::swap(
