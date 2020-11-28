@@ -294,6 +294,12 @@ fn start_tor_listener(
     wallet: Arc<Mutex<Wallet>>,
     tor_running: &mut bool,
 ) -> Result<std::sync::Arc<std::sync::Mutex<u32>>, Error> {
+
+    // Let's check if foreign API is running (was able to start)
+    if !grin_wallet_controller::controller::is_foreign_api_running() {
+        return Err(ErrorKind::GenericError("Foreign API is not running. Unable to start tor listener.".to_string()).into());
+    }
+
     let keychain_mask = Arc::new(Mutex::new(None));
 
     let addr = config.foreign_api_address();
@@ -308,30 +314,29 @@ fn start_tor_listener(
     thread::Builder::new()
             .name("tor_listener".to_string())
             .spawn(move || {
-
                 let wallet_data_dir = config.get_wallet_data_dir();
                 let winst = wallet.lock().get_wallet_instance().unwrap();
-                let onion_address = grin_wallet_controller::controller::get_tor_address(winst.clone(), keychain_mask.clone() ).unwrap();
+                let onion_address = grin_wallet_controller::controller::get_tor_address(winst.clone(), keychain_mask.clone()).unwrap();
                 let p = grin_wallet_controller::controller::init_tor_listener(winst.clone(),
-                               keychain_mask.clone(), &addr, Some(&wallet_data_dir.clone()) );
+                                                                              keychain_mask.clone(), &addr, Some(&wallet_data_dir.clone()));
 
-		let sender = HttpDataSender::new("https://", None, Some(wallet_data_dir.clone()), false);
-		let mut sender = sender.unwrap();
-		let s = sender.start_socks(&config.get_socks_addr());
+                let sender = HttpDataSender::new("https://", None, Some(wallet_data_dir.clone()), false);
+                let mut sender = sender.unwrap();
+                let s = sender.start_socks(&config.get_socks_addr());
 
-		match s {
-			Err(s) => {
-				cli_message!("INFO: Tor listener failed to start. HTTP listener must be enabled. {}", s);
-			},
-			_ => { }
-		}
+                match s {
+                    Err(s) => {
+                        cli_message!("INFO: Tor listener failed to start. HTTP listener must be enabled. {}", s);
+                    },
+                    _ => {}
+                }
 
                 let _ = match p {
-                     Ok(p) => {
-			let url_str = &format!("http://{}.onion", onion_address);
+                    Ok(p) => {
+                        let url_str = &format!("http://{}.onion", onion_address);
                         cli_message!("{}", &format!("Tor listener started for [{}]", url_str));
                         input.send(true).unwrap();
-			loop {
+                        loop {
                             std::thread::sleep(std::time::Duration::from_millis(30));
                             let val = mutex_clone.lock().unwrap();
                             if *val == 0 { break; }
@@ -346,7 +351,6 @@ fn start_tor_listener(
                     },
                 };
                 cli_message!("Tor listener has stopped.");
-
             })?;
 
     let resp = output.recv();
