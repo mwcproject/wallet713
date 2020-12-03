@@ -3,7 +3,7 @@ steps:
     displayName: Cargo Test All
   - script: './build_static_linux.sh'
     displayName: Build Linux Release
-    condition: and(succeeded(), eq( variables['Agent.OS'], 'Windows_NT' ))
+    condition: and(succeeded(), eq( variables['Agent.OS'], 'Linux' ))
   - script: './build_static.sh'
     displayName: Build MacOS Release
     condition: and(succeeded(), eq( variables['Agent.OS'], 'Darwin' ))
