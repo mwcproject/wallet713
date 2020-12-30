@@ -47,7 +47,9 @@ extern crate grin_wallet_controller;
 extern crate grin_wallet_util;
 extern crate grin_wallet_config;
 
-use grin_wallet_libwallet::{SlateVersion, VersionedSlate};
+extern crate ed25519_dalek;
+
+use grin_wallet_libwallet::SlatePurpose;
 use std::sync::mpsc::Receiver;
 use std::sync::mpsc::Sender;
 use grin_wallet_impls::adapters::HttpDataSender;
@@ -71,7 +73,7 @@ use clap::{App, Arg, ArgMatches, SubCommand};
 use colored::*;
 use grin_core::core;
 use grin_core::libtx::tx_fee;
-use grin_core::global::{set_mining_mode, ChainTypes};
+use grin_core::global::{init_global_chain_type, ChainTypes};
 #[cfg(not(target_os = "android"))]
 use rustyline::completion::{Completer, FilenameCompleter, Pair};
 #[cfg(not(target_os = "android"))]
@@ -259,7 +261,7 @@ fn welcome(args: &ArgMatches) -> Result<Wallet713Config, Error> {
     };
 
     let config = do_config(args, &chain, true, None, args.value_of("config-path"))?;
-    set_mining_mode(config.chain.clone());
+    init_global_chain_type(config.chain.clone());
 
     Ok(config)
 }
@@ -1273,7 +1275,7 @@ fn do_command(
 		let args = matches.subcommand_matches("encryptslate").unwrap();
  		let to = args.value_of("to");
 		let slate = args.value_of("slate").unwrap();
-		let slate = Slate::deserialize_upgrade(&slate)?;
+		let slate = Slate::deserialize_upgrade_plain(&slate)?;
 
 		if to.is_none() {
 			return Err(ErrorKind::ToNotSpecified("".to_string()).into());
@@ -1371,13 +1373,30 @@ fn do_command(
         Some("receive") => {
             let args = matches.subcommand_matches("receive").unwrap();
             let key_id = args.value_of("key_id");
-            let input = args.value_of("file").unwrap();
+            let input = args.value_of("file");
+            let slate_content = args.value_of("content");
             let rfile_param = args.value_of("recv_file");
-            let mut file = File::open(input.replace("~", &home_dir))?;
-            let mut slate = String::new();
-            file.read_to_string(&mut slate)?;
-            let mut slate = Slate::deserialize_upgrade(&slate)?;
-            let mut file = File::create(&format!("{}.response", input.replace("~", &home_dir)))?;
+            let w = wallet.lock();
+
+            let slate = if let Some(slate_content) = slate_content {
+                slate_content.to_string()
+            }
+            else if let Some(input) = input.clone() {
+                let mut file = File::open(input.replace("~", &home_dir))?;
+                let mut slate = String::new();
+                file.read_to_string(&mut slate)?;
+                slate
+            }
+            else {
+                return Err(ErrorKind::ArgumentError("Please difine '--content' of '--file' argument".to_string()).into());
+            };
+
+            let (mut slate, content, sender) = w.deserialize_slate( &slate )?;
+            if let Some(content) = &content {
+                if *content != SlatePurpose::SendInitial {
+                    return Err(ErrorKind::GenericError(format!("The slate doesn't contain initial send data, the slate content is {:?}", content)).into());
+                }
+            }
 
             let output_amounts = if rfile_param.is_some() {
                 let mut nvec = Vec::new();
@@ -1405,33 +1424,42 @@ fn do_command(
                 None
             };
 
-            let w = wallet.lock();
+            let (file, source_name) = if let Some(input) = input {
+                let source_name = input.to_string();
+                ( Some(File::create(&format!("{}.response", input.replace("~", &home_dir)))?), source_name )
+            }
+            else {
+                ( None, "slatepack".to_string() )
+            };
+
+            let address = if let Some(sender) = &sender {
+                ProvableAddress::from_tor_pub_key(sender).public_key
+            }
+            else {
+                "file".to_string()
+            };
+
             // Processing with a new receive account
-            w.process_sender_initiated_slate(Some(String::from("file")), &mut slate, key_id, output_amounts, None )?;
+            w.process_sender_initiated_slate(Some(address), &mut slate, key_id, output_amounts, None )?;
             let message = &slate.participant_data[0].message;
             let amount = core::amount_to_hr_string(slate.amount, false);
             if message.is_some() {
-                cli_message!("{} received. amount = [{}], message = [{:?}]", input, amount, message.clone().unwrap());
+                cli_message!("{} received. amount = [{}], message = [{:?}]", source_name, amount, message.clone().unwrap());
             }
             else {
-                cli_message!("{} received. amount = [{}]", input, amount);
+                cli_message!("{} received. amount = [{}]", source_name, amount);
             }
 
-            let out_slate = {
-                if slate.payment_proof.is_some() || slate.ttl_cutoff_height.is_some() {
-                    warn!("Transaction contains features that require mwc-wallet 3.0.0 or later");
-                    warn!("Please ensure the other party is running mwc-wallet v3.0.0 or later before sending");
-                    VersionedSlate::into_version(slate.clone(), SlateVersion::V3)
-                } else {
-                    let mut s = slate.clone();
-                    s.version_info.version = 2;
-                    s.version_info.orig_version = 2;
-                    VersionedSlate::into_version(s, SlateVersion::V2)
-                }
-           };
+            let slate_str = w.serialize_slate(&slate,
+                SlatePurpose::SendResponse, sender, content.is_some())?;
 
-            file.write_all(serde_json::to_string(&out_slate)?.as_bytes())?;
-            cli_message!("{}.response created successfully.", input);
+            if let Some(mut file) = file {
+                file.write_all(slate_str.as_bytes())?;
+                cli_message!("{}.response created successfully.", source_name);
+            }
+            else {
+                cli_message!("Slate: {}", slate_str);
+            }
         }
         Some("showpubkeys") => {
             let args = matches.subcommand_matches("showpubkeys").unwrap();
@@ -1439,7 +1467,7 @@ fn do_command(
             let mut file = File::open(input.replace("~", &home_dir))?;
             let mut slate = String::new();
             file.read_to_string(&mut slate)?;
-            let slate = Slate::deserialize_upgrade(&slate)?;
+            let slate = Slate::deserialize_upgrade_plain(&slate)?;
             for p in slate.participant_data {
                 println!("pubkey[{}]={:?}", p.id, p.public_blind_excess);
             }
@@ -1447,16 +1475,43 @@ fn do_command(
         Some("finalize") => {
             let args = matches.subcommand_matches("finalize").unwrap();
             let fluff = args.is_present("fluff");
-            let input = args.value_of("file").unwrap();
-            let mut file = File::open(input.replace("~", &home_dir))?;
-            let mut slate = String::new();
-            file.read_to_string(&mut slate)?;
-            let mut slate = Slate::deserialize_upgrade(&slate)?;
-            if &slate.participant_data.len() -1 ==0 {
-                cli_message!("Not a valid response file!");
+            let input = args.value_of("file");
+            let slate_content = args.value_of("content");
+
+            let source_name;
+
+            let slate = if let Some(slate_content) = slate_content {
+                source_name = "slatepack".to_string();
+                slate_content.to_string()
+            }
+            else if let Some(input) = input.clone() {
+                source_name = input.to_string();
+                let mut file = File::open(input.replace("~", &home_dir))?;
+                let mut slate = String::new();
+                file.read_to_string(&mut slate)?;
+                slate
+            }
+            else {
+                return Err(ErrorKind::ArgumentError("Please difine '--content' of '--file' argument".to_string()).into());
+            };
+
+            let (mut slate, content, _sender) = {
+                let w = wallet.lock();
+                 w.deserialize_slate(&slate)?
+            };
+
+            if let Some(content) = content {
+                if content != SlatePurpose::SendResponse && content != SlatePurpose::FullSlate {
+                    cli_message!("Error: Not a valid response slate!");
+                    return Ok(())
+                }
+            }
+
+            if slate.participant_data.len()<2 && !slate.compact_slate {
+                cli_message!("Error: Not a valid response slate!");
             } else {
                 wallet.lock().finalize_post_slate(&mut slate, fluff)?;
-                cli_message!("{} finalized.", input);
+                cli_message!("{} finalized transaction {}", source_name, slate.id);
             }
         }
         Some("submit") => {
@@ -1465,8 +1520,9 @@ fn do_command(
             let mut file = File::open(input.replace("~", &home_dir))?;
             let mut txn_file = String::new();
             file.read_to_string(&mut txn_file)?;
-            let tx_bin = from_hex(&txn_file)?;
-            let mut txn = ser::deserialize::<Transaction>(&mut &tx_bin[..], ser::ProtocolVersion(1) )?;
+            let tx_bin = from_hex(&txn_file)
+                .map_err(|_s| ErrorKind::GenericError(format!("Unable to parse the content of the file {}", input)))?;
+            let mut txn : Transaction = ser::deserialize(&mut &tx_bin[..], ser::ProtocolVersion(1) )?;
             let fluff = args.is_present("fluff");
             wallet.lock().submit(&mut txn, fluff)?;
         }
@@ -1560,6 +1616,21 @@ fn do_command(
                 false => core::amount_from_hr_string(amount).map_err(|_| ErrorKind::InvalidAmount(amount.to_string()))?,
             };
 
+            let slatepack_recipient_param = args.value_of("slatepack_recipient");
+            // Let's convert to dalek PK
+            let (slatepack_recipient_dalek_pk, slatepack_recipient_address ) = match slatepack_recipient_param {
+                Some(addr) => {
+                    let recipient_address = proofaddress::ProvableAddress::from_str(addr)?;
+                    let recipient_pk = recipient_address.tor_public_key()?;
+                    (Some(recipient_pk), Some(recipient_address))
+                }
+                None => (None, None),
+            };
+
+            let slatepack_format = args.is_present("slatepack");
+
+            let lock_later : Option<bool> = Some(args.is_present("lock_later"));
+
             // Preparign for sync update progress printing
             let running = Arc::new( AtomicBool::new(true) );
             let (tx, rx) = mpsc::channel();
@@ -1577,7 +1648,7 @@ fn do_command(
                     address = Some(String::from("file_proof"));
                 }
 
-                let slate = w.initiate_send_tx(
+                let slate = w.init_send_tx(
                     address.clone(),
                     amount,
                     confirmations,
@@ -1591,6 +1662,8 @@ fn do_command(
                     &status_send_channel,
                     ttl_blocks,
                     false,
+                    slatepack_recipient_address,
+                    lock_later,
                 );
 
 
@@ -1601,20 +1674,21 @@ fn do_command(
                         return Err(error);} //delete the temp file.
                 };
 
-                let out_slate = {
-                        if slate.payment_proof.is_some() || slate.ttl_cutoff_height.is_some() {
-                                warn!("Transaction contains features that require mwc-wallet 3.0.0 or later");
-                                warn!("Please ensure the other party is running mwc-wallet v3.0.0 or later before sending");
-                                VersionedSlate::into_version(slate.clone(), SlateVersion::V3)
-                        } else {
-                                let mut s = slate.clone();
-                                s.version_info.version = 2;
-                                s.version_info.orig_version = 2;
-                                VersionedSlate::into_version(s, SlateVersion::V2)
-                        }
-                };
+                if slatepack_recipient_dalek_pk.is_some() || slate.compact_slate {
+                    warn!("Slatepack and lock later requires mwc-wallet 4.0.0 or later");
+                    warn!("Please ensure the other party is running mwc-wallet v4.0.0 or later before sending");
+                }
+                else if slate.payment_proof.is_some() || slate.ttl_cutoff_height.is_some() {
+                    warn!("Transaction contains features that require mwc-wallet 3.0.0 or later");
+                    warn!("Please ensure the other party is running mwc-wallet v3.0.0 or later before sending");
+                }
 
-                file.write_all(serde_json::to_string(&out_slate)?.as_bytes())?;
+                let slate_str = w.serialize_slate(&slate,
+                                                  SlatePurpose::SendInitial,
+                                                  slatepack_recipient_dalek_pk,
+                                                  slatepack_format)?;
+
+                file.write_all(slate_str.as_bytes())?;
                 //copy the .bak file to the file name without .bak, and delete the .bak file
                 fs::copy(&temp_file_name,input)?;
                 fs::remove_file(temp_file_name)?;
@@ -1632,88 +1706,143 @@ fn do_command(
 
                 return Ok(());
             }
+            else if let Some(to) = to {
+                let mut to = to.to_string();
+                let mut display_to = None;
 
-            let mut to = to.unwrap().to_string();
-            let mut display_to = None;
-
-            if to.starts_with("@") {
-                let contact = address_book.lock().get_contact(&to[1..])?;
-                to = contact.get_address().to_string();
-                display_to = Some(contact.get_name().to_string());
-            }
-            // try parse as a general address and fallback to mwcmqs address
-            let address = Address::parse(&to);
-            let address: Result<Box<dyn Address>, Error> = match address {
-                Ok(address) => Ok(address),
-                Err(e) => {
-                    Ok(Box::new(MWCMQSAddress::from_str(&to).map_err(|_| e)?) as Box<dyn Address>)
+                if to.starts_with("@") {
+                    let contact = address_book.lock().get_contact(&to[1..])?;
+                    to = contact.get_address().to_string();
+                    display_to = Some(contact.get_name().to_string());
                 }
-            };
+                // try parse as a general address and fallback to mwcmqs address
+                let address = Address::parse(&to);
+                let address: Result<Box<dyn Address>, Error> = match address {
+                    Ok(address) => Ok(address),
+                    Err(e) => {
+                        Ok(Box::new(MWCMQSAddress::from_str(&to).map_err(|_| e)?) as Box<dyn Address>)
+                    }
+                };
 
-            let to = address?;
-            if display_to.is_none() {	
-                display_to = Some(to.get_stripped());	
-            }
+                let to = address?;
+                if display_to.is_none() {
+                    display_to = Some(to.get_stripped());
+                }
 
-            let w = wallet.lock();
-            let address = Some(to.to_string());
-            let mut slate = w.initiate_send_tx(
-                address.clone(),
-                amount,
-                confirmations,
-                strategy,
-                change_outputs,
-                500,
-                message,
-                output_list,
-                version,
-                1,
-                &status_send_channel,
-                ttl_blocks,
-                do_proof,
-            )?;
+                let w = wallet.lock();
+                let address = Some(to.to_string());
+                let mut slate = w.init_send_tx(
+                    address.clone(),
+                    amount,
+                    confirmations,
+                    strategy,
+                    change_outputs,
+                    500,
+                    message,
+                    output_list,
+                    version,
+                    1,
+                    &status_send_channel,
+                    ttl_blocks,
+                    do_proof,
+                    slatepack_recipient_address,
+                    lock_later,
+                )?;
 
-            // Stopping updater, sync should be done by now
-            running.store(false, Ordering::Relaxed);
-            let _ = updater.join();
+                // Stopping updater, sync should be done by now
+                running.store(false, Ordering::Relaxed);
+                let _ = updater.join();
 
-            let method = match to.address_type() {
-                AddressType::MWCMQS => "mwcmqs",
-                AddressType::Https => "http",
-            };
+                let method = match to.address_type() {
+                    AddressType::MWCMQS => "mwcmqs",
+                    AddressType::Https => "http",
+                };
 
-            let original_slate = slate.clone();
-
-            let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &apisecret, Some(config.get_tor_config()))?;
-            slate = sender.send_tx(&slate)?;
-            //check the expected proof address
-            //compare the expected listening wallet proof address  to the value the returned slate. If they don't match, return error
-            if let Some(expected_addr) = expected_proof_address {
-                if let Some(ref p) = slate.payment_proof {
-                    let receiver_a = p.clone().receiver_address;
-                    if receiver_a.public_key.len() ==56 &&  receiver_a.public_key!= expected_addr {
-                        return Err(ErrorKind::ProofAddresMismatch(receiver_a.public_key, expected_addr.to_string()).into());
+                let original_slate = slate.clone();
+                let (dalek_secret, _dalek_pk) = w.get_slatepack_keys()?;
+                let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &apisecret, Some(config.get_tor_config()))?;
+                slate = sender.send_tx(&slate,
+                                       SlatePurpose::SendInitial,
+                                       &dalek_secret,
+                                       slatepack_recipient_dalek_pk
+                )?;
+                //check the expected proof address
+                //compare the expected listening wallet proof address  to the value the returned slate. If they don't match, return error
+                if let Some(expected_addr) = expected_proof_address {
+                    if let Some(ref p) = slate.payment_proof {
+                        let receiver_a = p.clone().receiver_address;
+                        if receiver_a.public_key.len() == 56 && receiver_a.public_key != expected_addr {
+                            return Err(ErrorKind::ProofAddresMismatch(receiver_a.public_key, expected_addr.to_string()).into());
+                        }
                     }
                 }
-            }
 
 
-            // Sender can change that, restoring original value
-            slate.ttl_cutoff_height = original_slate.ttl_cutoff_height.clone();
-            // Checking is sender didn't do any harm to slate
-            Slate::compare_slates_send( &original_slate, &slate)?;
+                // Sender can change that, restoring original value
+                slate.ttl_cutoff_height = original_slate.ttl_cutoff_height.clone();
+                // Checking is sender didn't do any harm to slate
+                Slate::compare_slates_send(&original_slate, &slate)?;
 
-            w.tx_lock_outputs(&slate, address,0)?;
-            w.finalize_post_slate( &mut slate, fluff)?;
+                w.tx_lock_outputs(&slate, address, 0)?;
+                w.finalize_post_slate(&mut slate, fluff)?;
 
-            let ret_id = w.get_id(slate.id)?;
-            cli_message!(	
+                let ret_id = w.get_id(slate.id)?;
+                cli_message!(
                     "Transaction [{}] for [{}] MWCs sent successfully to [{}]",	
-                slate.id.to_string(),	
-                core::amount_to_hr_string(slate.amount, false),	
-                display_to.unwrap()	
-            );
-            println!("txid={:?}", ret_id);
+                    slate.id.to_string(),
+                    core::amount_to_hr_string(slate.amount, false),
+                    display_to.unwrap()
+                );
+                println!("txid={:?}", ret_id);
+            }
+            else {
+                // it must be a slatepack. May be not encrypted
+                if slatepack_recipient_dalek_pk.is_none() {
+                    return Err(ErrorKind::ArgumentError("None of 'send' destinations are defined".to_string()).into());
+                }
+
+                let w = wallet.lock();
+
+                let address = slatepack_recipient_param.map(|s| s.to_string());
+
+                // it must be just a slatepack without file or destination
+                let slate = w.init_send_tx(
+                    address.clone(),
+                    amount,
+                    confirmations,
+                    strategy,
+                    change_outputs,
+                    500,
+                    message,
+                    output_list,
+                    version,
+                    routputs,
+                    &status_send_channel,
+                    ttl_blocks,
+                    false,
+                    slatepack_recipient_address,
+                    lock_later,
+                )?;
+
+                let slate_str = w.serialize_slate(&slate,
+                                                  SlatePurpose::SendInitial,
+                                                  slatepack_recipient_dalek_pk,
+                                                  true)?; // must be a latepack
+
+                // Still colling, lock_later should handle that...
+                w.tx_lock_outputs(
+                    &slate,
+                    address,
+                    0)?;
+
+                cli_message!("Slatepack: {}", slate_str);
+
+                // Stopping updater, sync should be done by now
+                running.store(false, Ordering::Relaxed);
+                let _ = updater.join();
+
+                return Ok(());
+            }
         }
         Some("invoice") => {
             let args = matches.subcommand_matches("invoice").unwrap();
@@ -1725,6 +1854,17 @@ fn do_command(
             let amount = core::amount_from_hr_string(amount)
                 .map_err(|_| ErrorKind::InvalidAmount(amount.to_string()))?;
             let fluff = args.is_present("fluff");
+
+            let slatepack_recipient_param = args.value_of("slatepack_recipient");
+            // Let's convert to dalek PK
+            let (slatepack_recipient_dalek_pk, slatepack_recipient_address ) = match slatepack_recipient_param {
+                Some(addr) => {
+                    let recipient_address = proofaddress::ProvableAddress::from_str(addr)?;
+                    let recipient_pk = recipient_address.tor_public_key()?;
+                    (Some(recipient_pk), Some(recipient_address))
+                }
+                None => (None, None),
+            };
 
             let mut to = to.to_string();
             let mut display_to = None;
@@ -1748,17 +1888,23 @@ fn do_command(
                 display_to = Some(to.get_stripped());
             }
 
-            let mut slate = wallet.lock().initiate_receive_tx(Some(to.to_string()) ,amount, outputs)?;
+            let mut slate = wallet.lock().initiate_receive_tx(Some(to.to_string()) ,amount, outputs, slatepack_recipient_address)?;
 
             let method = match to.address_type() {
                 AddressType::MWCMQS => "mwcmqs",
                 AddressType::Https => return Err(ErrorKind::HttpRequest(format!("Invoice doesn't support address type: {:?}", to.address_type())).into()),
             };
 
+            let w = wallet.lock();
+
             // Invoices supported by MQS  only. HTTP based transport works differently, no invoice processing on them.
             let original_slate = slate.clone();
+            let (dalek_secret, _dalek_pk) = w.get_slatepack_keys()?;
             let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &None, None)?;
-            slate = sender.send_tx(&slate)?;
+            slate = sender.send_tx(&slate,
+                                  SlatePurpose::InvoiceInitial,
+                                   &dalek_secret,
+                                   slatepack_recipient_dalek_pk)?;
             // Sender can chenge that, restoring original value
             slate.ttl_cutoff_height = original_slate.ttl_cutoff_height.clone();
             // Checking is sender didn't do any harm to slate
@@ -2159,6 +2305,35 @@ fn do_command(
                 config.get_tls_config(false),
                 params,
                 true)?;
+        }
+        Some("decode_slatepack") => {
+            let args = matches.subcommand_matches("decode_slatepack").unwrap();
+
+            let content = match args.value_of("slatepack") {
+                Some(str) => str.to_string(),
+                None => {
+                    let input = args.value_of("file").ok_or(ErrorKind::ArgumentError("Please specify '--slatepack' of '--file' option".to_string()))?;
+                    let mut file = File::open(input.replace("~", &home_dir))?;
+                    let mut slate = String::new();
+                    file.read_to_string(&mut slate)?;
+                    slate
+                }
+            };
+
+            let w = wallet.lock();
+
+            let (slate, content, sender) = w.deserialize_slate( &content )?;
+            // Converting slate back to not encoded format
+
+            // Receiver 'None' make slate not encrypted. It should be plain json that all we like
+            // fast 'false' - generate JSON instead of binary slate
+            let slate_content = w.serialize_slate( &slate, SlatePurpose::FullSlate, None, false)?;
+
+            let sender = sender.map( |pk| proofaddress::ProvableAddress::from_tor_pub_key(&pk).public_key );
+
+            cli_message!("Slate: {}", slate_content);
+            cli_message!("Content: {}", content.map(|s| format!("{:?}",s) ).unwrap_or("N/A".to_string()) );
+            cli_message!("Sender: {}", sender.unwrap_or("None".to_string()) );
         }
         Some(subcommand) => {
             cli_message!(

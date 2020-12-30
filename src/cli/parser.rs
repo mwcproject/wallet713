@@ -231,8 +231,14 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("[file] -f, --file=<file> 'the file to store the slate in'")
                     )
+                    .arg(
+                        Arg::from_usage("[slatepack_recipient] --slatepack_recipient=<wallet_address> 'generate a slatepack for the public wallet address (TOR public key) of recipient wallet'")
+                    )
+                    .arg(
+                        Arg::from_usage("[slatepack] --slatepack 'generate the not enrypted anonymous slatepack that can be sent to any wallet'")
+                    )
                     .group(ArgGroup::with_name("destination")
-                        .args(&["to", "file"])
+                        .args(&["to", "file", "slatepack_recipient"])
                         .required(true)
                     )
                     .arg(
@@ -274,12 +280,15 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("[proof] --proof 'the transaction is submitted with payment_proof_address'")
                     )
+                    .arg(
+                        Arg::from_usage("[lock_later] --lock_later 'For files transactions lock outputs at final step.'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("invoice")
                     .about("sends invoice to an address")
                     .arg(
-                        Arg::from_usage("-t, --to=<address> 'the address to send MWCs to'")
+                        Arg::from_usage("-t, --to=<address> 'the address to request MWCs from'")
                     )
                     .arg(
                         Arg::from_usage("<amount> 'the amount of MWCs to send'")
@@ -289,6 +298,9 @@ impl<'a, 'b> Parser {
                     )
                     .arg(
                         Arg::from_usage("[fluff] -l, --fluff 'the transaction is submitted as a fluff transactions'")
+                    )
+                    .arg(
+                        Arg::from_usage("[slatepack_recipient] --slatepack_recipient 'the public wallet address (TOR public key) of another wallet'")
                     )
             )
             .subcommand(
@@ -373,7 +385,14 @@ impl<'a, 'b> Parser {
                 SubCommand::with_name("receive")
                     .about("receives a sender initiated slate from file and produces signed slate")
                     .arg(
-                        Arg::from_usage("-f, --file=<file> 'the slate file'")
+                        Arg::from_usage("[file] -f, --file=<file> 'the slate file'")
+                    )
+                    .arg(
+                        Arg::from_usage("[content] -c, --content=<slatepack> 'the content of the slate. Can be slatepack of json'")
+                    )
+                    .group(ArgGroup::with_name("response slate")
+                        .args(&["file", "content"])
+                        .required(true)
                     )
                     .arg(
                         Arg::from_usage("[key_id] -k, --key_id=<key_id> 'optional key id for this transaction. Be careful about using this.'")
@@ -410,7 +429,14 @@ impl<'a, 'b> Parser {
                 SubCommand::with_name("finalize")
                     .about("finalizes a slate response file and posts the transaction")
                     .arg(
-                        Arg::from_usage("-f, --file=<file> 'the slate file'")
+                        Arg::from_usage("[file] -f, --file=<file> 'the slate file'")
+                    )
+                    .arg(
+                        Arg::from_usage("[content] -c, --content=<slatepack> 'the content of the slate. Can be slatepack of json'")
+                    )
+                    .group(ArgGroup::with_name("response slate")
+                        .args(&["file", "content"])
+                        .required(true)
                     )
                     .arg(
                         Arg::from_usage("[fluff] -l, --fluff 'the transaction is submitted as a fluff transaction'")
@@ -622,6 +648,16 @@ impl<'a, 'b> Parser {
                     )
                     .arg(
                         Arg::from_usage("[wait_for_backup1] --wait_for_backup1 'stop before locking steps, so the first backup can be enforced'")
+                    )
+            )
+            .subcommand(
+                SubCommand::with_name("decode_slatepack")
+                    .about("Decode the slatepack")
+                    .arg(
+                        Arg::from_usage("[slatepack] -s, --slatepack=<content> 'Slate or slatepack content text'")
+                    )
+                    .arg(
+                        Arg::from_usage("[file] -f, --file=<file> 'File with a slate or slatepack content'")
                     )
             )
     }

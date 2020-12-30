@@ -2,7 +2,7 @@ use uuid::Uuid;
 use common::config::Wallet713Config;
 use common::{ErrorKind, Error};
 
-use grin_wallet_libwallet::{Slate, TxLogEntry, WalletInst, OutputCommitMapping, ScannedBlockInfo, NodeClient, StatusMessage, AcctPathMapping};
+use grin_wallet_libwallet::{Slate, TxLogEntry, WalletInst, OutputCommitMapping, ScannedBlockInfo, NodeClient, StatusMessage, AcctPathMapping, SlatePurpose};
 use grin_wallet_impls::lifecycle::WalletSeed;
 use grin_core::core::Transaction;
 use grin_util::secp::key::{ SecretKey, PublicKey };
@@ -22,6 +22,8 @@ use std::thread;
 use std::thread::JoinHandle;
 use std::sync::mpsc::Sender;
 use grin_wallet_libwallet::proof::proofaddress::{ProvableAddress,ProofAddressType};
+use ed25519_dalek::{SecretKey as DalekSecretKey, PublicKey as DalekPublicKey};
+use grin_wallet_libwallet::proof::proofaddress;
 
 pub struct Wallet {
     backend: Option< Arc<Mutex<Box<dyn WalletInst<'static,
@@ -409,7 +411,7 @@ impl Wallet {
     }
 
     // Create slate but not lock outptus into the DB. Call tx_lock_outputs to do that
-    pub fn initiate_send_tx(
+    pub fn init_send_tx(
         &self,
         address: Option<String>,
         amount: u64,
@@ -424,8 +426,10 @@ impl Wallet {
         status_send_channel: &Option<Sender<StatusMessage>>,
 	    ttl_blocks: u64,
         do_proof: bool,
+        slatepack_recipient: Option<ProvableAddress>,
+        late_lock: Option<bool>,
     ) -> Result<Slate, Error> {
-        let slate = api::initiate_tx(
+        let slate = api::init_send_tx(
             self.get_wallet_instance()?,
             None,
             address.clone(),
@@ -441,17 +445,19 @@ impl Wallet {
             status_send_channel,
             ttl_blocks,
             do_proof,
+            slatepack_recipient,
+            late_lock,
         )?;
 
         Ok(slate)
     }
 
     // Create invoice transaction
-    pub fn initiate_receive_tx(&self, address: Option<String>, amount: u64, num_outputs: usize) -> Result<Slate, Error> {
+    pub fn initiate_receive_tx(&self, address: Option<String>, amount: u64, num_outputs: usize, slatepack_recipient: Option<ProvableAddress>) -> Result<Slate, Error> {
         let slate = api::initiate_receive_tx(self.get_wallet_instance()?,
                                              address,
                                              None,
-                                             amount, num_outputs, None)?;
+                                             amount, num_outputs, None, slatepack_recipient)?;
         Ok(slate)
     }
 
@@ -656,6 +662,33 @@ impl Wallet {
 
     pub fn get_payment_proof_address_secret(&self) -> Result<SecretKey, Error> {
         api::get_payment_proof_address_secret(self.get_wallet_instance()?)
+    }
+
+    pub fn deserialize_slate(
+            &self,
+            slate_str: &str,
+    ) -> Result< (Slate, Option<SlatePurpose>, Option<DalekPublicKey>), Error> {
+        api::deserialize_slate(self.get_wallet_instance()?, slate_str)
+    }
+
+    pub fn serialize_slate(
+        &self,
+        slate: &Slate,
+        content: SlatePurpose,
+        receiver: Option<DalekPublicKey>,
+        slatepack_format: bool,
+    ) -> Result<String, Error> {
+        api::serialize_slate(self.get_wallet_instance()?, slate, content, receiver, slatepack_format)
+    }
+
+    pub fn get_slatepack_keys(&self) ->  Result<(DalekSecretKey, DalekPublicKey), Error>
+    {
+        let wallet = self.get_wallet_instance()?;
+        wallet_lock!(wallet, w);
+        let keychain = w.keychain(None)?;
+        let secret = proofaddress::payment_proof_address_dalek_secret( &keychain, None )?;
+        let pk = DalekPublicKey::from(&secret);
+        Ok((secret, pk))
     }
 
     fn init_seed(

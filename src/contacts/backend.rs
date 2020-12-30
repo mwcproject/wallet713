@@ -3,9 +3,9 @@ use std::fs::create_dir_all;
 use std::path::Path;
 
 use grin_core::ser::Error as CoreError;
-use grin_core::ser::{Readable, Reader, Writeable, Writer};
 use grin_store::{self, option_to_not_found, to_key};
 use grin_store::Store;
+use grin_core::ser;
 
 use super::types::{AddressBookBackend, AddressBookBatch, Contact};
 use grin_wallet_impls:: {
@@ -100,8 +100,8 @@ impl<'a> AddressBookBatch for Batch<'a> {
     }
 }
 
-impl Writeable for Contact {
-    fn write<W: Writer>(&self, writer: &mut W) -> Result<(), CoreError> {
+impl ser::Writeable for Contact {
+    fn write<W: ser::Writer>(&self, writer: &mut W) -> Result<(), CoreError> {
         let json = json!({
             "name": self.get_name(),
             "address": self.get_address().to_string(),
@@ -110,8 +110,8 @@ impl Writeable for Contact {
     }
 }
 
-impl Readable for Contact {
-    fn read(reader: &mut dyn Reader) -> Result<Contact, CoreError> {
+impl ser::Readable for Contact {
+    fn read<R: ser::Reader>(reader: &mut R) -> Result<Contact, CoreError> {
         let data = reader.read_bytes_len_prefix()?;
         let data = std::str::from_utf8(&data).map_err(|e| CoreError::CorruptedData(format!("Unable to read contacts data, {}", e)))?;
 

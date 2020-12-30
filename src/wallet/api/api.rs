@@ -10,9 +10,9 @@ use grin_p2p::types::PeerInfoDisplay;
 use grin_wallet_libwallet::proof::crypto::Hex;
 use grin_wallet_libwallet::proof::tx_proof::TxProof;
 use grin_wallet_libwallet::proof::proofaddress;
-use grin_wallet_libwallet::{AcctPathMapping, NodeClient, Slate, TxLogEntry,
-                            WalletInfo, OutputCommitMapping, WalletInst, WalletLCProvider,
-                            StatusMessage, TxLogEntryType, OutputData};
+use grin_wallet_libwallet::{AcctPathMapping, NodeClient, Slate, TxLogEntry, WalletInfo,
+                            OutputCommitMapping, WalletInst, WalletLCProvider, StatusMessage, TxLogEntryType,
+                            OutputData, SlatePurpose};
 use grin_wallet_libwallet::api_impl::types::SwapStartArgs;
 use grin_core::core::Transaction;
 use grin_keychain::{Identifier};
@@ -28,7 +28,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread::JoinHandle;
 use std::fs::File;
 use std::io::{Write, BufReader, BufRead};
-use grin_wallet_impls::Address;
+use grin_wallet_impls::{Address, PathToSlateGetter, SlateGetter, PathToSlatePutter, SlatePutter};
+use grin_wallet_impls::adapters::SlateGetData;
+use ed25519_dalek::PublicKey as DalekPublicKey;
+use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
 
 // struct for sending back node information
 pub struct NodeInfo
@@ -83,11 +86,13 @@ pub fn verifysignature(
     let msg = Message::from_slice(msg.as_bytes())?;
 
     let secp = Secp256k1::with_caps(ContextFlag::VerifyOnly);
-    let pk = grin_util::from_hex(pubkey)?;
-    let pk = PublicKey::from_slice(&secp, &pk)?;
+    let pk = grin_util::from_hex(pubkey)
+        .map_err(|e| ErrorKind::GenericError(format!("Unable to parse public key HEX value {}", e)))?;
+    let pk = PublicKey::from_slice(&pk)?;
 
-    let signature = grin_util::from_hex(signature)?;
-    let signature = Signature::from_der(&secp, &signature)?;
+    let signature = grin_util::from_hex(signature)
+        .map_err(|e| ErrorKind::GenericError(format!("Unable to parse signature HEX value {}", e)))?;
+    let signature = Signature::from_der(&signature)?;
 
     match secp.verify(&msg, &signature, &pk) {
         Ok(_) => println!("Message, signature and public key are valid!"),
@@ -493,7 +498,7 @@ pub fn txs_bulk_validate<'a, L, C, K>(
         if tx.tx_type != TxLogEntryType::TxReceived && tx.tx_type != TxLogEntryType::TxReceivedCancelled {
             if let Some(uuid_str) = tx.tx_slate_id {
                 if let Ok(transaction) = w.get_stored_tx_by_uuid(&uuid_str.to_string()) {
-                    tx_info.tx_kernels = transaction.body.kernels.iter().map(|k| grin_util::to_hex(k.excess.0.to_vec())).collect();
+                    tx_info.tx_kernels = transaction.body.kernels.iter().map(|k| grin_util::to_hex(&k.excess.0)).collect();
                 } else {
                     if tx.tx_type == TxLogEntryType::TxSent {
                         tx_info.warnings.push("Transaction slate not found".to_string());
@@ -502,7 +507,7 @@ pub fn txs_bulk_validate<'a, L, C, K>(
                 }
             }
             if let Some(kernel) = tx.kernel_excess {
-                tx_info.tx_kernels.push(grin_util::to_hex(kernel.0.to_vec()));
+                tx_info.tx_kernels.push(grin_util::to_hex(&kernel.0));
             }
         }
 
@@ -695,7 +700,7 @@ pub fn retrieve_summary_info<'a, L, C, K>(
     Ok(res)
 }
 
-pub fn initiate_tx<'a, L, C, K>(
+pub fn init_send_tx<'a, L, C, K>(
     wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
     active_account: Option<String>,
     address: Option<String>,
@@ -711,6 +716,8 @@ pub fn initiate_tx<'a, L, C, K>(
     status_send_channel: &Option<Sender<StatusMessage>>,
     ttl_blocks: u64,
     do_proof: bool,
+    slatepack_recipient: Option<ProvableAddress>,
+    late_lock: Option<bool>,
 ) -> Result<Slate, Error>
     where
         L: WalletLCProvider<'a, C, K>,
@@ -798,10 +805,12 @@ pub fn initiate_tx<'a, L, C, K>(
         minimum_confirmations_change_outputs: 1,
         send_args: None,
         outputs,
+        slatepack_recipient,
+        late_lock,
     };
 
     let s = grin_wallet_libwallet::owner::init_send_tx( &mut **w,
-                                                        None, params , false,
+                                                        None, &params , false,
                                                         routputs)?;
     Ok(s)
 }
@@ -819,7 +828,7 @@ pub fn tx_lock_outputs<'a, L, C, K>(
         K: Keychain + 'a,
 {
     wallet_lock!(wallet_inst, w);
-    grin_wallet_libwallet::owner::tx_lock_outputs( &mut **w, None, slate, address, participant_id )?;
+    grin_wallet_libwallet::owner::tx_lock_outputs( &mut **w, None, slate, address, participant_id, false )?;
     Ok(())
 }
 
@@ -834,7 +843,7 @@ pub fn finalize_tx<'a, L, C, K>(
 {
     wallet_lock!(wallet_inst, w);
 
-    let (slate_res, _context) = grin_wallet_libwallet::owner::finalize_tx( &mut **w, None, slate, true )?;
+    let (slate_res, _context) = grin_wallet_libwallet::owner::finalize_tx( &mut **w, None, slate, true, false )?;
     *slate = slate_res;
 
     Ok(())
@@ -1234,7 +1243,7 @@ pub fn get_payment_proof_address_secret<'a, L, C, K>(
 {
     wallet_lock!(wallet_inst, w);
     let keychain = w.keychain(None)?;
-    proofaddress::payment_proof_address_secret(&keychain)
+    proofaddress::payment_proof_address_secret(&keychain, None )
         .map_err(|e| ErrorKind::GenericError( format!("Unable to get payment proof secret, {}", e) ).into())
 }
 
@@ -1245,6 +1254,7 @@ pub fn initiate_receive_tx<'a, L, C, K>(
     amount: u64,
     num_outputs: usize,
     message: Option<String>,
+    slatepack_recipient: Option<ProvableAddress>,
 ) -> Result< Slate, Error >
     where
         L: WalletLCProvider<'a, C, K>,
@@ -1262,10 +1272,11 @@ pub fn initiate_receive_tx<'a, L, C, K>(
         /// is generated with the latest version.
         target_slate_version: None,
         address,
+        slatepack_recipient,
     };
 
     let s = grin_wallet_libwallet::owner::issue_invoice_tx(&mut **w,
-                                                           None, params , false, num_outputs)?;
+                                                           None, &params , false, num_outputs)?;
     Ok(s)
 }
 
@@ -1382,3 +1393,54 @@ pub fn swap_start<'a, L, C, K>(
     let swap_id = grin_wallet_libwallet::owner_swap::swap_start(wallet_inst, None, &params)?;
     Ok(swap_id)
 }
+
+pub fn deserialize_slate<'a, L, C, K>(
+    wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
+    slate_str: &str,
+)-> Result<(Slate, Option<SlatePurpose>, Option<DalekPublicKey>), Error>
+    where
+        L: WalletLCProvider<'a, C, K>,
+        C: NodeClient + 'a,
+        K: Keychain + 'a,
+{
+    wallet_lock!(wallet_inst, w);
+    let keychain = w.keychain(None)?;
+
+    let secret = proofaddress::payment_proof_address_dalek_secret( &keychain, None )?;
+
+    let slate_data = PathToSlateGetter::build_form_str(slate_str.to_string())
+        .get_tx( &secret )?;
+
+    match slate_data {
+        SlateGetData::PlainSlate(slate) => {
+            Ok( (slate, None, None) )
+        },
+        SlateGetData::Slatepack( slatepacker) => {
+            let sender = slatepacker.get_sender();
+            let content = slatepacker.get_content();
+            Ok( ( slatepacker.to_result_slate(), Some(content), sender ) )
+        }
+    }
+}
+
+pub fn serialize_slate<'a, L, C, K>(
+    wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
+    slate: &Slate,
+    content: SlatePurpose,
+    receiver: Option<DalekPublicKey>,
+    slatepack_format: bool,
+) -> Result<String, Error>
+    where
+        L: WalletLCProvider<'a, C, K>,
+        C: NodeClient + 'a,
+        K: Keychain + 'a,
+{
+    wallet_lock!(wallet_inst, w);
+    let keychain = w.keychain(None)?;
+    let secret = proofaddress::payment_proof_address_dalek_secret( &keychain, None )?;
+    let slate_str = PathToSlatePutter::build_encrypted(None, content,
+                                       DalekPublicKey::from(&secret),
+                                       receiver, slatepack_format ).put_tx(slate, &secret, false)?;
+    Ok(slate_str)
+}
+

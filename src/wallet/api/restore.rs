@@ -51,7 +51,7 @@ pub fn scan_outputs<'a, T: ?Sized, C, K>(wallet: &mut T, pub_keys: Vec<PublicKey
 	// Calculate rewind_hash for the commit.
 	let pub_keys_info : Vec<PubKeyInfo> = pub_keys.iter()
 		.map( |pk : &PublicKey| {
-			let public_root_key = pk.serialize_vec( &secp, true);
+			let public_root_key = pk.serialize_vec( true);
 			let rewind_hash = blake2b(32, &[], &public_root_key[..]).as_bytes().to_vec();
 			let pub_key_hex = pk.to_hex();
 
@@ -92,7 +92,7 @@ pub fn scan_outputs<'a, T: ?Sized, C, K>(wallet: &mut T, pub_keys: Vec<PublicKey
 				// Not processing 'legacy' logic. It is ok to test all commits. Naturally will skip 'non public' ones
 				//   Legacy logic try to hadble the latest data similar way, it is extra for scanning
 				let res = blake2b(32, &commit.0, &pk_info.rewind_hash);
-				let nonce = SecretKey::from_slice(&secp, res.as_bytes()).map_err(|e| {
+				let nonce = SecretKey::from_slice(res.as_bytes()).map_err(|e| {
 					ErrorKind::GenericError(format!("error: Unable to create nonce: {}", e))
 				})?;
 
