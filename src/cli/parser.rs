@@ -238,7 +238,7 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("[slatepack] --slatepack 'generate the not enrypted anonymous slatepack that can be sent to any wallet'")
                     )
                     .group(ArgGroup::with_name("destination")
-                        .args(&["to", "file", "slatepack_recipient"])
+                        .args(&["to", "file", "slatepack_recipient", "slatepack"])
                         .required(true)
                     )
                     .arg(

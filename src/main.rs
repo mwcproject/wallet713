@@ -1797,9 +1797,7 @@ fn do_command(
             }
             else {
                 // it must be a slatepack. May be not encrypted
-                if slatepack_recipient_dalek_pk.is_none() {
-                    return Err(ErrorKind::ArgumentError("None of 'send' destinations are defined".to_string()).into());
-                }
+                // if slatepack_recipient_dalek_pk is none - not encryptrd. Otherwise - encrypted
 
                 let w = wallet.lock();
 
@@ -1820,7 +1818,7 @@ fn do_command(
                     &status_send_channel,
                     ttl_blocks,
                     false,
-                    slatepack_recipient_address,
+                    Some( slatepack_recipient_address.clone().unwrap_or( ProvableAddress::blank() ) ), // Need to provide some address to trigger compact slate
                     lock_later,
                 )?;
 
