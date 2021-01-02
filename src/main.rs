@@ -1458,7 +1458,7 @@ fn do_command(
                 cli_message!("{}.response created successfully.", source_name);
             }
             else {
-                cli_message!("Slate: {}", slate_str);
+                cli_message!("Slatepack: {}", slate_str);
             }
         }
         Some("showpubkeys") => {
