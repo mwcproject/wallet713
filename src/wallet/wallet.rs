@@ -667,7 +667,7 @@ impl Wallet {
     pub fn deserialize_slate(
             &self,
             slate_str: &str,
-    ) -> Result< (Slate, Option<SlatePurpose>, Option<DalekPublicKey>), Error> {
+    ) -> Result< (Slate, Option<SlatePurpose>, Option<DalekPublicKey>, Option<DalekPublicKey>), Error> {
         api::deserialize_slate(self.get_wallet_instance()?, slate_str)
     }
 

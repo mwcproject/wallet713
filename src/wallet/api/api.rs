@@ -1397,7 +1397,7 @@ pub fn swap_start<'a, L, C, K>(
 pub fn deserialize_slate<'a, L, C, K>(
     wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
     slate_str: &str,
-)-> Result<(Slate, Option<SlatePurpose>, Option<DalekPublicKey>), Error>
+)-> Result<(Slate, Option<SlatePurpose>, Option<DalekPublicKey>, Option<DalekPublicKey>), Error>
     where
         L: WalletLCProvider<'a, C, K>,
         C: NodeClient + 'a,
@@ -1413,12 +1413,13 @@ pub fn deserialize_slate<'a, L, C, K>(
 
     match slate_data {
         SlateGetData::PlainSlate(slate) => {
-            Ok( (slate, None, None) )
+            Ok( (slate, None, None, None) )
         },
         SlateGetData::Slatepack( slatepacker) => {
             let sender = slatepacker.get_sender();
+            let recipient = slatepacker.get_recipient();
             let content = slatepacker.get_content();
-            Ok( ( slatepacker.to_result_slate(), Some(content), sender ) )
+            Ok( ( slatepacker.to_result_slate(), Some(content), sender, recipient ) )
         }
     }
 }

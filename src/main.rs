@@ -1391,7 +1391,7 @@ fn do_command(
                 return Err(ErrorKind::ArgumentError("Please difine '--content' of '--file' argument".to_string()).into());
             };
 
-            let (mut slate, content, sender) = w.deserialize_slate( &slate )?;
+            let (mut slate, content, sender, _recipient ) = w.deserialize_slate( &slate )?;
             if let Some(content) = &content {
                 if *content != SlatePurpose::SendInitial {
                     return Err(ErrorKind::GenericError(format!("The slate doesn't contain initial send data, the slate content is {:?}", content)).into());
@@ -1495,7 +1495,7 @@ fn do_command(
                 return Err(ErrorKind::ArgumentError("Please difine '--content' of '--file' argument".to_string()).into());
             };
 
-            let (mut slate, content, _sender) = {
+            let (mut slate, content, _sender, _recipient) = {
                 let w = wallet.lock();
                  w.deserialize_slate(&slate)?
             };
@@ -1801,7 +1801,11 @@ fn do_command(
 
                 let w = wallet.lock();
 
-                let address = slatepack_recipient_param.map(|s| s.to_string());
+                let mut address = slatepack_recipient_param.map(|s| s.to_string());
+
+                if address.is_none() && do_proof {
+                    address = Some(String::from("file_proof"));
+                }
 
                 // it must be just a slatepack without file or destination
                 let slate = w.init_send_tx(
@@ -1817,7 +1821,7 @@ fn do_command(
                     routputs,
                     &status_send_channel,
                     ttl_blocks,
-                    false,
+                    do_proof,
                     Some( slatepack_recipient_address.clone().unwrap_or( ProvableAddress::blank() ) ), // Need to provide some address to trigger compact slate
                     lock_later,
                 )?;
@@ -2320,7 +2324,7 @@ fn do_command(
 
             let w = wallet.lock();
 
-            let (slate, content, sender) = w.deserialize_slate( &content )?;
+            let (slate, content, sender, recipient) = w.deserialize_slate( &content )?;
             // Converting slate back to not encoded format
 
             // Receiver 'None' make slate not encrypted. It should be plain json that all we like
@@ -2328,10 +2332,12 @@ fn do_command(
             let slate_content = w.serialize_slate( &slate, SlatePurpose::FullSlate, None, false)?;
 
             let sender = sender.map( |pk| proofaddress::ProvableAddress::from_tor_pub_key(&pk).public_key );
+            let recipient = recipient.map( |pk| proofaddress::ProvableAddress::from_tor_pub_key(&pk).public_key );
 
             cli_message!("Slate: {}", slate_content);
             cli_message!("Content: {}", content.map(|s| format!("{:?}",s) ).unwrap_or("N/A".to_string()) );
             cli_message!("Sender: {}", sender.unwrap_or("None".to_string()) );
+            cli_message!("Recipient: {}", recipient.unwrap_or("None".to_string()) );
         }
         Some(subcommand) => {
             cli_message!(

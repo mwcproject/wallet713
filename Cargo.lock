@@ -104,7 +104,7 @@ checksum = "8d3a45e77e34375a7923b1e8febb049bb011f064714a8e17a1a616fef01da13d"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.8",
- "syn 1.0.57",
+ "syn 1.0.58",
 ]
 
 [[package]]
@@ -553,9 +553,9 @@ checksum = "688226b9769bbf11a9d82a94fb4adda15793a6023d33a8ca7695dbafec6f4123"
 
 [[package]]
 name = "const_fn"
-version = "0.4.4"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd51eab21ab4fd6a3bf889e2d0958c0a6e3a61ad04260325e919e652a2a62826"
+checksum = "28b9d6de7f49e22cf97ad17fc4036ece69300032f45f78f30b4a4482cdc3f4a6"
 
 [[package]]
 name = "constant_time_eq"
@@ -1175,7 +1175,7 @@ checksum = "aa4da3c766cd7a0db8242e326e9e4e081edd567072893ed320008189715366a4"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.8",
- "syn 1.0.57",
+ "syn 1.0.58",
  "synstructure 0.12.4",
 ]
 
@@ -1323,7 +1323,7 @@ dependencies = [
  "proc-macro-hack",
  "proc-macro2 1.0.24",
  "quote 1.0.8",
- "syn 1.0.57",
+ "syn 1.0.58",
 ]
 
 [[package]]
@@ -1354,7 +1354,7 @@ dependencies = [
  "futures-sink",
  "futures-task",
  "memchr 2.3.4",
- "pin-project 1.0.2",
+ "pin-project 1.0.3",
  "pin-utils",
  "proc-macro-hack",
  "proc-macro-nested",
@@ -1634,7 +1634,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "4.0.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#9f219172b98c52f298ebaecd9f8c83db14204c32"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#8c6de67730234268a562a0393a6e0ee624dd48ca"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1660,7 +1660,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "4.0.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#9f219172b98c52f298ebaecd9f8c83db14204c32"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#8c6de67730234268a562a0393a6e0ee624dd48ca"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -1675,7 +1675,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "4.0.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#9f219172b98c52f298ebaecd9f8c83db14204c32"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#8c6de67730234268a562a0393a6e0ee624dd48ca"
 dependencies = [
  "chrono",
  "colored",
@@ -1708,7 +1708,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "4.0.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#9f219172b98c52f298ebaecd9f8c83db14204c32"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#8c6de67730234268a562a0393a6e0ee624dd48ca"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1753,7 +1753,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "4.0.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#9f219172b98c52f298ebaecd9f8c83db14204c32"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#8c6de67730234268a562a0393a6e0ee624dd48ca"
 dependencies = [
  "base64 0.9.3",
  "bch",
@@ -1807,7 +1807,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "4.0.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#9f219172b98c52f298ebaecd9f8c83db14204c32"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#8c6de67730234268a562a0393a6e0ee624dd48ca"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
@@ -2014,7 +2014,7 @@ dependencies = [
  "httparse",
  "httpdate",
  "itoa",
- "pin-project 1.0.2",
+ "pin-project 1.0.3",
  "socket2",
  "tokio 0.2.24",
  "tower-service",
@@ -2936,11 +2936,11 @@ dependencies = [
 
 [[package]]
 name = "pin-project"
-version = "1.0.2"
+version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ccc2237c2c489783abd8c4c80e5450fc0e98644555b1364da68cc29aa151ca7"
+checksum = "5a83804639aad6ba65345661744708855f9fbcb71176ea8d28d05aeb11d975e7"
 dependencies = [
- "pin-project-internal 1.0.2",
+ "pin-project-internal 1.0.3",
 ]
 
 [[package]]
@@ -2951,18 +2951,18 @@ checksum = "65ad2ae56b6abe3a1ee25f15ee605bacadb9a764edaba9c2bf4103800d4a1895"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.8",
- "syn 1.0.57",
+ "syn 1.0.58",
 ]
 
 [[package]]
 name = "pin-project-internal"
-version = "1.0.2"
+version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8e8d2bf0b23038a4424865103a4df472855692821aab4e4f5c3312d461d9e5f"
+checksum = "b7bcc46b8f73443d15bc1c5fecbb315718491fa9187fa483f0e359323cde8b3a"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.8",
- "syn 1.0.57",
+ "syn 1.0.58",
 ]
 
 [[package]]
@@ -2973,9 +2973,9 @@ checksum = "c917123afa01924fc84bb20c4c03f004d9c38e5127e3c039bbf7f4b9c76a2f6b"
 
 [[package]]
 name = "pin-project-lite"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b063f57ec186e6140e2b8b6921e5f1bd89c7356dda5b33acc5401203ca6131c"
+checksum = "e36743d754ccdf9954c2e352ce2d4b106e024c814f6499c2dadff80da9a442d8"
 
 [[package]]
 name = "pin-utils"
@@ -3721,7 +3721,7 @@ checksum = "c84d3526699cd55261af4b941e4e725444df67aa4f9e6a3564f18030d12672df"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.8",
- "syn 1.0.57",
+ "syn 1.0.58",
 ]
 
 [[package]]
@@ -3749,9 +3749,9 @@ dependencies = [
 
 [[package]]
 name = "serde_yaml"
-version = "0.8.14"
+version = "0.8.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7baae0a99f1a324984bcdc5f0718384c1f69775f1c7eec8b859b71b443e3fd7"
+checksum = "971be8f6e4d4a47163b405a3df70d14359186f9ab0f3a3ec37df144ca1ce089f"
 dependencies = [
  "dtoa",
  "linked-hash-map",
@@ -3778,7 +3778,7 @@ checksum = "d08338d8024b227c62bd68a12c7c9883f5c66780abaef15c550dc56f46ee6515"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.8",
- "syn 1.0.57",
+ "syn 1.0.58",
 ]
 
 [[package]]
@@ -3981,9 +3981,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.57"
+version = "1.0.58"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4211ce9909eb971f111059df92c45640aad50a619cf55cd76476be803c4c68e6"
+checksum = "cc60a3d73ea6594cd712d830cc1f0390fd71542d8c8cd24e70cc54cdfd5e05d5"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.8",
@@ -4010,7 +4010,7 @@ checksum = "b834f2d66f734cb897113e34aaff2f1ab4719ca946f9a7358dba8f8064148701"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.8",
- "syn 1.0.57",
+ "syn 1.0.58",
  "unicode-xid 0.2.1",
 ]
 
@@ -4096,7 +4096,7 @@ checksum = "9be73a2caec27583d0046ef3796c3794f868a5bc813db689eed00c7631275cd1"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.8",
- "syn 1.0.57",
+ "syn 1.0.58",
 ]
 
 [[package]]
@@ -4284,7 +4284,7 @@ checksum = "e44da00bfc73a25f814cd8d7e57a68a5c31b74b3152a0a1d1f590c97ed06265a"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.8",
- "syn 1.0.57",
+ "syn 1.0.58",
 ]
 
 [[package]]
@@ -4473,7 +4473,7 @@ checksum = "9f47026cdc4080c07e49b37087de021820269d996f581aac150ef9e5583eefe3"
 dependencies = [
  "cfg-if 1.0.0",
  "log",
- "pin-project-lite 0.2.0",
+ "pin-project-lite 0.2.1",
  "tracing-core",
 ]
 
@@ -4742,7 +4742,7 @@ dependencies = [
  "log",
  "proc-macro2 1.0.24",
  "quote 1.0.8",
- "syn 1.0.57",
+ "syn 1.0.58",
  "wasm-bindgen-shared",
 ]
 
@@ -4764,7 +4764,7 @@ checksum = "b5a48c72f299d80557c7c62e37e7225369ecc0c963964059509fbafe917c7549"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.8",
- "syn 1.0.57",
+ "syn 1.0.58",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
 ]
@@ -4932,9 +4932,9 @@ dependencies = [
 
 [[package]]
 name = "yaml-rust"
-version = "0.4.4"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39f0c922f1a334134dc2f7a8b67dc5d25f0735263feec974345ff706bcf20b0d"
+checksum = "56c1936c4cc7a1c9ab21a1ebb602eb942ba868cbd44a99cb7cdc5892335e1c85"
 dependencies = [
  "linked-hash-map",
 ]
@@ -4977,7 +4977,7 @@ checksum = "c3f369ddb18862aba61aa49bf31e74d29f0f162dec753063200e1dc084345d16"
 dependencies = [
  "proc-macro2 1.0.24",
  "quote 1.0.8",
- "syn 1.0.57",
+ "syn 1.0.58",
  "synstructure 0.12.4",
 ]
 
