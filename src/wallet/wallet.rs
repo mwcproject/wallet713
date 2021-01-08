@@ -265,7 +265,7 @@ impl Wallet {
         let (validated, txs) = api::retrieve_txs_with_proof_flag(
                 wallet_inst.clone(), refresh_from_node, tx_id.clone(),
                 tx_slate_id.clone(), pagination_start, pagination_length)?;
-        let txs = txs.iter().map(|tpl| tpl.0.clone()).collect::<Vec<TxLogEntry>>();
+        let mut txs = txs.iter().map(|tpl| tpl.0.clone()).collect::<Vec<TxLogEntry>>();
 
         let data_dir = {
             wallet_lock!(wallet_inst, w);
@@ -286,6 +286,12 @@ impl Wallet {
         } else {
             None
         };
+
+        if let Some(id) = id {
+            // Filter txs records. If we mess up with self transactions, we migth have several with same uuid.
+            // The first one will be good for us.
+            txs.retain( |tx| tx.id == id);
+        }
 
         display::txs(
             &self.get_current_account()?.label,
@@ -531,12 +537,13 @@ impl Wallet {
         &self,
         address: Option<String>,
         slate: &mut Slate,
+        message: Option<String>,
         key_id: Option<&str>,
         output_amounts: Option<Vec<u64>>,
         dest_acct_name: Option<&str>,
     ) -> Result<(), Error> {
         let s = api::receive_tx(self.get_wallet_instance()?, address, slate,
-                                None, key_id, output_amounts, dest_acct_name).map_err(|e| ErrorKind::GrinWalletReceiveError(format!("{}", e)))?;
+                                message, key_id, output_amounts, dest_acct_name).map_err(|e| ErrorKind::GrinWalletReceiveError(format!("{}", e)))?;
         *slate = s;
         Ok(())
     }

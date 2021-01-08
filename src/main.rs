@@ -1376,6 +1376,7 @@ fn do_command(
             let input = args.value_of("file");
             let slate_content = args.value_of("content");
             let rfile_param = args.value_of("recv_file");
+            let message = args.value_of("message");
             let w = wallet.lock();
 
             let slate = if let Some(slate_content) = slate_content {
@@ -1440,7 +1441,9 @@ fn do_command(
             };
 
             // Processing with a new receive account
-            w.process_sender_initiated_slate(Some(address), &mut slate, key_id, output_amounts, None )?;
+            w.process_sender_initiated_slate(Some(address), &mut slate,
+                                             message.map(|s|s.to_string()),
+                                             key_id, output_amounts, None )?;
             let message = &slate.participant_data[0].message;
             let amount = core::amount_to_hr_string(slate.amount, false);
             if message.is_some() {

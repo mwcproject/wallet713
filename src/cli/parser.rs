@@ -400,6 +400,9 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("[recv_file] -r, --recv_file=<recv_file> 'optional receive file with line by line output sizes in nanomwc.'")
                     )
+                    .arg(
+                        Arg::from_usage("[message] -m, --message=<message> 'optional participant message to include'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("encryptslate")
