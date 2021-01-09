@@ -384,9 +384,9 @@ checksum = "e3b5ca7a04898ad4bcd41c90c5285445ff5b791899bb1b0abdd2a2aa791211d7"
 
 [[package]]
 name = "byteorder"
-version = "1.3.4"
+version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08c48aae112d48ed9f069b33538ea9e3e90aa263cfa3d1c24309612b1f7472de"
+checksum = "ae44d1a3d5a19df61dd0c8beb138458ac2a53a7ac09eba97d55592540004306b"
 
 [[package]]
 name = "bytes"
@@ -404,6 +404,12 @@ name = "bytes"
 version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e4cec68f03f32e44924783795810fa50a7035d8c8ebe78580ad7e6c703fba38"
+
+[[package]]
+name = "bytes"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ad1f8e949d755f9d79112b5bb46938e0ef9d3804a0b16dfab13aafcaa5f0fa72"
 
 [[package]]
 name = "bzip2"
@@ -1434,7 +1440,7 @@ dependencies = [
  "grin_pool",
  "grin_store",
  "grin_util",
- "http 0.2.2",
+ "http 0.2.3",
  "hyper 0.13.9",
  "hyper-rustls 0.20.0",
  "hyper-rustls 0.21.0",
@@ -1634,7 +1640,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "4.0.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#925e0de0ae1315edfbd7f2f3f56103e9e33537e0"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#ad78635e94dad1f74f9c5d719dabac8ecbbb98ff"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1660,7 +1666,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "4.0.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#925e0de0ae1315edfbd7f2f3f56103e9e33537e0"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#ad78635e94dad1f74f9c5d719dabac8ecbbb98ff"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -1675,7 +1681,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "4.0.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#925e0de0ae1315edfbd7f2f3f56103e9e33537e0"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#ad78635e94dad1f74f9c5d719dabac8ecbbb98ff"
 dependencies = [
  "chrono",
  "colored",
@@ -1708,7 +1714,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "4.0.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#925e0de0ae1315edfbd7f2f3f56103e9e33537e0"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#ad78635e94dad1f74f9c5d719dabac8ecbbb98ff"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1753,7 +1759,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "4.0.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#925e0de0ae1315edfbd7f2f3f56103e9e33537e0"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#ad78635e94dad1f74f9c5d719dabac8ecbbb98ff"
 dependencies = [
  "base64 0.9.3",
  "bch",
@@ -1807,7 +1813,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "4.0.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#925e0de0ae1315edfbd7f2f3f56103e9e33537e0"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#ad78635e94dad1f74f9c5d719dabac8ecbbb98ff"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
@@ -1854,7 +1860,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "futures-util",
- "http 0.2.2",
+ "http 0.2.3",
  "indexmap",
  "slab",
  "tokio 0.2.24",
@@ -1916,11 +1922,11 @@ dependencies = [
 
 [[package]]
 name = "http"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "84129d298a6d57d246960ff8eb831ca4af3f96d29e2e28848dae275408658e26"
+checksum = "7245cd7449cc792608c3c8a9eaf69bd4eabbabf802713748fd739c98b82f0747"
 dependencies = [
- "bytes 0.5.6",
+ "bytes 1.0.0",
  "fnv",
  "itoa",
 ]
@@ -1944,7 +1950,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13d5ff830006f7646652e057693569bfe0d51760c0085a071769d142a205111b"
 dependencies = [
  "bytes 0.5.6",
- "http 0.2.2",
+ "http 0.2.3",
 ]
 
 [[package]]
@@ -2009,7 +2015,7 @@ dependencies = [
  "futures-core",
  "futures-util",
  "h2 0.2.7",
- "http 0.2.2",
+ "http 0.2.3",
  "http-body 0.3.1",
  "httparse",
  "httpdate",
@@ -2066,7 +2072,7 @@ checksum = "5b04745c5e7e8f4f93209f411644659055ce99f1973bd615015e3a7321ec2771"
 dependencies = [
  "async-socks5",
  "futures 0.3.9",
- "http 0.2.2",
+ "http 0.2.3",
  "hyper 0.13.9",
  "hyper-tls 0.4.3",
  "thiserror",
@@ -2236,9 +2242,9 @@ dependencies = [
 
 [[package]]
 name = "linked-hash-map"
-version = "0.5.3"
+version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8dd5a6d5999d9907cda8ed67bbd137d3af8085216c2ac62de5be860bd41f304a"
+checksum = "7fb9b38af92608140b86b693604b9ffcc5824240a484d1ecd4795bacb2fe88f3"
 
 [[package]]
 name = "lmdb-zero"
@@ -2867,7 +2873,7 @@ dependencies = [
  "libc",
  "redox_syscall",
  "rustc_version",
- "smallvec 0.6.13",
+ "smallvec 0.6.14",
  "winapi 0.3.9",
 ]
 
@@ -2881,7 +2887,7 @@ dependencies = [
  "cloudabi",
  "libc",
  "redox_syscall",
- "smallvec 1.6.0",
+ "smallvec 1.6.1",
  "winapi 0.3.9",
 ]
 
@@ -3322,9 +3328,9 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.4.2"
+version = "1.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38cf2c13ed4745de91a5eb834e11c00bcc3709e773173b2ce4c56c9fbde04b9c"
+checksum = "d9251239e129e16308e70d853559389de218ac275b515068abc96829d05b948a"
 dependencies = [
  "aho-corasick",
  "memchr 2.3.4",
@@ -3334,9 +3340,9 @@ dependencies = [
 
 [[package]]
 name = "regex-syntax"
-version = "0.6.21"
+version = "0.6.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b181ba2dcf07aaccad5448e8ead58db5b742cf85dfe035e2227f137a539a189"
+checksum = "b5eb417147ba9860a96cfe72a0b93bf88fee1744b5636ec99ab20c1aa9376581"
 
 [[package]]
 name = "remove_dir_all"
@@ -3866,18 +3872,18 @@ checksum = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
 
 [[package]]
 name = "smallvec"
-version = "0.6.13"
+version = "0.6.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7b0758c52e15a8b5e3691eae6cc559f08eee9406e548a4477ba4e67770a82b6"
+checksum = "b97fcaeba89edba30f044a10c6a3cc39df9c3f17d7cd829dd1446cab35f890e0"
 dependencies = [
  "maybe-uninit",
 ]
 
 [[package]]
 name = "smallvec"
-version = "1.6.0"
+version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a55ca5f3b68e41c979bf8c46a6f1da892ca4db8f94023ce0bd32407573b1ac0"
+checksum = "fe0f37c9e8f3c5a4a66ad655a93c74daac4ad00c441533bf5c6e7990bb42604e"
 
 [[package]]
 name = "smaz"

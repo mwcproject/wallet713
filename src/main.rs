@@ -1596,7 +1596,7 @@ fn do_command(
             let change_outputs = u32::from_str_radix(change_outputs, 10)
                 .map_err(|_| ErrorKind::InvalidNumOutputs(change_outputs.to_string()))?;
 
-            let version = match args.value_of("version") {
+            let mut version = match args.value_of("version") {
                 Some(v) => Some(u16::from_str_radix(v, 10)
                     .map_err(|_| ErrorKind::InvalidSlateVersion(v.to_string()))?),
                 None => None,
@@ -1732,6 +1732,20 @@ fn do_command(
                     display_to = Some(to.get_stripped());
                 }
 
+                // Let's contact the another wallet to request a version
+                let method = match to.address_type() {
+                    AddressType::MWCMQS => "mwcmqs",
+                    AddressType::Https => "http",
+                };
+
+                let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &apisecret, Some(config.get_tor_config()))?;
+                let other_wallet_version = sender.check_other_wallet_version()?;
+                if let Some(other_wallet_version) = &other_wallet_version {
+                    if version.is_none() {
+                        version = Some(other_wallet_version.0.to_numeric_version() as u16);
+                    }
+                }
+
                 let w = wallet.lock();
                 let address = Some(to.to_string());
                 let mut slate = w.init_send_tx(
@@ -1756,18 +1770,13 @@ fn do_command(
                 running.store(false, Ordering::Relaxed);
                 let _ = updater.join();
 
-                let method = match to.address_type() {
-                    AddressType::MWCMQS => "mwcmqs",
-                    AddressType::Https => "http",
-                };
-
                 let original_slate = slate.clone();
                 let (dalek_secret, _dalek_pk) = w.get_slatepack_keys()?;
-                let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &apisecret, Some(config.get_tor_config()))?;
                 slate = sender.send_tx(&slate,
                                        SlatePurpose::SendInitial,
                                        &dalek_secret,
-                                       slatepack_recipient_dalek_pk
+                                       slatepack_recipient_dalek_pk,
+                                       other_wallet_version,
                 )?;
                 //check the expected proof address
                 //compare the expected listening wallet proof address  to the value the returned slate. If they don't match, return error
@@ -1908,8 +1917,10 @@ fn do_command(
             let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &None, None)?;
             slate = sender.send_tx(&slate,
                                   SlatePurpose::InvoiceInitial,
-                                   &dalek_secret,
-                                   slatepack_recipient_dalek_pk)?;
+                                  &dalek_secret,
+                                  slatepack_recipient_dalek_pk,
+                                  sender.check_other_wallet_version()?
+            )?;
             // Sender can chenge that, restoring original value
             slate.ttl_cutoff_height = original_slate.ttl_cutoff_height.clone();
             // Checking is sender didn't do any harm to slate
