@@ -1640,7 +1640,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "4.0.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#ad78635e94dad1f74f9c5d719dabac8ecbbb98ff"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#651a1f7cd1826b50f10904abcc83fbbad59882e6"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1666,7 +1666,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "4.0.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#ad78635e94dad1f74f9c5d719dabac8ecbbb98ff"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#651a1f7cd1826b50f10904abcc83fbbad59882e6"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -1681,7 +1681,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "4.0.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#ad78635e94dad1f74f9c5d719dabac8ecbbb98ff"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#651a1f7cd1826b50f10904abcc83fbbad59882e6"
 dependencies = [
  "chrono",
  "colored",
@@ -1714,7 +1714,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "4.0.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#ad78635e94dad1f74f9c5d719dabac8ecbbb98ff"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#651a1f7cd1826b50f10904abcc83fbbad59882e6"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1759,7 +1759,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "4.0.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#ad78635e94dad1f74f9c5d719dabac8ecbbb98ff"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#651a1f7cd1826b50f10904abcc83fbbad59882e6"
 dependencies = [
  "base64 0.9.3",
  "bch",
@@ -1813,7 +1813,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "4.0.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#ad78635e94dad1f74f9c5d719dabac8ecbbb98ff"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#651a1f7cd1826b50f10904abcc83fbbad59882e6"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
