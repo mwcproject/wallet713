@@ -1739,7 +1739,7 @@ fn do_command(
                 };
 
                 let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &apisecret, Some(config.get_tor_config()))?;
-                let other_wallet_version = sender.check_other_wallet_version()?;
+                let other_wallet_version = sender.check_other_wallet_version(&to.to_string())?;
                 if let Some(other_wallet_version) = &other_wallet_version {
                     if version.is_none() {
                         version = Some(other_wallet_version.0.to_numeric_version() as u16);
@@ -1919,7 +1919,7 @@ fn do_command(
                                   SlatePurpose::InvoiceInitial,
                                   &dalek_secret,
                                   slatepack_recipient_dalek_pk,
-                                  sender.check_other_wallet_version()?
+                                  sender.check_other_wallet_version(&to.to_string())?
             )?;
             // Sender can chenge that, restoring original value
             slate.ttl_cutoff_height = original_slate.ttl_cutoff_height.clone();
