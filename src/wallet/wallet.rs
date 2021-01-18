@@ -111,7 +111,12 @@ impl Wallet {
     pub fn node_info(
         &mut self) -> Result<(), Error> {
 
-        let ni = api::node_info(self.get_wallet_instance()?)?;
+        // Add retry for the node info.
+        let ni = match api::node_info(self.get_wallet_instance()?) {
+            Ok(ni) => ni,
+            Err(_) => api::node_info(self.get_wallet_instance()?)?,
+        };
+
         // this is an error condition
         if ni.height == 0 && ni.total_difficulty == 0 {
             cli_message!("Error: Error occured trying to contact node!");

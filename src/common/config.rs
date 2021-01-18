@@ -423,9 +423,11 @@ impl Wallet713Config {
             Some(grin_api::TLSConfig::new(self.tls_certificate_file.clone().unwrap(),
                                           self.tls_certificate_key.clone().unwrap()))
         } else {
-            if !self.foreign_api_address().starts_with("127.0.0.1:") && print_message {
-                cli_message!("WARNING: TLS configuration is not set. Non-secure HTTP connection will be used. It is recommended to use secure TLS connection.");
-            }
+            // We are stopping to print this message because our users really doesn't care. The QT wallet has such warring into the seetings.
+            // Those warnings suppose to be more important.
+            //if !self.foreign_api_address().starts_with("127.0.0.1:") && print_message {
+            //    cli_message!("WARNING: TLS configuration is not set. Non-secure HTTP connection will be used. It is recommended to use secure TLS connection.");
+            //}
             None
         }
     }
