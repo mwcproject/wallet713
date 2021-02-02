@@ -31,6 +31,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "aes"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd2bc6d3f370b5666245ff421e231cba4353df936e26986d2918e61a8fd6aef6"
+dependencies = [
+ "aes-soft",
+ "aesni",
+ "block-cipher",
+]
+
+[[package]]
+name = "aes-soft"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63dd91889c49327ad7ef3b500fd1109dbd3c509a03db0d4a9ce413b79f575cb6"
+dependencies = [
+ "block-cipher",
+ "byteorder",
+ "opaque-debug 0.3.0",
+]
+
+[[package]]
+name = "aesni"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0a6fe808308bb07d393e2ea47780043ec47683fcf19cf5efc8ca51c50cc8c68a"
+dependencies = [
+ "block-cipher",
+ "opaque-debug 0.3.0",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "0.7.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -189,13 +221,13 @@ dependencies = [
  "byteorder",
  "digest 0.7.6",
  "dns-lookup",
- "hex",
+ "hex 0.3.2",
  "linked-hash-map",
  "log",
  "murmur3",
  "rand 0.5.6",
  "ring",
- "ripemd160",
+ "ripemd160 0.7.0",
  "rust-base58",
  "rust-crypto",
  "secp256k1",
@@ -241,7 +273,7 @@ checksum = "349f9b6a179ed607305526ca489b34ad0a41aed5f7980fa90eb03160b69598fb"
 [[package]]
 name = "bitcoin"
 version = "0.26.0"
-source = "git+https://github.com/mwcproject/rust-bitcoin?branch=zkp#8008ba95571ead63b538dd399f3833a0aeb804f6"
+source = "git+https://github.com/mwcproject/rust-bitcoin?branch=zkp#98b1412e3704848370d23ce7d37b5f93b83ddbad"
 dependencies = [
  "bech32",
  "bitcoin_hashes",
@@ -287,6 +319,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71b66dc4e6b6d83f3afd41eb3006cd332a60d4e18496a31f2caa4069914d773f"
 
 [[package]]
+name = "bitvec"
+version = "0.18.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d2838fdd79e8776dbe07a106c784b0f8dda571a21b2750a092cc4cbaa653c8e"
+dependencies = [
+ "funty",
+ "radium",
+ "wyz",
+]
+
+[[package]]
 name = "blake2-rfc"
 version = "0.2.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -301,6 +344,17 @@ name = "blake2b_simd"
 version = "0.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "afa748e348ad3be8263be728124b24a24f268266f6f5d58af9d75f6a40b5c587"
+dependencies = [
+ "arrayref",
+ "arrayvec 0.5.2",
+ "constant_time_eq",
+]
+
+[[package]]
+name = "blake2s_simd"
+version = "0.5.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e461a7034e85b211a4acb57ee2e6730b32912b06c08cc242243c39fc21ae6a2"
 dependencies = [
  "arrayref",
  "arrayvec 0.5.2",
@@ -323,7 +377,7 @@ version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c0940dc441f31689269e10ac70eb1002a3a1d3ad1390e030043662eb7fe4688b"
 dependencies = [
- "block-padding",
+ "block-padding 0.1.5",
  "byte-tools 0.3.1",
  "byteorder",
  "generic-array 0.12.3",
@@ -339,12 +393,51 @@ dependencies = [
 ]
 
 [[package]]
+name = "block-cipher"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f337a3e6da609650eb74e02bc9fac7b735049f7623ab12f2e4c719316fcc7e80"
+dependencies = [
+ "generic-array 0.14.4",
+]
+
+[[package]]
+name = "block-modes"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0c9b14fd8a4739e6548d4b6018696cf991dcf8c6effd9ef9eb33b29b8a650972"
+dependencies = [
+ "block-cipher",
+ "block-padding 0.2.1",
+]
+
+[[package]]
 name = "block-padding"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fa79dedbb091f449f1f39e53edf88d5dbe95f895dae6135a8d7b881fb5af73f5"
 dependencies = [
  "byte-tools 0.3.1",
+]
+
+[[package]]
+name = "block-padding"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
+
+[[package]]
+name = "bls12_381"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4caf0101205582491f772d60a6fcb6bcec19963e68209cb631851eeadb01421f"
+dependencies = [
+ "bitvec",
+ "ff",
+ "group",
+ "pairing",
+ "rand_core 0.5.1",
+ "subtle",
 ]
 
 [[package]]
@@ -412,9 +505,9 @@ dependencies = [
 
 [[package]]
 name = "bzip2-sys"
-version = "0.1.9+1.0.8"
+version = "0.1.10+1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad3b39a260062fca31f7b0b12f207e8f2590a67d32ec7d59c20484b07ea7285e"
+checksum = "17fa3d1ac1ca21c5c4e36a97f3c3eb25084576f6fc47bf0139c1123434216c6c"
 dependencies = [
  "cc",
  "libc",
@@ -868,6 +961,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "crypto_api"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f855e87e75a4799e18b8529178adcde6fd4f97c1449ff4821e747ff728bb102"
+
+[[package]]
+name = "crypto_api_chachapoly"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d930b6a026ce9d358a17f9c9046c55d90b14bb847f36b6ebb6b19365d4feffb8"
+dependencies = [
+ "crypto_api",
+]
+
+[[package]]
 name = "crypto_box"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1144,6 +1252,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "equihash"
+version = "0.1.0"
+source = "git+https://github.com/mwcproject/librustzcash?branch=master#1a3b5c1750c328399ef9000cba889892255ff3c8"
+dependencies = [
+ "blake2b_simd",
+ "byteorder",
+]
+
+[[package]]
 name = "error-chain"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1179,6 +1296,17 @@ name = "fake-simd"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e88a8acf291dafb59c2d96e8f59828f3838bb1a70398823ade51a84de6a6deed"
+
+[[package]]
+name = "ff"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "01646e077d4ebda82b73f1bca002ea1e91561a77df2431a9e79729bcc31950ef"
+dependencies = [
+ "bitvec",
+ "rand_core 0.5.1",
+ "subtle",
+]
 
 [[package]]
 name = "flate2"
@@ -1224,6 +1352,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "fpe"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ef2196a22f6d98bbde79ae510eb4f397bd446cfbd6c26425e25ec81442a31bab"
+dependencies = [
+ "aes",
+ "block-modes",
+ "num-bigint 0.3.1",
+ "num-integer",
+ "num-traits 0.2.14",
+]
+
+[[package]]
 name = "fuchsia-cprng"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1244,6 +1385,12 @@ name = "fuchsia-zircon-sys"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3dcaa9ae7725d12cdb85b3ad99a434db70b468c09ded17e012d86b5c1010f7a7"
+
+[[package]]
+name = "funty"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fed34cd105917e91daa4da6b3728c47b068749d6a62c59811f06ed2ac71d9da7"
 
 [[package]]
 name = "futures"
@@ -1513,7 +1660,7 @@ dependencies = [
  "log",
  "pbkdf2",
  "rand 0.6.5",
- "ripemd160",
+ "ripemd160 0.7.0",
  "serde",
  "serde_derive",
  "serde_json",
@@ -1629,7 +1776,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "4.1.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#0ee707ddec3c90dd8bf5db9313bd7574315aa5fd"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#a4344a0aa7dd1b6453c91d11fa86a59f3483952c"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -1655,7 +1802,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "4.1.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#0ee707ddec3c90dd8bf5db9313bd7574315aa5fd"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#a4344a0aa7dd1b6453c91d11fa86a59f3483952c"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -1670,7 +1817,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "4.1.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#0ee707ddec3c90dd8bf5db9313bd7574315aa5fd"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#a4344a0aa7dd1b6453c91d11fa86a59f3483952c"
 dependencies = [
  "chrono",
  "colored",
@@ -1703,7 +1850,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "4.1.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#0ee707ddec3c90dd8bf5db9313bd7574315aa5fd"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#a4344a0aa7dd1b6453c91d11fa86a59f3483952c"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1748,7 +1895,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "4.1.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#0ee707ddec3c90dd8bf5db9313bd7574315aa5fd"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#a4344a0aa7dd1b6453c91d11fa86a59f3483952c"
 dependencies = [
  "base64 0.9.3",
  "bch",
@@ -1775,7 +1922,7 @@ dependencies = [
  "grin_util",
  "grin_wallet_config",
  "grin_wallet_util",
- "hex",
+ "hex 0.3.2",
  "hmac",
  "lazy_static",
  "libc",
@@ -1784,7 +1931,7 @@ dependencies = [
  "rand 0.6.5",
  "regex",
  "ring",
- "ripemd160",
+ "ripemd160 0.7.0",
  "serde",
  "serde_derive",
  "serde_json",
@@ -1797,12 +1944,13 @@ dependencies = [
  "strum_macros",
  "uuid",
  "x25519-dalek 0.6.0",
+ "zcash_primitives",
 ]
 
 [[package]]
 name = "grin_wallet_util"
 version = "4.1.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#0ee707ddec3c90dd8bf5db9313bd7574315aa5fd"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#a4344a0aa7dd1b6453c91d11fa86a59f3483952c"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
@@ -1818,6 +1966,18 @@ dependencies = [
  "serde",
  "serde_derive",
  "sha3",
+]
+
+[[package]]
+name = "group"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cc11f9f5fbf1943b48ae7c2bf6846e7d827a512d1be4f23af708f5ca5d01dde1"
+dependencies = [
+ "byteorder",
+ "ff",
+ "rand_core 0.5.1",
+ "subtle",
 ]
 
 [[package]]
@@ -1887,6 +2047,12 @@ name = "hex"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "805026a5d0141ffc30abb3be3173848ad46a1b1664fe632428479619a3644d77"
+
+[[package]]
+name = "hex"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "644f9158b2f133fd50f5fb3242878846d9eb792e445c893805ff0e3824006e35"
 
 [[package]]
 name = "hmac"
@@ -2173,6 +2339,20 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
+]
+
+[[package]]
+name = "jubjub"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "620638af3b80d23f4df0cae21e3cc9809ac8826767f345066f010bcea66a2c55"
+dependencies = [
+ "bitvec",
+ "bls12_381",
+ "ff",
+ "group",
+ "rand_core 0.5.1",
+ "subtle",
 ]
 
 [[package]]
@@ -2831,6 +3011,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "pairing"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f702cdbee9e0a6272452c20dec82465bc821116598b4eeb63e9a71a69dbf7fd"
+dependencies = [
+ "ff",
+ "group",
+]
+
+[[package]]
 name = "parking_lot"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3080,6 +3270,12 @@ checksum = "991431c3519a3f36861882da93630ce66b52918dcf1b8e2fd66b397fc96f28df"
 dependencies = [
  "proc-macro2 1.0.24",
 ]
+
+[[package]]
+name = "radium"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64de9a0c5361e034f1aefc9f71a86871ec870e766fe31a009734a989b329286a"
 
 [[package]]
 name = "rand"
@@ -3400,6 +3596,17 @@ dependencies = [
  "block-buffer 0.3.3",
  "byte-tools 0.2.0",
  "digest 0.7.6",
+]
+
+[[package]]
+name = "ripemd160"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2eca4ecc81b7f313189bf73ce724400a07da2a6dac19588b03c8bd76a2dcc251"
+dependencies = [
+ "block-buffer 0.9.0",
+ "digest 0.9.0",
+ "opaque-debug 0.3.0",
 ]
 
 [[package]]
@@ -4880,6 +5087,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "wyz"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "85e60b0d1b5f99db2556934e21937020776a5d31520bf169e851ac44e6420214"
+
+[[package]]
 name = "x25519-dalek"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4922,6 +5135,34 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56c1936c4cc7a1c9ab21a1ebb602eb942ba868cbd44a99cb7cdc5892335e1c85"
 dependencies = [
  "linked-hash-map",
+]
+
+[[package]]
+name = "zcash_primitives"
+version = "0.4.0"
+source = "git+https://github.com/mwcproject/librustzcash?branch=master#1a3b5c1750c328399ef9000cba889892255ff3c8"
+dependencies = [
+ "aes",
+ "bitvec",
+ "blake2b_simd",
+ "blake2s_simd",
+ "bls12_381",
+ "byteorder",
+ "crypto_api_chachapoly",
+ "equihash",
+ "ff",
+ "fpe",
+ "group",
+ "hex 0.4.2",
+ "jubjub",
+ "lazy_static",
+ "log",
+ "rand 0.7.3",
+ "rand_core 0.5.1",
+ "ripemd160 0.9.1",
+ "secp256k1",
+ "sha2 0.9.2",
+ "subtle",
 ]
 
 [[package]]
