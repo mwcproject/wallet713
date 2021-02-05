@@ -2179,8 +2179,8 @@ fn do_command(
 
             let secondary_currency = args.value_of("secondary_currency").unwrap();
             match secondary_currency {
-                "btc" | "bch" => (),
-                _ => return Err(ErrorKind::GenericError(format!("Invalid secondary_currency value. Expected btc or bch, get {}", secondary_currency)).into()),
+                "btc" | "bch" | "ltc" | "zcash" | "dash" | "doge" => (),
+                _ => return Err(ErrorKind::GenericError(format!("Invalid secondary_currency value. Expected btc, bch, ltc, zcash, dash or doge. Get {}", secondary_currency)).into()),
             }
 
             let secondary_amount = args.value_of("secondary_amount").unwrap();

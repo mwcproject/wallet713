@@ -541,7 +541,7 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("[confirmations] -c, --min_conf=<confirmations> 'Minimum number of confirmations required for an output to be spendable. Default: 10'")
                     )
                     .arg(
-                        Arg::from_usage("-s, --secondary_currency=<currency> 'Secondary currency name (bch, btc)'")
+                        Arg::from_usage("-s, --secondary_currency=<currency> 'Secondary currency name (btc, bch, ltc, zcash, dash, doge)'")
                     )
                     .arg(
                         Arg::from_usage("-b, --secondary_amount=<amount> 'Secondary currency amount excluding fees'")
