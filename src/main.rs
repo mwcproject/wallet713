@@ -1386,10 +1386,13 @@ fn do_command(
                 let mut file = File::open(input.replace("~", &home_dir))?;
                 let mut slate = String::new();
                 file.read_to_string(&mut slate)?;
+                if slate.len()<3 {
+                    return Err(ErrorKind::ArgumentError(format!("File {} is empty", input)).into());
+                }
                 slate
             }
             else {
-                return Err(ErrorKind::ArgumentError("Please difine '--content' of '--file' argument".to_string()).into());
+                return Err(ErrorKind::ArgumentError("Please define '--content' or '--file' argument".to_string()).into());
             };
 
             let (mut slate, content, sender, _recipient ) = w.deserialize_slate( &slate )?;
@@ -1470,6 +1473,9 @@ fn do_command(
             let mut file = File::open(input.replace("~", &home_dir))?;
             let mut slate = String::new();
             file.read_to_string(&mut slate)?;
+            if slate.len()<3 {
+                return Err(ErrorKind::ArgumentError(format!("File {} is empty", input)).into());
+            }
             let slate = Slate::deserialize_upgrade_plain(&slate)?;
             for p in slate.participant_data {
                 println!("pubkey[{}]={:?}", p.id, p.public_blind_excess);
@@ -1492,6 +1498,9 @@ fn do_command(
                 let mut file = File::open(input.replace("~", &home_dir))?;
                 let mut slate = String::new();
                 file.read_to_string(&mut slate)?;
+                if slate.len()<3 {
+                    return Err(ErrorKind::ArgumentError(format!("File {} is empty", input)).into());
+                }
                 slate
             }
             else {
@@ -1523,6 +1532,9 @@ fn do_command(
             let mut file = File::open(input.replace("~", &home_dir))?;
             let mut txn_file = String::new();
             file.read_to_string(&mut txn_file)?;
+            if txn_file.len()<3 {
+                return Err(ErrorKind::ArgumentError(format!("File {} is empty", input)).into());
+            }
             let tx_bin = from_hex(&txn_file)
                 .map_err(|_s| ErrorKind::GenericError(format!("Unable to parse the content of the file {}", input)))?;
             let mut txn : Transaction = ser::deserialize(&mut &tx_bin[..], ser::ProtocolVersion(1) )?;
@@ -2150,6 +2162,9 @@ fn do_command(
             let mut file = File::open(path)?;
             let mut proof = String::new();
             file.read_to_string(&mut proof)?;
+            if proof.len()<3 {
+                return Err(ErrorKind::ArgumentError(format!("File {} is empty", input)).into());
+            }
             let tx_pf: TxProof = serde_json::from_str(&proof)?;
 
             match tx_proof::verify_tx_proof_wrapper(&tx_pf) {
@@ -2179,8 +2194,8 @@ fn do_command(
 
             let secondary_currency = args.value_of("secondary_currency").unwrap();
             match secondary_currency {
-                "btc" | "bch" => (),
-                _ => return Err(ErrorKind::GenericError(format!("Invalid secondary_currency value. Expected btc or bch, get {}", secondary_currency)).into()),
+                "btc" | "bch" | "ltc" | "zcash" | "dash" | "doge" => (),
+                _ => return Err(ErrorKind::GenericError(format!("Invalid secondary_currency value. Expected btc, bch, ltc, zcash, dash or doge. Get {}", secondary_currency)).into()),
             }
 
             let secondary_amount = args.value_of("secondary_amount").unwrap();
@@ -2332,6 +2347,9 @@ fn do_command(
                     let mut file = File::open(input.replace("~", &home_dir))?;
                     let mut slate = String::new();
                     file.read_to_string(&mut slate)?;
+                    if slate.len()<3 {
+                        return Err(ErrorKind::ArgumentError(format!("File {} is empty", input)).into());
+                    }
                     slate
                 }
             };

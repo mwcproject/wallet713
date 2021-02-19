@@ -154,6 +154,22 @@ pub const WALLET713_CONFIG_HELP: &str =
 # btc_main_2 = \"btc.main2.swap.mwc.mw:18337\"
 # btc_test_1 = \"btc.test1.swap.mwc.mw:18339\"
 # btc_test_2 = \"btc.test2.swap.mwc.mw:18339\"
+# dash_main_1 = \"dash.main1.swap.mwc.mw:18351\"
+# dash_main_2 = \"dash.main2.swap.mwc.mw:18351\"
+# dash_test_1 = \"dash.test1.swap.mwc.mw:18349\"
+# dash_test_2 = \"dash.test1.swap.mwc.mw:18349\"
+# doge_main_1 = \"doge.main1.swap.mwc.mw:18359\"
+# doge_main_2 = \"doge.main2.swap.mwc.mw:18359\"
+# doge_test_1 = \"doge.test1.swap.mwc.mw:18357\"
+# doge_test_2 = \"doge.test1.swap.mwc.mw:18357\"
+# ltc_main_1 = \"ltc.main1.swap.mwc.mw:18343\"
+# ltc_main_2 = \"ltc.main2.swap.mwc.mw:18343\"
+# ltc_test_1 = \"ltc.test1.swap.mwc.mw:18341\"
+# ltc_test_2 = \"ltc.test1.swap.mwc.mw:18341\"
+# zcash_main_1 = \"zcash.main1.swap.mwc.mw:18355\"
+# zcash_main_2 = \"zcash.main2.swap.mwc.mw:18355\"
+# zcash_test_1 = \"zcash.test1.swap.mwc.mw:18353\"
+# zcash_test_2 = \"zcash.test1.swap.mwc.mw:18353\"
 
 ";
 
@@ -191,21 +207,39 @@ impl Wallet713Config {
             tls_certificate_key: None,
             config_home: None,
             wallet_updater_frequency_sec: None,
-            swap_electrumx_addr: Some(
-                [
-                    ("btc_main_1", "btc.main1.swap.mwc.mw:18337"),
-                    ("btc_main_2", "btc.main2.swap.mwc.mw:18337"),
-                    ("btc_test_1", "btc.test1.swap.mwc.mw:18339"),
-                    ("btc_test_2", "btc.test2.swap.mwc.mw:18339"),
-                    ("bch_main_1", "bch.main1.swap.mwc.mw:18333"),
-                    ("bch_main_2", "bch.main2.swap.mwc.mw:18333"),
-                    ("bch_test_1", "bch.test1.swap.mwc.mw:18335"),
-                    ("bch_test_2", "bch.test1.swap.mwc.mw:18335"),
-                ].iter().cloned()
-                    .map(|i| (i.0.to_string(), i.1.to_string()) )
-                    .collect::<BTreeMap<String,String>>()
-            )
+            swap_electrumx_addr: Some( Self::get_default_electrumx_servers() ),
         }
+    }
+
+    fn get_default_electrumx_servers() -> BTreeMap<String,String> {
+        [
+            ("btc_main_1", "btc.main1.swap.mwc.mw:18337"),
+            ("btc_main_2", "btc.main2.swap.mwc.mw:18337"),
+            ("btc_test_1", "btc.test1.swap.mwc.mw:18339"),
+            ("btc_test_2", "btc.test2.swap.mwc.mw:18339"),
+            ("bch_main_1", "bch.main1.swap.mwc.mw:18333"),
+            ("bch_main_2", "bch.main2.swap.mwc.mw:18333"),
+            ("bch_test_1", "bch.test1.swap.mwc.mw:18335"),
+            ("bch_test_2", "bch.test1.swap.mwc.mw:18335"),
+            ("dash_main_1", "dash.main1.swap.mwc.mw:18351"),
+            ("dash_main_2", "dash.main2.swap.mwc.mw:18351"),
+            ("dash_test_1", "dash.test1.swap.mwc.mw:18349"),
+            ("dash_test_2", "dash.test1.swap.mwc.mw:18349"),
+            ("doge_main_1", "doge.main1.swap.mwc.mw:18359"),
+            ("doge_main_2", "doge.main2.swap.mwc.mw:18359"),
+            ("doge_test_1", "doge.test1.swap.mwc.mw:18357"),
+            ("doge_test_2", "doge.test1.swap.mwc.mw:18357"),
+            ("ltc_main_1", "ltc.main1.swap.mwc.mw:18343"),
+            ("ltc_main_2", "ltc.main2.swap.mwc.mw:18343"),
+            ("ltc_test_1", "ltc.test1.swap.mwc.mw:18341"),
+            ("ltc_test_2", "ltc.test1.swap.mwc.mw:18341"),
+            ("zcash_main_1", "zcash.main1.swap.mwc.mw:18355"),
+            ("zcash_main_2", "zcash.main2.swap.mwc.mw:18355"),
+            ("zcash_test_1", "zcash.test1.swap.mwc.mw:18353"),
+            ("zcash_test_2", "zcash.test1.swap.mwc.mw:18353"),
+        ].iter().cloned()
+            .map(|i| (i.0.to_string(), i.1.to_string()) )
+            .collect::<BTreeMap<String,String>>()
     }
 
     #[cfg(not(target_os = "android"))]
@@ -235,6 +269,23 @@ impl Wallet713Config {
         file.read_to_string(&mut toml_str)?;
         let mut config: Wallet713Config = toml::from_str(&toml_str[..])?;
         config.config_home = Some(config_path);
+
+        // merging swap_electrumx_addr with predefined ones. TThe new values will be added automatically.
+        // We don't want to bump the config file verrsion because of every new coin.
+        let default_elecetumx_servers = Self::get_default_electrumx_servers();
+        if config.swap_electrumx_addr.is_none() {
+            config.swap_electrumx_addr = Some(default_elecetumx_servers);
+        }
+        else {
+            let mut settings = config.swap_electrumx_addr.unwrap();
+            for (k,v) in default_elecetumx_servers {
+                if !settings.contains_key(&k) {
+                    settings.insert(k,v);
+                }
+            }
+            config.swap_electrumx_addr = Some(settings);
+        }
+
         Ok(config)
     }
 
