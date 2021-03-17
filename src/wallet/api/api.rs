@@ -718,6 +718,7 @@ pub fn init_send_tx<'a, L, C, K>(
     do_proof: bool,
     slatepack_recipient: Option<ProvableAddress>,
     late_lock: Option<bool>,
+    min_fee: Option<u64>,
 ) -> Result<Slate, Error>
     where
         L: WalletLCProvider<'a, C, K>,
@@ -807,6 +808,7 @@ pub fn init_send_tx<'a, L, C, K>(
         outputs,
         slatepack_recipient,
         late_lock,
+        min_fee,
     };
 
     let s = grin_wallet_libwallet::owner::init_send_tx( &mut **w,
@@ -1308,7 +1310,7 @@ pub fn receive_tx<'a, L, C, K>(
         false,
         true,
     )?;
-    Ok(s)
+    Ok(s.0)
 }
 
 pub fn swap_create_from_offer<'a, L, C, K>(

@@ -49,11 +49,6 @@ pub enum ErrorKind {
         display = "Tor Error: `{}`",
         0
     )]
-    TORError(String),
-    #[fail(
-    display = "invalid transaction id number: `{}`",
-    0
-    )]
     InvalidTxIdNumber(String),
     #[fail(
     display = "invalid transaction UUID: `{}`",

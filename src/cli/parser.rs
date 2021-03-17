@@ -211,6 +211,9 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("[tor] -t, --tor 'start the Tor listener'")
                     )
+                    .arg(
+                        Arg::from_usage("[libp2p] -p, --libp2p 'start the libp2p with Tor listener'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("stop")
@@ -282,6 +285,9 @@ impl<'a, 'b> Parser {
                     )
                     .arg(
                         Arg::from_usage("[lock_later] --lock_later 'For files transactions lock outputs at final step.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[min_fee] --min_fee=<fee> 'Minimal fee value. By default wallet selecting the minimal fee accepted by the network. This value can increase the fee if needed.'")
                     )
             )
             .subcommand(
@@ -661,6 +667,68 @@ impl<'a, 'b> Parser {
                     )
                     .arg(
                         Arg::from_usage("[file] -f, --file=<file> 'File with a slate or slatepack content'")
+                    )
+            )
+            .subcommand(
+                SubCommand::with_name("integrity")
+                    .about("Manage integrity fees and funds")
+                    .arg(
+                        Arg::from_usage("[check] -c, --check 'View paid integrity fees, view integrity account balance'")
+                    )
+                    .arg(
+                        Arg::from_usage("[reserve] -r, --reserve=<mwc> 'In case of low balance, how much coins reserve for integrity fees. Default is 1 MWC'")
+                    )
+                    .arg(
+                        Arg::from_usage("[account] -a, --account=<account> 'Account name to withdraw funds for integrity fee reservation'")
+                    )
+                    .arg(
+                        Arg::from_usage("[create] -t, --create=<fee> 'Create integrity transaction to pay fees. Argument is comma separated fees (MWC). The minimal fee for network is 10X of basic fees. Currently it is 0.01 MWC'")
+                    )
+                    .arg(
+                        Arg::from_usage("[withdraw] -w, --withdraw 'Withdraw the integrity funds back to regular wallet account'")
+                    )
+                    .arg(
+                        Arg::from_usage("[json] -j, --json 'Print response in Json format'")
+                    )
+            )
+            .subcommand(
+                SubCommand::with_name("messaging")
+                    .about("Manage libp2p messaging routine")
+                    .arg(
+                        Arg::from_usage("[status] -s, --status 'Show status of messaging: listening topics, minimal fee, broadcasting messages, number of received messages.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[add_topic] -a, --add_topic=<topic> 'Add topic to listen. Messages must be in json format.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[fee] -f, --fee=<mwc> 'Integrity fee. For topic and receive_message it is a minimal accepted fee. For publishing it is integrity fee to pay.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[remove_topic] -r, --remove_topic=<topic> 'Stop listening on the topic.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[publish_message] -p, --publish_message=<message> 'Start broadcasting the message.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[publish_topic] -t, --publish_topic=<topic> 'Topic for the broadcast message.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[publish_interval] -i, --publish_interval=<sec> 'Time interval for broadcasting (seconds). The minimal interval is 1 minute.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[withdraw_message] -w, --withdraw_message=<uuid> 'Stop broadcast message.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[receive_messages] -v, --receive_messages=<yes|no> 'Print messages that was received. Optionally messages can be deleted from the buffer. Note, last 1000 messages will be stored.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[check_integrity] --check_integrity 'Check Integrity context expiration of broadcast messages. Need to be done at least every hour.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[check_integrity_retain] --check_integrity_retain 'Delete messages with expired Integrity context'")
+                    )
+                    .arg(
+                        Arg::from_usage("[json] --json 'Print response in Json format'")
                     )
             )
     }

@@ -439,6 +439,7 @@ impl Wallet {
         do_proof: bool,
         slatepack_recipient: Option<ProvableAddress>,
         late_lock: Option<bool>,
+        min_fee: Option<u64>,
     ) -> Result<Slate, Error> {
         let slate = api::init_send_tx(
             self.get_wallet_instance()?,
@@ -458,6 +459,7 @@ impl Wallet {
             do_proof,
             slatepack_recipient,
             late_lock,
+            min_fee,
         )?;
 
         Ok(slate)

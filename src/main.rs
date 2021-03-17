@@ -120,6 +120,7 @@ use grin_wallet_controller::command;
 use grin_wallet_libwallet::proof::tx_proof;
 use grin_wallet_libwallet::proof::proofaddress;
 use std::fs;
+use grin_util::secp::constants::SECRET_KEY_SIZE;
 
 
 #[cfg(not(target_os = "android"))]
@@ -295,6 +296,7 @@ fn start_tor_listener(
     config: &Wallet713Config,
     wallet: Arc<Mutex<Wallet>>,
     tor_running: &mut bool,
+    start_libp2p: bool,
 ) -> Result<std::sync::Arc<std::sync::Mutex<u32>>, Error> {
 
     // Let's check if foreign API is running (was able to start)
@@ -308,36 +310,32 @@ fn start_tor_listener(
     let mutex = std::sync::Arc::new(std::sync::Mutex::new(1));
     let mutex_clone = mutex.clone();
 
-    let (input, output): (Sender<bool>, Receiver<bool>) = std::sync::mpsc::channel();
+    let (input, output): (Sender<[u8; SECRET_KEY_SIZE]>, Receiver<[u8; SECRET_KEY_SIZE]>) = std::sync::mpsc::channel();
 
     // cloning for the thread
-    let config = config.clone();
+    let config2 = config.clone();
+    let wallet2 = wallet.clone();
 
     thread::Builder::new()
             .name("tor_listener".to_string())
             .spawn(move || {
-                let wallet_data_dir = config.get_wallet_data_dir();
-                let winst = wallet.lock().get_wallet_instance().unwrap();
+                let wallet_data_dir = config2.get_wallet_data_dir();
+                let winst = wallet2.lock().get_wallet_instance().unwrap();
                 let onion_address = grin_wallet_controller::controller::get_tor_address(winst.clone(), keychain_mask.clone()).unwrap();
-                let p = grin_wallet_controller::controller::init_tor_listener(winst.clone(),
-                                                                              keychain_mask.clone(), &addr, Some(&wallet_data_dir.clone()));
-
-                let sender = HttpDataSender::new("https://", None, Some(wallet_data_dir.clone()), false);
-                let mut sender = sender.unwrap();
-                let s = sender.start_socks(&config.get_socks_addr());
-
-                match s {
-                    Err(s) => {
-                        cli_message!("INFO: Tor listener failed to start. HTTP listener must be enabled. {}", s);
-                    },
-                    _ => {}
-                }
+                let p = grin_wallet_controller::controller::init_tor_listener(
+                    winst.clone(),
+                    keychain_mask.clone(),
+                    &addr,
+                    &config2.get_socks_addr(),
+                    &config2.libp2p_port,
+                    Some(&wallet_data_dir.clone())
+                );
 
                 let _ = match p {
-                    Ok(p) => {
+                    Ok((p, tor_secret)) => {
                         let url_str = &format!("http://{}.onion", onion_address);
                         cli_message!("{}", &format!("Tor listener started for [{}]", url_str));
-                        input.send(true).unwrap();
+                        input.send(tor_secret.0).unwrap();
                         loop {
                             std::thread::sleep(std::time::Duration::from_millis(30));
                             let val = mutex_clone.lock().unwrap();
@@ -348,7 +346,9 @@ fn start_tor_listener(
                     },
                     Err(e) => {
                         cli_message!("ERROR: Unable to start Tor listener. {}", e);
-                        input.send(false).unwrap();
+                        // all zero key - unable to start.
+                        let zero_buf : [u8; SECRET_KEY_SIZE] = [0; SECRET_KEY_SIZE];
+                        input.send(zero_buf).unwrap();
                         None
                     },
                 };
@@ -356,7 +356,25 @@ fn start_tor_listener(
             })?;
 
     let resp = output.recv();
-    *tor_running = resp.unwrap();
+    let tor_secret = resp.unwrap();
+    *tor_running = tor_secret.iter().filter(|b| **b!=0).count()>0;
+
+    if start_libp2p && *tor_running {
+        if config.libp2p_port.is_none() {
+            return Err(ErrorKind::ArgumentError("Please define libp2p_port value in config".to_string()).into())
+        }
+
+        let libp2p_port = config.libp2p_port.unwrap();
+        grin_wallet_controller::controller::start_libp2p_listener(
+            wallet.lock().get_wallet_instance().unwrap(),
+            tor_secret,
+            &config.get_socks_addr(),
+            libp2p_port,
+            mutex.clone(),
+        )?;
+
+        cli_message!("libp2p listener started. Port {}", libp2p_port);
+    }
 
     Ok(mutex)
 }
@@ -422,6 +440,8 @@ fn start_wallet_api(
             let wallet_instance = wallet.lock().get_wallet_instance()?;
             let foreign_api_address = config.foreign_api_address();
             let tls_config = tls_config.clone();
+            let socks_addr = config.get_socks_addr();
+            let libp2p_port = config.libp2p_port.clone();
 
             thread::Builder::new()
                 .name("foreign_listener".to_string())
@@ -431,7 +451,10 @@ fn start_wallet_api(
                         Arc::new(Mutex::new(None)),
                         &foreign_api_address,
                         tls_config,
-                        false)
+                        false,
+                        &socks_addr,
+                        &libp2p_port,
+                    )
                     {
                         cli_message!( "{}: Foreign API Listener failed. {}", "ERROR".bright_red(), e );
                     }
@@ -1059,14 +1082,16 @@ fn do_command(
             return Ok(());
         }
         Some("listen") => {
-            let mwcmqs = matches
-                .subcommand_matches("listen")
-                .unwrap()
-                .is_present("mwcmqs");
-            let tor = matches
-                .subcommand_matches("listen")
-                .unwrap()
-                .is_present("tor");
+            let args = matches.subcommand_matches("listen").unwrap();
+
+            let mwcmqs = args.is_present("mwcmqs");
+            let tor = args.is_present("tor");
+            let libp2p = args.is_present("libp2p");
+
+            if libp2p && !tor {
+                return Err(ErrorKind::ArgumentError("libp2p can be started with tor. Please specify both --tor --libp2p".to_string()).into());
+            }
+
             if mwcmqs {
                 let is_running = match mwcmqs_broker {
                     Some((_, subscriber)) => subscriber.is_running(),
@@ -1084,9 +1109,9 @@ fn do_command(
                 if !(*tor_running) {
                     if config.foreign_api() {
                         cli_message!("Starting Tor listener...");
-                        *tor_state = Some(start_tor_listener(&config, wallet.clone(), tor_running)?);
+                        *tor_state = Some(start_tor_listener(&config, wallet.clone(), tor_running, libp2p)?);
                     } else {
-                        return Err(ErrorKind::TORError("Foreign API must be enabled to use Tor.".to_string()))?;
+                        return Err(ErrorKind::ArgumentError("Foreign API must be enabled to use Tor.".to_string()))?;
                     }
                 } else {
                     cli_message!("INFO: Tor listener already started.");
@@ -1094,14 +1119,10 @@ fn do_command(
             }
         }
         Some("stop") => {
-            let mwcmqs = matches
-                .subcommand_matches("stop")
-                .unwrap()
-                .is_present("mwcmqs");
-            let tor = matches
-                .subcommand_matches("stop")
-                .unwrap()
-                .is_present("tor");
+            let args = matches.subcommand_matches("stop").unwrap();
+
+            let mwcmqs = args.is_present("mwcmqs");
+            let tor = args.is_present("tor");
 
             if mwcmqs {
                 let is_running = match mwcmqs_broker {
@@ -1646,6 +1667,16 @@ fn do_command(
 
             let lock_later : Option<bool> = Some(args.is_present("lock_later"));
 
+            let min_fee = match args.value_of("min_fee") {
+                Some(min_fee) => {
+                    match core::amount_from_hr_string(min_fee) {
+                        Ok(min_fee) => Some(min_fee),
+                        Err(e) => return Err(ErrorKind::ArgumentError(format!("Could not parse minimal fee as a number, {}",e)).into()),
+                    }
+                }
+                None => None,
+            };
+
             // Preparign for sync update progress printing
             let running = Arc::new( AtomicBool::new(true) );
             let (tx, rx) = mpsc::channel();
@@ -1679,6 +1710,7 @@ fn do_command(
                     false,
                     slatepack_recipient_address,
                     lock_later,
+                    min_fee,
                 );
 
 
@@ -1776,6 +1808,7 @@ fn do_command(
                     do_proof,
                     slatepack_recipient_address,
                     lock_later,
+                    min_fee,
                 )?;
 
                 // Stopping updater, sync should be done by now
@@ -1848,6 +1881,7 @@ fn do_command(
                     do_proof,
                     Some( slatepack_recipient_address.clone().unwrap_or( ProvableAddress::blank() ) ), // Need to provide some address to trigger compact slate
                     lock_later,
+                    min_fee,
                 )?;
 
                 let slate_str = w.serialize_slate(&slate,
@@ -2370,6 +2404,84 @@ fn do_command(
             cli_message!("Content: {}", content.map(|s| format!("{:?}",s) ).unwrap_or("N/A".to_string()) );
             cli_message!("Sender: {}", sender.unwrap_or("None".to_string()) );
             cli_message!("Recipient: {}", recipient.unwrap_or("None".to_string()) );
+        }
+        Some("integrity") => {
+            let args = matches.subcommand_matches("integrity").unwrap();
+
+            let mut fee = vec![];
+            let subcommand = if args.is_present("check") {
+                command::IntegritySubcommand::Check
+            } else if args.is_present("create") {
+                let fee_str = args.value_of("create").unwrap().split(",");
+                for fs in fee_str {
+                    let fee_amount = core::amount_from_hr_string(fs).map_err(|e| {
+                        ErrorKind::ArgumentError(format!("Unable to parse create fee amount, {}", e))
+                    })?;
+                    fee.push(fee_amount);
+                }
+                command::IntegritySubcommand::Create
+            } else if args.is_present("withdraw") {
+                command::IntegritySubcommand::Withdraw
+            } else {
+                return Err(ErrorKind::ArgumentError(
+                    "Expected check, create or withdraw parameter".to_string(),
+                ).into());
+            };
+
+            let reserve = match args.value_of("reserve") {
+                Some(str) => Some(core::amount_from_hr_string(str).map_err(|e| {
+                    ErrorKind::ArgumentError(format!("Unable to parse reserve MWC value, {}", e))
+                })?),
+                None => None,
+            };
+            let account = args.value_of("account").map(|s| String::from(s));
+
+            grin_wallet_controller::command::integrity(
+                wallet.lock().get_wallet_instance()?,
+                None,
+                command::IntegrityArgs {
+                    subcommand,
+                    account,
+                    reserve,
+                    fee,
+                    json: args.is_present("json"),
+                }
+            )?;
+        }
+        Some("messaging") => {
+            let args = matches.subcommand_matches("messaging").unwrap();
+
+            let fee = match args.value_of("fee") {
+                Some(s) => Some(core::amount_from_hr_string(s).map_err(|e| {
+                    ErrorKind::ArgumentError(format!("Unable to parse create fee amount, {}", e))
+                })?),
+                None => None,
+            };
+
+            let publish_interval = match args.value_of("publish_interval") {
+                Some(s) => Some(s.parse::<u32>().map_err(|e| {
+                    ErrorKind::ArgumentError(format!("Unable to parse interval value, {}", e))
+                })?),
+                None => None,
+            };
+
+            grin_wallet_controller::command::messaging(
+                wallet.lock().get_wallet_instance()?,
+                None,
+                command::MessagingArgs {
+                    show_status: args.is_present("status"),
+                    add_topic: args.value_of("add_topic").map(|s| String::from(s)),
+                    fee,
+                    remove_topic: args.value_of("remove_topic").map(|s| String::from(s)),
+                    publish_message: args.value_of("publish_message").map(|s| String::from(s)),
+                    publish_topic: args.value_of("publish_topic").map(|s| String::from(s)),
+                    publish_interval,
+                    withdraw_message_id: args.value_of("withdraw_message").map(|s| String::from(s)),
+                    receive_messages: args.value_of("receive_messages").map(|s| s == "yes"),
+                    check_integrity_expiration: args.is_present("check_integrity"),
+                    check_integrity_retain: args.is_present("check_integrity_retain"),
+                    json: args.is_present("json"),
+                })?;
         }
         Some(subcommand) => {
             cli_message!(
