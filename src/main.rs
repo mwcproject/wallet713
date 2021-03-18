@@ -1142,7 +1142,7 @@ fn do_command(
             let confirmations = u64::from_str_radix(confirmations, 10)
                 .map_err(|_| ErrorKind::InvalidMinConfirmations(confirmations.to_string()))?;
 
-            wallet.lock().info(!args.is_present("--no-refresh"), confirmations)?;
+            wallet.lock().info(!args.is_present("--no-refresh"), confirmations, Some(config.get_replay_mitigation_config()))?;
         }
         Some("txs_count") => {
             let count = wallet.lock().txs_count()?;

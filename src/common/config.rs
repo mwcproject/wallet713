@@ -12,6 +12,7 @@ use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
 use crate::contacts::{ DEFAULT_GRINBOX_PORT};
 use crate::common::Error;
 use grin_wallet_impls::MWCMQSAddress;
+use grin_wallet_libwallet::ReplayMitigationConfig;
 use grin_wallet_config::{MQSConfig, TorConfig};
 use contacts::{DEFAULT_MWCMQS_DOMAIN, DEFAULT_MWCMQS_PORT};
 use std::collections::BTreeMap;
@@ -40,6 +41,8 @@ pub struct Wallet713Config {
     pub disable_history: Option<bool>,
     pub foreign_api_address: Option<String>,
     pub foreign_api_secret: Option<String>,
+    pub replay_mitigation_flag : Option<bool>,
+    pub replay_mitigation_min_amount : Option<u64>,
 
     /// If enabled both tls_certificate_file and tls_certificate_key, TSL will be applicable to all rest API
     /// TLS certificate file
@@ -74,6 +77,11 @@ pub const WALLET713_CONFIG_HELP: &str =
 # MWC MQS connection settings. By default mwc713 using thhis method for communication.
 # mwcmqs_domain = \"mqs.mwc.mw\"
 # mwcmqs_port = 443
+
+# MWC replay attack mitigation settings.
+Example only do self spend for outputs with at least 5 MWCs:  replay_mitigation_min_amount = 50000000000
+# replay_mitigation_flag = false
+# replay_mitigation_min_amount = 50000000000
 
 # The address to bind to for tor socks 5 proxy. By default this is set to 127.0.0.1:59051
 # socks_addr = \"127.0.0.1:59051\"
@@ -203,6 +211,8 @@ impl Wallet713Config {
             disable_history: None,
             foreign_api_address: None,
             foreign_api_secret: None,
+            replay_mitigation_flag : None,
+            replay_mitigation_min_amount : None,
             tls_certificate_file: None,
             tls_certificate_key: None,
             config_home: None,
@@ -444,6 +454,13 @@ impl Wallet713Config {
         grin_wallet_config::MQSConfig {
             mwcmqs_domain: self.mwcmqs_domain.clone().unwrap_or(DEFAULT_MWCMQS_DOMAIN.to_string()),
             mwcmqs_port: self.mwcmqs_port.clone().unwrap_or(DEFAULT_MWCMQS_PORT),
+        }
+    }
+
+    pub fn get_replay_mitigation_config(&self) -> ReplayMitigationConfig {
+        ReplayMitigationConfig {
+            replay_mitigation_flag: self.replay_mitigation_flag.clone().unwrap_or(false),
+            replay_mitigation_min_amount: self.replay_mitigation_min_amount.clone().unwrap_or(50000000000),
         }
     }
 
