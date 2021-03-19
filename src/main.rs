@@ -120,10 +120,16 @@ use grin_wallet_controller::command;
 use grin_wallet_libwallet::proof::tx_proof;
 use grin_wallet_libwallet::proof::proofaddress;
 use std::fs;
+use grin_wallet_libwallet::ReplayMitigationConfig;
 
 
 #[cfg(not(target_os = "android"))]
 const CLI_HISTORY_PATH: &str = ".history";
+lazy_static! {
+
+	/// Global config in memory storage.
+	static ref REPLAY_MITIGATION_CONFIG: Mutex< ReplayMitigationConfig> = Mutex::new(ReplayMitigationConfig::default);
+}
 
 fn getpassword() -> Result<String, Error> {
     let mwc_password = getenv("MWC_PASSWORD")?;
@@ -528,6 +534,12 @@ fn main() {
             e
         );
     });
+
+    //update the replay mitigation global configuration
+    let replay_attck_config = config.get_replay_mitigation_config();
+    REPLAY_MITIGATION_CONFIG.lock().replay_mitigation_flag = replay_attck_config.replay_mitigation_flag;
+    REPLAY_MITIGATION_CONFIG.lock().replay_mitigation_min_amount = replay_attck_config.replay_mitigation_min_amount;
+
 
     if disable_history {
         config.disable_history = Some(true);
