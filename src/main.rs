@@ -104,6 +104,7 @@ use contacts::DEFAULT_MWCMQS_PORT;
 use contacts::DEFAULT_MWCMQS_DOMAIN;
 
 use grin_wallet_libwallet::proof::tx_proof::TxProof;
+use grin_wallet_libwallet::set_replay_config;
 use grin_wallet_libwallet::Slate;
 use grin_util::secp::key::PublicKey;
 use grin_wallet_impls::{MWCMQPublisher, MWCMQSubscriber, MWCMQSAddress, Publisher, Subscriber, Address, AddressType};
@@ -120,16 +121,11 @@ use grin_wallet_controller::command;
 use grin_wallet_libwallet::proof::tx_proof;
 use grin_wallet_libwallet::proof::proofaddress;
 use std::fs;
-use grin_wallet_libwallet::ReplayMitigationConfig;
 
 
 #[cfg(not(target_os = "android"))]
 const CLI_HISTORY_PATH: &str = ".history";
-lazy_static! {
 
-	/// Global config in memory storage.
-	static ref REPLAY_MITIGATION_CONFIG: Mutex< ReplayMitigationConfig> = Mutex::new(ReplayMitigationConfig::default);
-}
 
 fn getpassword() -> Result<String, Error> {
     let mwc_password = getenv("MWC_PASSWORD")?;
@@ -536,9 +532,8 @@ fn main() {
     });
 
     //update the replay mitigation global configuration
-    let replay_attck_config = config.get_replay_mitigation_config();
-    REPLAY_MITIGATION_CONFIG.lock().replay_mitigation_flag = replay_attck_config.replay_mitigation_flag;
-    REPLAY_MITIGATION_CONFIG.lock().replay_mitigation_min_amount = replay_attck_config.replay_mitigation_min_amount;
+    let replay_attack_config = config.get_replay_mitigation_config();
+    set_replay_config(replay_attack_config);
 
 
     if disable_history {
@@ -1154,7 +1149,7 @@ fn do_command(
             let confirmations = u64::from_str_radix(confirmations, 10)
                 .map_err(|_| ErrorKind::InvalidMinConfirmations(confirmations.to_string()))?;
 
-            wallet.lock().info(!args.is_present("--no-refresh"), confirmations, Some(config.get_replay_mitigation_config()))?;
+            wallet.lock().info(!args.is_present("--no-refresh"), confirmations, )?;
         }
         Some("txs_count") => {
             let count = wallet.lock().txs_count()?;

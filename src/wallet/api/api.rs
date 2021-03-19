@@ -32,7 +32,6 @@ use grin_wallet_impls::{Address, PathToSlateGetter, SlateGetter, PathToSlatePutt
 use grin_wallet_impls::adapters::SlateGetData;
 use ed25519_dalek::PublicKey as DalekPublicKey;
 use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
-use grin_wallet_libwallet::ReplayMitigationConfig;
 
 // struct for sending back node information
 pub struct NodeInfo
@@ -676,7 +675,6 @@ pub fn retrieve_summary_info<'a, L, C, K>(
     wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
     refresh_from_node: bool,
     minimum_confirmations: u64,
-    replay_config: Option<ReplayMitigationConfig>,
 ) -> Result<(bool, WalletInfo), Error>
     where
         L: WalletLCProvider<'a, C, K>,
@@ -694,7 +692,6 @@ pub fn retrieve_summary_info<'a, L, C, K>(
                                                                   &tx,
                                                                   refresh_from_node,
                                                                   minimum_confirmations,
-        replay_config,
 
     )?;
 
@@ -729,7 +726,7 @@ pub fn init_send_tx<'a, L, C, K>(
         K: Keychain + 'a,
 {
     // Caller is responsible for refresh call
-    grin_wallet_libwallet::owner::update_wallet_state(wallet_inst.clone(), None, status_send_channel, None )?;
+    grin_wallet_libwallet::owner::update_wallet_state(wallet_inst.clone(), None, status_send_channel)?;
 
     wallet_lock!(wallet_inst, w);
 
@@ -1054,7 +1051,6 @@ pub fn sync<'a, L, C, K>(
         wallet_inst,
         None,
         &status_send_channel,
-        None,
     )?;
 
     running.store(false, Ordering::Relaxed);

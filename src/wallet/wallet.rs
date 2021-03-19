@@ -24,7 +24,6 @@ use std::sync::mpsc::Sender;
 use grin_wallet_libwallet::proof::proofaddress::{ProvableAddress,ProofAddressType};
 use ed25519_dalek::{SecretKey as DalekSecretKey, PublicKey as DalekPublicKey};
 use grin_wallet_libwallet::proof::proofaddress;
-use grin_wallet_libwallet::ReplayMitigationConfig;
 
 pub struct Wallet {
     backend: Option< Arc<Mutex<Box<dyn WalletInst<'static,
@@ -228,10 +227,10 @@ impl Wallet {
         Ok(())
     }
 
-    pub fn info(&self, refresh: bool, confirmations: u64, replay_config: Option<ReplayMitigationConfig>) -> Result<(), Error> {
+    pub fn info(&self, refresh: bool, confirmations: u64) -> Result<(), Error> {
         let (mut validated, wallet_info) = api::retrieve_summary_info(
             self.get_wallet_instance()?, refresh,
-            confirmations, replay_config)?;
+            confirmations)?;
         if !refresh { validated = true; }
         display::info(&self.get_current_account()?.label, &wallet_info, !refresh || validated, true);
         Ok(())
