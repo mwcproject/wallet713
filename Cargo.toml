@@ -1,6 +1,6 @@
 [package]
 name = "mwc713"
-version = "4.1.1"
+version = "4.1.2"
 authors = ["vault713 devs"]
 description = "A wallet that makes it easy to send, store, and swap MWC."
 keywords = [ "grin", "mimblewimble", "rust", "crypto", "cryptocurrency" ]
@@ -63,12 +63,12 @@ grin_util = { git = "https://github.com/mwcproject/mwc-node", tag = "4.2.2" }
 grin_api = { git = "https://github.com/mwcproject/mwc-node", tag = "4.2.2" }
 grin_store = { git = "https://github.com/mwcproject/mwc-node", tag = "4.2.2" }
 grin_p2p = { git = "https://github.com/mwcproject/mwc-node", tag = "4.2.2" }
-grin_wallet_impls = { git = "https://github.com/mwcproject/mwc-wallet", tag = "4.1.1" }
-grin_wallet_libwallet = { git = "https://github.com/mwcproject/mwc-wallet", tag = "4.1.1" }
-grin_wallet_api = { git = "https://github.com/mwcproject/mwc-wallet", tag = "4.1.1" }
-grin_wallet_controller = { git = "https://github.com/mwcproject/mwc-wallet", tag = "4.1.1" }
-grin_wallet_config = { git = "https://github.com/mwcproject/mwc-wallet", tag = "4.1.1" }
-grin_wallet_util = { git = "https://github.com/mwcproject/mwc-wallet", tag = "4.1.1" }
+grin_wallet_impls = { git = "https://github.com/mwcproject/mwc-wallet", tag = "4.1.2" }
+grin_wallet_libwallet = { git = "https://github.com/mwcproject/mwc-wallet", tag = "4.1.2" }
+grin_wallet_api = { git = "https://github.com/mwcproject/mwc-wallet", tag = "4.1.2" }
+grin_wallet_controller = { git = "https://github.com/mwcproject/mwc-wallet", tag = "4.1.2" }
+grin_wallet_config = { git = "https://github.com/mwcproject/mwc-wallet", tag = "4.1.2" }
+grin_wallet_util = { git = "https://github.com/mwcproject/mwc-wallet", tag = "4.1.2" }
 
 # For bleeding edge
 #grin_core = { git = "https://github.com/mwcproject/mwc-node", branch = "master" }
