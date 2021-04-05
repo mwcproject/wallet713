@@ -704,6 +704,9 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("[fee] -f, --fee=<mwc> 'Integrity fee. For topic and receive_message it is a minimal accepted fee. For publishing it is integrity fee to pay.'")
                     )
                     .arg(
+                        Arg::from_usage("[fee_uuid] -u, --fee_uuid=<uuid> 'Integrity transaction fee to use.'")
+                    )
+                    .arg(
                         Arg::from_usage("[remove_topic] -r, --remove_topic=<topic> 'Stop listening on the topic.'")
                     )
                     .arg(

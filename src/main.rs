@@ -2458,6 +2458,13 @@ fn do_command(
                 None => None,
             };
 
+            let fee_uuid = match args.value_of("fee_uuid") {
+                Some(s) => Some(Uuid::parse_str(s).map_err(|e| {
+                    ErrorKind::ArgumentError(format!("Unable to parse fee transaction UUID, {}", e))
+                })?),
+                None => None,
+            };
+
             let publish_interval = match args.value_of("publish_interval") {
                 Some(s) => Some(s.parse::<u32>().map_err(|e| {
                     ErrorKind::ArgumentError(format!("Unable to parse interval value, {}", e))
@@ -2472,6 +2479,7 @@ fn do_command(
                     show_status: args.is_present("status"),
                     add_topic: args.value_of("add_topic").map(|s| String::from(s)),
                     fee,
+                    fee_uuid,
                     remove_topic: args.value_of("remove_topic").map(|s| String::from(s)),
                     publish_message: args.value_of("publish_message").map(|s| String::from(s)),
                     publish_topic: args.value_of("publish_topic").map(|s| String::from(s)),

@@ -80,7 +80,7 @@ pub const WALLET713_CONFIG_HELP: &str =
 # socks_addr = \"127.0.0.1:59051\"
 
 # socks port for wallet libp2p listener. Note, libp2p activated with TOR listener.
-# libp2p_port = 3419
+# libp2p_port = 13419
 
 # MWC MQS/GrinBox address defive index. Every new index will give you a new address that will be used for
 # communication with message queue
