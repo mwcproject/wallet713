@@ -748,8 +748,17 @@ impl Wallet {
         account: &str,
         passphrase: grin_util::ZeroingString,
     ) -> Result<(), Error> {
+        //parse the node_uri String to a list
+        //parse the nodes address and put them in a vec
+        let node_list_string = &config.mwc_node_uri().clone();
+        let node_list: Vec<String> = node_list_string
+            .split(";")
+            .map(|s| s.to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
+
         let node_client = HTTPNodeClient::new(
-            &config.mwc_node_uri(),
+            node_list,
             config.mwc_node_secret(),
         )?;
 
