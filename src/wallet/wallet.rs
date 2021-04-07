@@ -757,7 +757,7 @@ impl Wallet {
             .filter(|s| !s.is_empty())
             .collect();
 
-        let node_client = HTTPNodeClient::new(
+        let mut node_client = HTTPNodeClient::new(
             node_list,
             config.mwc_node_secret(),
         )?;
@@ -776,7 +776,7 @@ impl Wallet {
         >;
         let lc = wallet.lc_provider().unwrap();
         lc.set_top_level_directory( config.get_top_level_directory()?.as_str() )?;
-        lc.open_wallet(None, passphrase, false, false, Some(config.get_wallet_data_directory()?.as_str()) )?;
+        let mask = lc.open_wallet(None, passphrase, false, false, Some(config.get_wallet_data_directory()?.as_str()) )?;
         let wallet_inst = lc.wallet_inst()?;
         wallet_inst.set_parent_key_id_by_name(account)?;
 
@@ -784,6 +784,19 @@ impl Wallet {
             wallet_inst.get_data_file_dir(),
             &config.swap_electrumx_addr,
         );
+        //read or save the node index(the good node)
+        {
+            let mut batch = wallet_inst.batch(mask.as_ref())?;
+            let index = batch.get_last_working_node_index()?;
+            if index == 0 {
+                let _get_index = node_client.get_version_info(); //need to call a node api to get the working node index, one time cost.
+                let node_client_index = node_client.get_node_index();
+                let _ = batch.save_last_working_node_index(node_client_index + 1); //index stored in db start from 1. need to offset by +1
+            } else {
+                node_client.set_node_index(index - 1); //index stored in db start from 1. need to offset by -1
+            }
+            batch.commit()?;
+        }
 
         self.backend = Some(Arc::new(Mutex::new(wallet)));
 
