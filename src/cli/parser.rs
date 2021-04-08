@@ -544,6 +544,9 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("-w, --mwc_amount=<amount> 'MWC amount to trade'")
                     )
                     .arg(
+                        Arg::from_usage("[outputs] -o, --outputs=<outputs> 'Comma separated outputs to include into the Swap Trade. Outputs can belong to another trades'")
+                    )
+                    .arg(
                         Arg::from_usage("[confirmations] -c, --min_conf=<confirmations> 'Minimum number of confirmations required for an output to be spendable. Default: 10'")
                     )
                     .arg(
@@ -587,6 +590,9 @@ impl<'a, 'b> Parser {
                     )
                     .arg(
                         Arg::from_usage("[dry_run] --dry_run 'verify parameters, do not create a new swap trade'")
+                    )
+                    .arg(
+                        Arg::from_usage("[tag] --tag 'string tag for the swap trade. Tags are used for managing swap marketplace trades'")
                     )
             )
             .subcommand(
@@ -732,6 +738,19 @@ impl<'a, 'b> Parser {
                     )
                     .arg(
                         Arg::from_usage("[json] --json 'Print response in Json format'")
+                    )
+            )
+            .subcommand(
+                SubCommand::with_name("send_marketplace_message")
+                    .about("Send marketplace related message to another wallet by tor address")
+                    .arg(
+                        Arg::from_usage("-c, --command=<command> 'Command to perform. Current supported values are accept_offer and fail_bidding'")
+                    )
+                    .arg(
+                        Arg::from_usage("-o, --offer_id=<offer_id> 'Marketplace offer ID'")
+                    )
+                    .arg(
+                        Arg::from_usage("-a, --tor_address=<tor_address> 'Another wallet tor address'")
                     )
             )
     }

@@ -2267,6 +2267,7 @@ fn do_command(
             let w = wallet.lock();
             let swap_id = w.swap_start(
                 mwc_amount,
+                args.value_of("outputs").map(|s| s.split(",").map(|s| s.to_string()).collect()),
                 secondary_currency.to_string(),
                 secondary_amount.to_string(),
                 secondary_address.to_string(),
@@ -2282,6 +2283,7 @@ fn do_command(
                 electrum_node_uri1,
                 electrum_node_uri2,
                 dry_run,
+                args.value_of("tag").map(|s| s.to_string()),
             )?;
             cli_message!("New Swap Trade created: {}", swap_id);
         }
@@ -2490,6 +2492,19 @@ fn do_command(
                     check_integrity_retain: args.is_present("check_integrity_retain"),
                     json: args.is_present("json"),
                 })?;
+        }
+        Some("send_marketplace_message") => {
+            let args = matches.subcommand_matches("send_marketplace_message").unwrap();
+            grin_wallet_controller::command::send_marketplace_message(
+                wallet.lock().get_wallet_instance()?,
+                None,
+                &config.get_tor_config(),
+                command::SendMarketplaceMessageArgs {
+                    command: args.value_of("command").unwrap().to_string(),
+                    offer_id: args.value_of("offer_id").unwrap().to_string(),
+                    tor_address: args.value_of("tor_address").unwrap().to_string(),
+                }
+            )?;
         }
         Some(subcommand) => {
             cli_message!(
