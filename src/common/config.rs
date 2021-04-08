@@ -67,7 +67,7 @@ pub const WALLET713_CONFIG_HELP: &str =
 ### WALLET 713 CONFIGURATION          ###
 #########################################
 
-# Blockcahin to use: 'Mainnet' or 'Floonet'
+# Blockchain to use: 'Mainnet' or 'Floonet'
 # chain = \"Floonet\"
 
 # Path for mwc713 wallet data
@@ -79,7 +79,7 @@ pub const WALLET713_CONFIG_HELP: &str =
 # mwcmqs_port = 443
 
 # MWC replay attack mitigation settings.
-Example only do self spend for outputs with at least 5 MWCs:  replay_mitigation_min_amount = 50000000000
+# Example only do self spend for outputs with at least 5 MWCs:  replay_mitigation_min_amount = 50000000000
 # replay_mitigation_flag = false
 # replay_mitigation_min_amount = 50000000000
 
@@ -91,7 +91,7 @@ Example only do self spend for outputs with at least 5 MWCs:  replay_mitigation_
 # grinbox_address_index = 0
 
 # MWC node connection URI. Please make sure that you are connecting to the node from correct network.
-# mwc_node_uri = \"https://mwc713.floonet.mwc.mw\"
+# mwc_node_uri = \"https://mwc713.floonet.mwc.mw;https://mwc7132.floonet.mwc.mw;https://mwc7133.floonet.mwc.mw;https://mwc7134.floonet.mwc.mw\"
 
 # MWC node secret
 # mwc_node_secret = \"11ne3EAUtOXVKwhxm84U\"
@@ -393,8 +393,10 @@ impl Wallet713Config {
     pub fn mwc_node_uri(&self) -> String {
         let chain_type = self.chain.clone();
         self.mwc_node_uri.clone().unwrap_or(match chain_type {
-            ChainTypes::Mainnet => String::from("https://mwc713.mwc.mw"),
-            _ => String::from("https://mwc713.floonet.mwc.mw"),
+            ChainTypes::Mainnet =>
+                String::from("https://mwc713.mwc.mw;https://mwc71362.mwc.mw;https://mwc7133.mwc.mw;https://mwc7134.mwc.mw;https://mwc7135.mwc.mw;https://mwc7136.mwc.mw"),
+            _ =>
+                String::from("https://mwc713.floonet.mwc.mw;https://mwc7132.floonet.mwc.mw;https://mwc7133.floonet.mwc.mw;https://mwc7134.floonet.mwc.mw"),
         })
     }
 
