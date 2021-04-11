@@ -592,7 +592,7 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("[dry_run] --dry_run 'verify parameters, do not create a new swap trade'")
                     )
                     .arg(
-                        Arg::from_usage("[tag] --tag 'string tag for the swap trade. Tags are used for managing swap marketplace trades'")
+                        Arg::from_usage("[tag] --tag=<tag> 'string tag for the swap trade. Tags are used for managing swap marketplace trades'")
                     )
             )
             .subcommand(
