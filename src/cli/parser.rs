@@ -626,7 +626,7 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("[trade_import] --trade_import=<file> 'Import the trade data'")
                     )
                     .arg(
-                        Arg::from_usage("[adjust] -j, --adjust=<cancel|destination|secondary_address|secondary_fee|electrumx_uri> 'Modify the swap trade workflow. You can use this to cancel a swap or adjust some parameters'")
+                        Arg::from_usage("[adjust] -j, --adjust=<params> 'Modify the swap trade workflow. You can use this to cancel a swap or adjust some parameters. Values: comma separated: cancel,destination,secondary_address,secondary_fee,electrumx_uri,tag'")
                     )
                     .arg(
                         Arg::from_usage("[swap_id] -i, --swap_id=<id> 'Swap trade Id. Required for commands that are specific for single trade'")
@@ -663,6 +663,9 @@ impl<'a, 'b> Parser {
                     )
                     .arg(
                         Arg::from_usage("[wait_for_backup1] --wait_for_backup1 'stop before locking steps, so the first backup can be enforced'")
+                    )
+                    .arg(
+                        Arg::from_usage("[tag] --tag=<tag> 'Adjusted tag for the swap trade. Tags are used for managing swap marketplace trades'")
                     )
             )
             .subcommand(
