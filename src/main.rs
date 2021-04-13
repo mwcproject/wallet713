@@ -2368,8 +2368,8 @@ fn do_command(
                 wallet.lock().get_wallet_instance()?,
                 None,
                 config.foreign_api_address(),
-                Some( config.get_mqs_config()),
-                Some(config.get_tor_config()),
+                config.get_mqs_config(),
+                config.get_tor_config(),
                 config.get_tls_config(false),
                 params,
                 true)?;
