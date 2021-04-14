@@ -747,7 +747,7 @@ impl<'a, 'b> Parser {
                 SubCommand::with_name("send_marketplace_message")
                     .about("Send marketplace related message to another wallet by tor address")
                     .arg(
-                        Arg::from_usage("-c, --command=<command> 'Command to perform. Current supported values are accept_offer and fail_bidding'")
+                        Arg::from_usage("-c, --command=<command> 'Command to perform. Current supported values are check_offer, accept_offer and fail_bidding'")
                     )
                     .arg(
                         Arg::from_usage("-o, --offer_id=<offer_id> 'Marketplace offer ID'")
