@@ -211,6 +211,9 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("[tor] -t, --tor 'start the Tor listener'")
                     )
+                    .arg(
+                        Arg::from_usage("[libp2p] -p, --libp2p 'start the libp2p with Tor listener'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("stop")
@@ -282,6 +285,9 @@ impl<'a, 'b> Parser {
                     )
                     .arg(
                         Arg::from_usage("[lock_later] --lock_later 'For files transactions lock outputs at final step.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[min_fee] --min_fee=<fee> 'Minimal fee value. By default wallet selecting the minimal fee accepted by the network. This value can increase the fee if needed.'")
                     )
             )
             .subcommand(
@@ -538,6 +544,9 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("-w, --mwc_amount=<amount> 'MWC amount to trade'")
                     )
                     .arg(
+                        Arg::from_usage("[outputs] -o, --outputs=<outputs> 'Comma separated outputs to include into the Swap Trade. Outputs can belong to another trades'")
+                    )
+                    .arg(
                         Arg::from_usage("[confirmations] -c, --min_conf=<confirmations> 'Minimum number of confirmations required for an output to be spendable. Default: 10'")
                     )
                     .arg(
@@ -582,6 +591,9 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("[dry_run] --dry_run 'verify parameters, do not create a new swap trade'")
                     )
+                    .arg(
+                        Arg::from_usage("[tag] --tag=<tag> 'string tag for the swap trade. Tags are used for managing swap marketplace trades'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("swap")
@@ -614,7 +626,7 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("[trade_import] --trade_import=<file> 'Import the trade data'")
                     )
                     .arg(
-                        Arg::from_usage("[adjust] -j, --adjust=<cancel|destination|secondary_address|secondary_fee|electrumx_uri> 'Modify the swap trade workflow. You can use this to cancel a swap or adjust some parameters'")
+                        Arg::from_usage("[adjust] -j, --adjust=<params> 'Modify the swap trade workflow. You can use this to cancel a swap or adjust some parameters. Values: comma separated: cancel,destination,secondary_address,secondary_fee,electrumx_uri,tag'")
                     )
                     .arg(
                         Arg::from_usage("[swap_id] -i, --swap_id=<id> 'Swap trade Id. Required for commands that are specific for single trade'")
@@ -652,6 +664,9 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("[wait_for_backup1] --wait_for_backup1 'stop before locking steps, so the first backup can be enforced'")
                     )
+                    .arg(
+                        Arg::from_usage("[tag] --tag=<tag> 'Adjusted tag for the swap trade. Tags are used for managing swap marketplace trades'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("decode_slatepack")
@@ -661,6 +676,84 @@ impl<'a, 'b> Parser {
                     )
                     .arg(
                         Arg::from_usage("[file] -f, --file=<file> 'File with a slate or slatepack content'")
+                    )
+            )
+            .subcommand(
+                SubCommand::with_name("integrity")
+                    .about("Manage integrity fees and funds")
+                    .arg(
+                        Arg::from_usage("[check] -c, --check 'View paid integrity fees, view integrity account balance'")
+                    )
+                    .arg(
+                        Arg::from_usage("[reserve] -r, --reserve=<mwc> 'In case of low balance, how much coins reserve for integrity fees. Default is 1 MWC'")
+                    )
+                    .arg(
+                        Arg::from_usage("[account] -a, --account=<account> 'Account name to withdraw funds for integrity fee reservation'")
+                    )
+                    .arg(
+                        Arg::from_usage("[create] -t, --create=<fee> 'Create integrity transaction to pay fees. Argument is comma separated fees (MWC). The minimal fee for network is 10X of basic fees. Currently it is 0.01 MWC'")
+                    )
+                    .arg(
+                        Arg::from_usage("[withdraw] -w, --withdraw 'Withdraw the integrity funds back to regular wallet account'")
+                    )
+                    .arg(
+                        Arg::from_usage("[json] -j, --json 'Print response in Json format'")
+                    )
+            )
+            .subcommand(
+                SubCommand::with_name("messaging")
+                    .about("Manage libp2p messaging routine")
+                    .arg(
+                        Arg::from_usage("[status] -s, --status 'Show status of messaging: listening topics, minimal fee, broadcasting messages, number of received messages.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[add_topic] -a, --add_topic=<topic> 'Add topic to listen. Messages must be in json format.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[fee] -f, --fee=<mwc> 'Integrity fee. For topic and receive_message it is a minimal accepted fee. For publishing it is integrity fee to pay.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[fee_uuid] -u, --fee_uuid=<uuid> 'Integrity transaction fee to use.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[remove_topic] -r, --remove_topic=<topic> 'Stop listening on the topic.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[publish_message] -p, --publish_message=<message> 'Start broadcasting the message.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[publish_topic] -t, --publish_topic=<topic> 'Topic for the broadcast message.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[publish_interval] -i, --publish_interval=<sec> 'Time interval for broadcasting (seconds). The minimal interval is 1 minute.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[withdraw_message] -w, --withdraw_message=<uuid> 'Stop broadcast message.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[receive_messages] -v, --receive_messages=<yes|no> 'Print messages that was received. Optionally messages can be deleted from the buffer. Note, last 1000 messages will be stored.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[check_integrity] --check_integrity 'Check Integrity context expiration of broadcast messages. Need to be done at least every hour.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[check_integrity_retain] --check_integrity_retain 'Delete messages with expired Integrity context'")
+                    )
+                    .arg(
+                        Arg::from_usage("[json] --json 'Print response in Json format'")
+                    )
+            )
+            .subcommand(
+                SubCommand::with_name("send_marketplace_message")
+                    .about("Send marketplace related message to another wallet by tor address")
+                    .arg(
+                        Arg::from_usage("-c, --command=<command> 'Command to perform. Current supported values are check_offer, accept_offer and fail_bidding'")
+                    )
+                    .arg(
+                        Arg::from_usage("-o, --offer_id=<offer_id> 'Marketplace offer ID'")
+                    )
+                    .arg(
+                        Arg::from_usage("-a, --tor_address=<tor_address> 'Another wallet tor address'")
                     )
             )
     }

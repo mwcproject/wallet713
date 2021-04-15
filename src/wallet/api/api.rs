@@ -719,6 +719,7 @@ pub fn init_send_tx<'a, L, C, K>(
     do_proof: bool,
     slatepack_recipient: Option<ProvableAddress>,
     late_lock: Option<bool>,
+    min_fee: Option<u64>,
 ) -> Result<Slate, Error>
     where
         L: WalletLCProvider<'a, C, K>,
@@ -808,6 +809,7 @@ pub fn init_send_tx<'a, L, C, K>(
         outputs,
         slatepack_recipient,
         late_lock,
+        min_fee,
     };
 
     let s = grin_wallet_libwallet::owner::init_send_tx( &mut **w,
@@ -1309,7 +1311,7 @@ pub fn receive_tx<'a, L, C, K>(
         false,
         true,
     )?;
-    Ok(s)
+    Ok(s.0)
 }
 
 pub fn swap_create_from_offer<'a, L, C, K>(
@@ -1328,6 +1330,7 @@ pub fn swap_create_from_offer<'a, L, C, K>(
 pub fn swap_start<'a, L, C, K>(
     wallet_inst: Arc<Mutex<Box<dyn WalletInst<'a, L, C, K>>>>,
     mwc_amount: u64,
+    outputs: Option<Vec<String>>,
     secondary_currency: String,
     secondary_amount: String,
     secondary_redeem_address: String,
@@ -1343,6 +1346,7 @@ pub fn swap_start<'a, L, C, K>(
     electrum_node_uri1: Option<String>,
     electrum_node_uri2: Option<String>,
     dry_run: bool,
+    tag: Option<String>,
 )-> Result<String, Error>
     where
         L: WalletLCProvider<'a, C, K>,
@@ -1374,6 +1378,7 @@ pub fn swap_start<'a, L, C, K>(
 
     let params = SwapStartArgs {
         mwc_amount,
+        outputs,
         secondary_currency,
         secondary_amount,
         secondary_redeem_address,
@@ -1389,6 +1394,7 @@ pub fn swap_start<'a, L, C, K>(
         electrum_node_uri1,
         electrum_node_uri2,
         dry_run,
+        tag,
     };
 
     let swap_id = grin_wallet_libwallet::owner_swap::swap_start(wallet_inst, None, &params)?;

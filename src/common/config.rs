@@ -29,6 +29,7 @@ pub struct Wallet713Config {
     pub mwcmqs_port: Option<u16>,
     pub grinbox_address_index: Option<u32>,
     pub socks_addr: Option<String>,
+    pub libp2p_port: Option<u16>,
     pub mwc_node_uri: Option<String>,
     pub mwc_node_secret: Option<String>,
     pub grinbox_listener_auto_start: Option<bool>,
@@ -85,6 +86,9 @@ pub const WALLET713_CONFIG_HELP: &str =
 
 # The address to bind to for tor socks 5 proxy. By default this is set to 127.0.0.1:59051
 # socks_addr = \"127.0.0.1:59051\"
+
+# socks port for wallet libp2p listener. Note, libp2p activated with TOR listener.
+# libp2p_port = 13419
 
 # MWC MQS/GrinBox address defive index. Every new index will give you a new address that will be used for
 # communication with message queue
@@ -198,6 +202,7 @@ impl Wallet713Config {
             mwcmqs_domain: None,
             mwcmqs_port: None,
             socks_addr: None,
+            libp2p_port: Some(3419),
             grinbox_address_index: None,
             mwc_node_uri: None,
             mwc_node_secret: None,

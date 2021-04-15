@@ -439,6 +439,7 @@ impl Wallet {
         do_proof: bool,
         slatepack_recipient: Option<ProvableAddress>,
         late_lock: Option<bool>,
+        min_fee: Option<u64>,
     ) -> Result<Slate, Error> {
         let slate = api::init_send_tx(
             self.get_wallet_instance()?,
@@ -458,6 +459,7 @@ impl Wallet {
             do_proof,
             slatepack_recipient,
             late_lock,
+            min_fee,
         )?;
 
         Ok(slate)
@@ -626,6 +628,7 @@ impl Wallet {
     pub fn swap_start(
         &self,
         mwc_amount: u64,
+        outputs: Option<Vec<String>>,
         secondary_currency: String,
         secondary_amount: String,
         secondary_redeem_address: String,
@@ -641,9 +644,11 @@ impl Wallet {
         electrum_node_uri1: Option<String>,
         electrum_node_uri2: Option<String>,
         dry_run: bool,
+        tag: Option<String>,
     ) -> Result<String, Error> {
         api::swap_start(self.get_wallet_instance()?,
                         mwc_amount,
+                        outputs,
                         secondary_currency,
                         secondary_amount,
                         secondary_redeem_address,
@@ -658,7 +663,8 @@ impl Wallet {
                         buyer_communication_address,
                         electrum_node_uri1,
                         electrum_node_uri2,
-                        dry_run)
+                        dry_run,
+                        tag)
     }
 
     pub fn get_provable_address(
