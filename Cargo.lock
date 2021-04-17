@@ -724,12 +724,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "c_linked_list"
-version = "1.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4964518bd3b4a8190e832886cdc0da9794f12e8e6c1613a9e90ff331c4c8724b"
-
-[[package]]
 name = "cache-padded"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1848,28 +1842,6 @@ checksum = "501466ecc8a30d1d3b7fc9229b122b2ce8ed6e9d9223f1138d4babb253e51817"
 dependencies = [
  "typenum",
  "version_check 0.9.3",
-]
-
-[[package]]
-name = "get_if_addrs"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a54c43f691a555f724b251228f061975ce447c710898254697f97de134f40f5c"
-dependencies = [
- "c_linked_list",
- "get_if_addrs-sys",
- "libc",
- "winapi 0.2.8",
-]
-
-[[package]]
-name = "get_if_addrs-sys"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7cf68ed691805f2dfe4e83cf85e3d373e704c3654c454dbb3280a15e2ea8d509"
-dependencies = [
- "gcc",
- "libc",
 ]
 
 [[package]]
@@ -3079,12 +3051,12 @@ dependencies = [
 [[package]]
 name = "libp2p-tokio-socks5"
 version = "0.7.1"
-source = "git+https://github.com/mwcproject/rust-libp2p-tokio-socks5?branch=master#264731f816743cd89e53e2be43c6384fbe82cbac"
+source = "git+https://github.com/mwcproject/rust-libp2p-tokio-socks5?branch=master#69bd822cc0bd1021244e4eb4c8fd59df3e80214a"
 dependencies = [
  "data-encoding",
  "futures 0.3.14",
  "futures-timer",
- "get_if_addrs",
+ "if-addrs",
  "ipnet",
  "libp2p",
  "log",
