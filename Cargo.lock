@@ -274,9 +274,9 @@ checksum = "e91831deabf0d6d7ec49552e489aed63b7456a7a3c46cff62adad428110b0af0"
 
 [[package]]
 name = "async-trait"
-version = "0.1.49"
+version = "0.1.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "589652ce7ccb335d1e7ecb3be145425702b290dbcb7029bbeaae263fc1d87b48"
+checksum = "0b98e84bbb4cbcdd97da190ba0c58a1bb0de2c1fdf67d159e192ed766aeca722"
 dependencies = [
  "proc-macro2 1.0.26",
  "quote 1.0.9",
@@ -336,9 +336,9 @@ checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
 name = "backtrace"
-version = "0.3.56"
+version = "0.3.57"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d117600f438b1707d4e4ae15d3595657288f8235a0eb593e80ecc98ab34e1bc"
+checksum = "78ed203b9ba68b242c62b3fb7480f589dd49829be1edb3fe8fc8b4ffda2dcb8d"
 dependencies = [
  "addr2line",
  "cfg-if 1.0.0",
@@ -651,9 +651,9 @@ checksum = "771fe0050b883fcc3ea2359b1a96bcfbc090b7116eae7c3c512c7a083fdf23d3"
 
 [[package]]
 name = "build_const"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39092a32794787acd8525ee150305ff051b0aa6cc2abaf193924f5ab05425f39"
+checksum = "b4ae4235e6dac0694637c763029ecea1a2ec9e4e06ec2729bd21ba4d9c863eb7"
 
 [[package]]
 name = "bumpalo"
@@ -763,7 +763,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "244fbce0d47e97e8ef2f63b81d5e05882cb518c68531eb33194990d7b7e85845"
 dependencies = [
  "stream-cipher",
- "zeroize 1.2.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -773,7 +773,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed8738f14471a99f0e316c327e68fc82a3611cc2895fcb604b89eedaf8f39d95"
 dependencies = [
  "cipher",
- "zeroize 1.2.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -786,7 +786,7 @@ dependencies = [
  "chacha20 0.5.0",
  "poly1305",
  "stream-cipher",
- "zeroize 1.2.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -799,7 +799,7 @@ dependencies = [
  "chacha20 0.6.0",
  "cipher",
  "poly1305",
- "zeroize 1.2.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -1252,7 +1252,7 @@ dependencies = [
  "salsa20",
  "x25519-dalek 1.1.1",
  "xsalsa20poly1305",
- "zeroize 1.2.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -1304,7 +1304,7 @@ dependencies = [
  "digest 0.8.1",
  "rand_core 0.5.1",
  "subtle 2.4.0",
- "zeroize 1.2.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -1317,7 +1317,7 @@ dependencies = [
  "digest 0.9.0",
  "rand_core 0.5.1",
  "subtle 2.4.0",
- "zeroize 1.2.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -1462,7 +1462,7 @@ dependencies = [
  "rand 0.7.3",
  "serde",
  "sha2 0.9.3",
- "zeroize 1.2.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -1561,7 +1561,7 @@ dependencies = [
  "proc-macro2 1.0.26",
  "quote 1.0.9",
  "syn 1.0.69",
- "synstructure 0.12.4",
+ "synstructure",
 ]
 
 [[package]]
@@ -1904,7 +1904,7 @@ dependencies = [
 [[package]]
 name = "grin_api"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#55bb95376f89a7647fb212c807193573c5068cbf"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#6e0efca314ebb14bed4a8a02e5e4ece337a73042"
 dependencies = [
  "bytes 0.5.6",
  "easy-jsonrpc-mw",
@@ -1938,7 +1938,7 @@ dependencies = [
 [[package]]
 name = "grin_chain"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#55bb95376f89a7647fb212c807193573c5068cbf"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#6e0efca314ebb14bed4a8a02e5e4ece337a73042"
 dependencies = [
  "bit-vec",
  "bitflags 1.2.1",
@@ -1962,7 +1962,7 @@ dependencies = [
 [[package]]
 name = "grin_core"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#55bb95376f89a7647fb212c807193573c5068cbf"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#6e0efca314ebb14bed4a8a02e5e4ece337a73042"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1982,13 +1982,13 @@ dependencies = [
  "serde",
  "serde_derive",
  "siphasher",
- "zeroize 1.2.0",
+ "zeroize",
 ]
 
 [[package]]
 name = "grin_keychain"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#55bb95376f89a7647fb212c807193573c5068cbf"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#6e0efca314ebb14bed4a8a02e5e4ece337a73042"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -2006,13 +2006,13 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "sha2 0.7.1",
- "zeroize 1.2.0",
+ "zeroize",
 ]
 
 [[package]]
 name = "grin_p2p"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#55bb95376f89a7647fb212c807193573c5068cbf"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#6e0efca314ebb14bed4a8a02e5e4ece337a73042"
 dependencies = [
  "async-std",
  "bitflags 1.2.1",
@@ -2045,7 +2045,7 @@ dependencies = [
 [[package]]
 name = "grin_pool"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#55bb95376f89a7647fb212c807193573c5068cbf"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#6e0efca314ebb14bed4a8a02e5e4ece337a73042"
 dependencies = [
  "blake2-rfc",
  "chrono",
@@ -2063,7 +2063,7 @@ dependencies = [
 [[package]]
 name = "grin_secp256k1zkp"
 version = "0.7.10"
-source = "git+https://github.com/mwcproject/rust-secp256k1-zkp?branch=master#dc041cad9a1148522c4b31e82dbeba11be37ad82"
+source = "git+https://github.com/mwcproject/rust-secp256k1-zkp?branch=master#916bebb3df5e1d4188a385c1f97af3474772d2e5"
 dependencies = [
  "arrayvec 0.3.25",
  "cc",
@@ -2072,13 +2072,13 @@ dependencies = [
  "rustc-serialize",
  "serde",
  "serde_json",
- "zeroize 0.9.3",
+ "zeroize",
 ]
 
 [[package]]
 name = "grin_store"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#55bb95376f89a7647fb212c807193573c5068cbf"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#6e0efca314ebb14bed4a8a02e5e4ece337a73042"
 dependencies = [
  "byteorder",
  "croaring-mw",
@@ -2098,7 +2098,7 @@ dependencies = [
 [[package]]
 name = "grin_util"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#55bb95376f89a7647fb212c807193573c5068cbf"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#6e0efca314ebb14bed4a8a02e5e4ece337a73042"
 dependencies = [
  "backtrace",
  "base64 0.12.3",
@@ -2117,14 +2117,14 @@ dependencies = [
  "serde_derive",
  "sha3",
  "walkdir",
- "zeroize 1.2.0",
+ "zeroize",
  "zip",
 ]
 
 [[package]]
 name = "grin_wallet_api"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#1ec3b0a8f32e87c3108c7490f46de5ee8ab00d4a"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#f2c04de2eb9e23a2b8be447eb0f7fdf20ef66db8"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -2150,7 +2150,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#1ec3b0a8f32e87c3108c7490f46de5ee8ab00d4a"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#f2c04de2eb9e23a2b8be447eb0f7fdf20ef66db8"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -2165,7 +2165,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#1ec3b0a8f32e87c3108c7490f46de5ee8ab00d4a"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#f2c04de2eb9e23a2b8be447eb0f7fdf20ef66db8"
 dependencies = [
  "chrono",
  "colored",
@@ -2199,7 +2199,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#1ec3b0a8f32e87c3108c7490f46de5ee8ab00d4a"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#f2c04de2eb9e23a2b8be447eb0f7fdf20ef66db8"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -2245,7 +2245,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#1ec3b0a8f32e87c3108c7490f46de5ee8ab00d4a"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#f2c04de2eb9e23a2b8be447eb0f7fdf20ef66db8"
 dependencies = [
  "base64 0.9.3",
  "bch",
@@ -2301,7 +2301,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#1ec3b0a8f32e87c3108c7490f46de5ee8ab00d4a"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#f2c04de2eb9e23a2b8be447eb0f7fdf20ef66db8"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
@@ -2916,7 +2916,7 @@ dependencies = [
  "thiserror",
  "unsigned-varint 0.7.0",
  "void",
- "zeroize 1.2.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -2989,7 +2989,7 @@ dependencies = [
  "snow",
  "static_assertions",
  "x25519-dalek 1.1.1",
- "zeroize 1.2.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -3373,7 +3373,7 @@ dependencies = [
  "proc-macro2 1.0.26",
  "quote 1.0.9",
  "syn 1.0.69",
- "synstructure 0.12.4",
+ "synstructure",
 ]
 
 [[package]]
@@ -4760,7 +4760,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "399f290ffc409596022fce5ea5d4138184be4784f2b28c62c59f0d8389059a15"
 dependencies = [
  "cipher",
- "zeroize 1.2.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -5055,9 +5055,9 @@ checksum = "cbce6d4507c7e4a3962091436e56e95290cb71fa302d0d270e32130b75fbff27"
 
 [[package]]
 name = "slab"
-version = "0.4.2"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
+checksum = "f173ac3d1a7e3b28003f40de0b5ce7fe2710f9b9dc3fc38664cebee46b3b6527"
 
 [[package]]
 name = "smallvec"
@@ -5233,18 +5233,6 @@ dependencies = [
  "proc-macro2 1.0.26",
  "quote 1.0.9",
  "unicode-xid 0.2.1",
-]
-
-[[package]]
-name = "synstructure"
-version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02353edf96d6e4dc81aea2d8490a7e9db177bf8acb0e951c24940bf866cb313f"
-dependencies = [
- "proc-macro2 0.4.30",
- "quote 0.6.13",
- "syn 0.15.44",
- "unicode-xid 0.1.0",
 ]
 
 [[package]]
@@ -6261,7 +6249,7 @@ checksum = "637ff90c9540fa3073bb577e65033069e4bae7c79d49d74aa3ffdf5342a53217"
 dependencies = [
  "curve25519-dalek 2.1.2",
  "rand_core 0.5.1",
- "zeroize 1.2.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -6272,7 +6260,7 @@ checksum = "5a0c105152107e3b96f6a00a65e86ce82d9b125230e1c4302940eca58ff71f4f"
 dependencies = [
  "curve25519-dalek 3.1.0",
  "rand_core 0.5.1",
- "zeroize 1.2.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -6286,7 +6274,7 @@ dependencies = [
  "rand_core 0.5.1",
  "salsa20",
  "subtle 2.4.0",
- "zeroize 1.2.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -6342,44 +6330,23 @@ dependencies = [
 
 [[package]]
 name = "zeroize"
-version = "0.9.3"
+version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45af6a010d13e4cf5b54c94ba5a2b2eba5596b9e46bf5875612d332a1f2b3f86"
+checksum = "4756f7db3f7b5574938c3eb1c117038b8e07f95ee6718c0efad4ac21508f1efd"
 dependencies = [
- "zeroize_derive 0.9.3",
-]
-
-[[package]]
-name = "zeroize"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81a974bcdd357f0dca4d41677db03436324d45a4c9ed2d0b873a5a360ce41c36"
-dependencies = [
- "zeroize_derive 1.0.1",
+ "zeroize_derive",
 ]
 
 [[package]]
 name = "zeroize_derive"
-version = "0.9.3"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "080616bd0e31f36095288bb0acdf1f78ef02c2fa15527d7e993f2a6c7591643e"
-dependencies = [
- "proc-macro2 0.4.30",
- "quote 0.6.13",
- "syn 0.15.44",
- "synstructure 0.10.2",
-]
-
-[[package]]
-name = "zeroize_derive"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3f369ddb18862aba61aa49bf31e74d29f0f162dec753063200e1dc084345d16"
+checksum = "a2c1e130bebaeab2f23886bf9acbaca14b092408c452543c857f66399cd6dab1"
 dependencies = [
  "proc-macro2 1.0.26",
  "quote 1.0.9",
  "syn 1.0.69",
- "synstructure 0.12.4",
+ "synstructure",
 ]
 
 [[package]]
