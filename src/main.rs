@@ -2514,6 +2514,13 @@ fn do_command(
                 }
             )?;
         }
+        Some("check_tor_connection") => {
+            grin_wallet_controller::command::check_tor_connection(
+                wallet.lock().get_wallet_instance()?,
+                None,
+                &config.get_tor_config()
+            )?;
+        }
         Some(subcommand) => {
             cli_message!(
                 "{}: subcommand `{}` not implemented!",

@@ -756,5 +756,9 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("-a, --tor_address=<tor_address> 'Another wallet tor address'")
                     )
             )
+            .subcommand(
+                SubCommand::with_name("check_tor_connection")
+                    .about("check this wallet tor connection")
+            )
     }
 }
