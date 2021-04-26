@@ -464,9 +464,9 @@ dependencies = [
 
 [[package]]
 name = "bitcoinconsensus"
-version = "0.19.0-2"
+version = "0.19.0-3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa73ba49cd637fcb607af797e737a064f2015a25ba55c3f48501978a8b3fc90e"
+checksum = "1a8aa43b5cd02f856cb126a9af819e77b8910fdd74dd1407be649f2f5fe3a1b5"
 dependencies = [
  "cc",
  "libc",
@@ -731,9 +731,9 @@ checksum = "631ae5198c9be5e753e5cc215e1bd73c2b466a3565173db433f52bb9d3e66dba"
 
 [[package]]
 name = "cc"
-version = "1.0.41"
+version = "1.0.67"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8dae9c4b8fedcae85592ba623c4fd08cfdab3e3b72d6df780c6ead964a69bfff"
+checksum = "e3c69b077ad434294d3ce9f1f6143a2a4b89a8a2d54ef813d85003a4fd1137fd"
 
 [[package]]
 name = "cexpr"
@@ -2126,7 +2126,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#ee635c772373cfe6660c44089b143af541a8fb45"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#b123af940c0431110a8b7aa82e40ed50f5773c29"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -2152,7 +2152,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#ee635c772373cfe6660c44089b143af541a8fb45"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#b123af940c0431110a8b7aa82e40ed50f5773c29"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -2167,7 +2167,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#ee635c772373cfe6660c44089b143af541a8fb45"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#b123af940c0431110a8b7aa82e40ed50f5773c29"
 dependencies = [
  "chrono",
  "colored",
@@ -2201,7 +2201,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#ee635c772373cfe6660c44089b143af541a8fb45"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#b123af940c0431110a8b7aa82e40ed50f5773c29"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -2247,7 +2247,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#ee635c772373cfe6660c44089b143af541a8fb45"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#b123af940c0431110a8b7aa82e40ed50f5773c29"
 dependencies = [
  "base64 0.9.3",
  "bch",
@@ -2303,7 +2303,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#ee635c772373cfe6660c44089b143af541a8fb45"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#b123af940c0431110a8b7aa82e40ed50f5773c29"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
@@ -2836,9 +2836,9 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 
 [[package]]
 name = "libc"
-version = "0.2.93"
+version = "0.2.94"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9385f66bf6105b241aa65a61cb923ef20efc665cb9f9bb50ac2f0c4b7f378d41"
+checksum = "18794a8ad5b29321f790b55d93dfba91e125cb1a9edbd4f8e3150acc771c1a5e"
 
 [[package]]
 name = "liblmdb-sys"
@@ -4566,13 +4566,13 @@ dependencies = [
 
 [[package]]
 name = "ring"
-version = "0.16.12"
+version = "0.16.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ba5a8ec64ee89a76c98c549af81ff14813df09c3e6dc4766c3856da48597a0c"
+checksum = "3053cf52e236a3ed746dfc745aa9cacf1b791d846bdaf412f60a8d7d6e17c8fc"
 dependencies = [
  "cc",
- "lazy_static",
  "libc",
+ "once_cell",
  "spin",
  "untrusted",
  "web-sys",
@@ -4802,9 +4802,9 @@ checksum = "d29ab0c6d3fc0ee92fe66e2d99f700eab17a8d57d1c1d3b748380fb20baa78cd"
 
 [[package]]
 name = "sct"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3042af939fca8c3453b7af0f1c66e533a15a86169e39de2657310ade8f98d3c"
+checksum = "b362b83898e0e69f38515b82ee15aa80636befe47c3b6d3d89a911e78fc228ce"
 dependencies = [
  "ring",
  "untrusted",
@@ -6115,9 +6115,9 @@ dependencies = [
 
 [[package]]
 name = "webpki"
-version = "0.21.2"
+version = "0.21.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1f50e1972865d6b1adb54167d1c8ed48606004c2c9d0ea5f1eeb34d95e863ef"
+checksum = "b8e38c0608262c46d4a56202ebabdeb094cef7e560ca7a226c6bf055188aa4ea"
 dependencies = [
  "ring",
  "untrusted",
