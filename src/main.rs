@@ -330,7 +330,8 @@ fn start_tor_listener(
                     &addr,
                     &config2.get_socks_addr(),
                     &config2.libp2p_port,
-                    Some(&wallet_data_dir.clone())
+                    Some(&wallet_data_dir.clone()),
+                    &config2.tor_log_file,
                 );
 
                 let _ = match p {
@@ -444,6 +445,7 @@ fn start_wallet_api(
             let tls_config = tls_config.clone();
             let socks_addr = config.get_socks_addr();
             let libp2p_port = config.libp2p_port.clone();
+            let tor_log_file = config.tor_log_file.clone();
 
             thread::Builder::new()
                 .name("foreign_listener".to_string())
@@ -456,6 +458,7 @@ fn start_wallet_api(
                         false,
                         &socks_addr,
                         &libp2p_port,
+                        &tor_log_file,
                     )
                     {
                         cli_message!( "{}: Foreign API Listener failed. {}", "ERROR".bright_red(), e );
@@ -1578,7 +1581,7 @@ fn do_command(
             let to = to.unwrap().to_string();
             let apisecret = args.value_of("apisecret").map(|s| s.to_string());
 
-            let http_sender = HttpDataSender::new(&to, apisecret.clone(), None, false)?;
+            let http_sender = HttpDataSender::new(&to, apisecret.clone(), None, false, None)?;
             let trailing = match &to.to_string().ends_with('/') {
                 true => "",
                 false => "/",

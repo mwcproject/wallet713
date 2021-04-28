@@ -61,6 +61,9 @@ pub struct Wallet713Config {
     /// Key: <coin>_[main|test]_[1|2]
     /// Value: url
     pub swap_electrumx_addr: Option<BTreeMap<String,String>>,
+
+    // Log filename for tor
+    pub tor_log_file: Option<String>,
 }
 
 pub const WALLET713_CONFIG_HELP: &str =
@@ -223,6 +226,7 @@ impl Wallet713Config {
             config_home: None,
             wallet_updater_frequency_sec: None,
             swap_electrumx_addr: Some( Self::get_default_electrumx_servers() ),
+            tor_log_file: None,
         }
     }
 
