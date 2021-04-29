@@ -249,7 +249,7 @@ dependencies = [
  "async-global-executor",
  "async-io",
  "async-lock",
- "crossbeam-utils 0.8.3",
+ "crossbeam-utils 0.8.4",
  "futures-channel",
  "futures-core",
  "futures-io",
@@ -1012,7 +1012,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06ed27e177f16d65f0f0c22a213e17c696ace5dd64b14258b52f9417ccb52db4"
 dependencies = [
  "cfg-if 1.0.0",
- "crossbeam-utils 0.8.3",
+ "crossbeam-utils 0.8.4",
 ]
 
 [[package]]
@@ -1033,8 +1033,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94af6efb46fef72616855b036a624cf27ba656ffc9be1b9a3c931cfc7749a9a9"
 dependencies = [
  "cfg-if 1.0.0",
- "crossbeam-epoch 0.9.3",
- "crossbeam-utils 0.8.3",
+ "crossbeam-epoch 0.9.4",
+ "crossbeam-utils 0.8.4",
 ]
 
 [[package]]
@@ -1054,12 +1054,12 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-epoch"
-version = "0.9.3"
+version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2584f639eb95fea8c798496315b297cf81b9b58b6d30ab066a75455333cf4b12"
+checksum = "52fb27eab85b17fbb9f6fd667089e07d6a2eb8743d02639ee7f6a7a7729c9c94"
 dependencies = [
  "cfg-if 1.0.0",
- "crossbeam-utils 0.8.3",
+ "crossbeam-utils 0.8.4",
  "lazy_static",
  "memoffset 0.6.3",
  "scopeguard",
@@ -1089,9 +1089,9 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-utils"
-version = "0.8.3"
+version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7e9d99fa91428effe99c5c6d4634cdeba32b8cf784fc428a2a687f61a952c49"
+checksum = "4feb231f0d4d6af81aed15928e58ecf5816aa62a2393e2c82f46973e92a9a278"
 dependencies = [
  "autocfg 1.0.1",
  "cfg-if 1.0.0",
@@ -1654,6 +1654,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "fs2"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9564fc758e15025b46aa6643b1b77d047d1a56a1aea6e01002ac0c7026876213"
+dependencies = [
+ "libc",
+ "winapi 0.3.9",
+]
+
+[[package]]
 name = "fuchsia-cprng"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1905,7 +1915,7 @@ dependencies = [
 [[package]]
 name = "grin_api"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#1b07ced4bdc0915ec112b3bc818d924d5a85b4ea"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#0c238e13e7824ef86691b042af4880a2deea9941"
 dependencies = [
  "bytes 0.5.6",
  "chrono",
@@ -1940,7 +1950,7 @@ dependencies = [
 [[package]]
 name = "grin_chain"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#1b07ced4bdc0915ec112b3bc818d924d5a85b4ea"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#0c238e13e7824ef86691b042af4880a2deea9941"
 dependencies = [
  "bit-vec",
  "bitflags 1.2.1",
@@ -1964,7 +1974,7 @@ dependencies = [
 [[package]]
 name = "grin_core"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#1b07ced4bdc0915ec112b3bc818d924d5a85b4ea"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#0c238e13e7824ef86691b042af4880a2deea9941"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -1990,7 +2000,7 @@ dependencies = [
 [[package]]
 name = "grin_keychain"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#1b07ced4bdc0915ec112b3bc818d924d5a85b4ea"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#0c238e13e7824ef86691b042af4880a2deea9941"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -2014,7 +2024,7 @@ dependencies = [
 [[package]]
 name = "grin_p2p"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#1b07ced4bdc0915ec112b3bc818d924d5a85b4ea"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#0c238e13e7824ef86691b042af4880a2deea9941"
 dependencies = [
  "async-std",
  "bitflags 1.2.1",
@@ -2048,7 +2058,7 @@ dependencies = [
 [[package]]
 name = "grin_pool"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#1b07ced4bdc0915ec112b3bc818d924d5a85b4ea"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#0c238e13e7824ef86691b042af4880a2deea9941"
 dependencies = [
  "blake2-rfc",
  "chrono",
@@ -2058,6 +2068,7 @@ dependencies = [
  "grin_keychain",
  "grin_util",
  "log",
+ "lru-cache",
  "rand 0.6.5",
  "serde",
  "serde_derive",
@@ -2079,9 +2090,47 @@ dependencies = [
 ]
 
 [[package]]
+name = "grin_servers"
+version = "4.3.0"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#0c238e13e7824ef86691b042af4880a2deea9941"
+dependencies = [
+ "chrono",
+ "dirs 1.0.5",
+ "ed25519-dalek",
+ "failure",
+ "failure_derive",
+ "fs2",
+ "futures 0.3.14",
+ "grin_api",
+ "grin_chain",
+ "grin_core",
+ "grin_keychain",
+ "grin_p2p",
+ "grin_pool",
+ "grin_store",
+ "grin_util",
+ "http 0.2.4",
+ "hyper 0.13.10",
+ "hyper-rustls 0.20.0",
+ "hyper-rustls 0.21.0",
+ "lmdb-zero",
+ "log",
+ "rand 0.6.5",
+ "regex",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "sysinfo",
+ "timer",
+ "tokio 0.2.25",
+ "tokio-util 0.2.0",
+ "walkdir",
+]
+
+[[package]]
 name = "grin_store"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#1b07ced4bdc0915ec112b3bc818d924d5a85b4ea"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#0c238e13e7824ef86691b042af4880a2deea9941"
 dependencies = [
  "byteorder",
  "croaring-mw",
@@ -2101,7 +2150,7 @@ dependencies = [
 [[package]]
 name = "grin_util"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#1b07ced4bdc0915ec112b3bc818d924d5a85b4ea"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#0c238e13e7824ef86691b042af4880a2deea9941"
 dependencies = [
  "backtrace",
  "base64 0.12.3",
@@ -2127,7 +2176,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#92b11cd102822f13855d9656de883c86807024de"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#af8f3d5f7a910ea5e5c2bfbc7e4a899c72229a28"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -2153,7 +2202,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#92b11cd102822f13855d9656de883c86807024de"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#af8f3d5f7a910ea5e5c2bfbc7e4a899c72229a28"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -2168,7 +2217,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#92b11cd102822f13855d9656de883c86807024de"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#af8f3d5f7a910ea5e5c2bfbc7e4a899c72229a28"
 dependencies = [
  "chrono",
  "colored",
@@ -2202,7 +2251,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#92b11cd102822f13855d9656de883c86807024de"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#af8f3d5f7a910ea5e5c2bfbc7e4a899c72229a28"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -2213,11 +2262,6 @@ dependencies = [
  "failure",
  "failure_derive",
  "futures 0.3.14",
- "grin_api",
- "grin_core",
- "grin_keychain",
- "grin_p2p",
- "grin_util",
  "grin_wallet_config",
  "grin_wallet_libwallet",
  "grin_wallet_util",
@@ -2248,7 +2292,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#92b11cd102822f13855d9656de883c86807024de"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#af8f3d5f7a910ea5e5c2bfbc7e4a899c72229a28"
 dependencies = [
  "base64 0.9.3",
  "bch",
@@ -2268,11 +2312,6 @@ dependencies = [
  "ed25519-dalek",
  "failure",
  "failure_derive",
- "grin_api",
- "grin_core",
- "grin_keychain",
- "grin_p2p",
- "grin_util",
  "grin_wallet_config",
  "grin_wallet_util",
  "hex 0.3.2",
@@ -2304,7 +2343,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#92b11cd102822f13855d9656de883c86807024de"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#af8f3d5f7a910ea5e5c2bfbc7e4a899c72229a28"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
@@ -2315,6 +2354,7 @@ dependencies = [
  "grin_core",
  "grin_keychain",
  "grin_p2p",
+ "grin_servers",
  "grin_store",
  "grin_util",
  "rand 0.6.5",
@@ -2368,7 +2408,7 @@ dependencies = [
  "indexmap",
  "slab",
  "tokio 0.2.25",
- "tokio-util",
+ "tokio-util 0.3.1",
  "tracing",
  "tracing-futures",
 ]
@@ -2864,7 +2904,7 @@ dependencies = [
 [[package]]
 name = "libp2p"
 version = "0.35.1"
-source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#79ee64d1189a2da5ec32a1b6f26c74e811e69578"
+source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#7ecd5176844079a909036be355bf4d5ec47f7810"
 dependencies = [
  "atomic",
  "bytes 1.0.1",
@@ -2890,7 +2930,7 @@ dependencies = [
 [[package]]
 name = "libp2p-core"
 version = "0.27.1"
-source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#79ee64d1189a2da5ec32a1b6f26c74e811e69578"
+source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#7ecd5176844079a909036be355bf4d5ec47f7810"
 dependencies = [
  "asn1_der",
  "bs58 0.4.0",
@@ -2925,7 +2965,7 @@ dependencies = [
 [[package]]
 name = "libp2p-dns"
 version = "0.27.0"
-source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#79ee64d1189a2da5ec32a1b6f26c74e811e69578"
+source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#7ecd5176844079a909036be355bf4d5ec47f7810"
 dependencies = [
  "futures 0.3.14",
  "libp2p-core",
@@ -2935,7 +2975,7 @@ dependencies = [
 [[package]]
 name = "libp2p-gossipsub"
 version = "0.28.0"
-source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#79ee64d1189a2da5ec32a1b6f26c74e811e69578"
+source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#7ecd5176844079a909036be355bf4d5ec47f7810"
 dependencies = [
  "asynchronous-codec",
  "base64 0.13.0",
@@ -2960,7 +3000,7 @@ dependencies = [
 [[package]]
 name = "libp2p-mplex"
 version = "0.27.1"
-source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#79ee64d1189a2da5ec32a1b6f26c74e811e69578"
+source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#7ecd5176844079a909036be355bf4d5ec47f7810"
 dependencies = [
  "asynchronous-codec",
  "bytes 1.0.1",
@@ -2977,7 +3017,7 @@ dependencies = [
 [[package]]
 name = "libp2p-noise"
 version = "0.29.0"
-source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#79ee64d1189a2da5ec32a1b6f26c74e811e69578"
+source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#7ecd5176844079a909036be355bf4d5ec47f7810"
 dependencies = [
  "bytes 1.0.1",
  "curve25519-dalek 3.1.0",
@@ -2998,7 +3038,7 @@ dependencies = [
 [[package]]
 name = "libp2p-ping"
 version = "0.27.0"
-source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#79ee64d1189a2da5ec32a1b6f26c74e811e69578"
+source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#7ecd5176844079a909036be355bf4d5ec47f7810"
 dependencies = [
  "futures 0.3.14",
  "libp2p-core",
@@ -3012,7 +3052,7 @@ dependencies = [
 [[package]]
 name = "libp2p-swarm"
 version = "0.27.2"
-source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#79ee64d1189a2da5ec32a1b6f26c74e811e69578"
+source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#7ecd5176844079a909036be355bf4d5ec47f7810"
 dependencies = [
  "either",
  "futures 0.3.14",
@@ -3027,7 +3067,7 @@ dependencies = [
 [[package]]
 name = "libp2p-swarm-derive"
 version = "0.22.0"
-source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#79ee64d1189a2da5ec32a1b6f26c74e811e69578"
+source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#7ecd5176844079a909036be355bf4d5ec47f7810"
 dependencies = [
  "quote 1.0.9",
  "syn 1.0.71",
@@ -3036,7 +3076,7 @@ dependencies = [
 [[package]]
 name = "libp2p-tcp"
 version = "0.27.1"
-source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#79ee64d1189a2da5ec32a1b6f26c74e811e69578"
+source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#7ecd5176844079a909036be355bf4d5ec47f7810"
 dependencies = [
  "async-io",
  "futures 0.3.14",
@@ -3071,7 +3111,7 @@ dependencies = [
 [[package]]
 name = "libp2p-yamux"
 version = "0.30.1"
-source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#79ee64d1189a2da5ec32a1b6f26c74e811e69578"
+source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#7ecd5176844079a909036be355bf4d5ec47f7810"
 dependencies = [
  "futures 0.3.14",
  "libp2p-core",
@@ -3388,7 +3428,7 @@ checksum = "e5ce46fe64a9d73be07dcbe690a38ce1b293be448fd8ce1e6c1b8062c9f72c6a"
 [[package]]
 name = "multistream-select"
 version = "0.10.1"
-source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#79ee64d1189a2da5ec32a1b6f26c74e811e69578"
+source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#7ecd5176844079a909036be355bf4d5ec47f7810"
 dependencies = [
  "bytes 1.0.1",
  "futures 0.3.14",
@@ -3732,9 +3772,9 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "openssl"
-version = "0.10.33"
+version = "0.10.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a61075b62a23fef5a29815de7536d940aa35ce96d18ce0cc5076272db678a577"
+checksum = "6d7830286ad6a3973c0f1d9b73738f69c76b739301d0229c4b96501695cbe4c8"
 dependencies = [
  "bitflags 1.2.1",
  "cfg-if 1.0.0",
@@ -3761,9 +3801,9 @@ dependencies = [
 
 [[package]]
 name = "openssl-sys"
-version = "0.9.61"
+version = "0.9.62"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "313752393519e876837e09e1fa183ddef0be7735868dced3196f4472d536277f"
+checksum = "fa52160d45fa2e7608d504b7c3a3355afed615e6d8b627a74458634ba21b69bd"
 dependencies = [
  "autocfg 1.0.1",
  "cc",
@@ -3795,7 +3835,7 @@ dependencies = [
 [[package]]
 name = "parity-multiaddr"
 version = "0.11.1"
-source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#79ee64d1189a2da5ec32a1b6f26c74e811e69578"
+source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#7ecd5176844079a909036be355bf4d5ec47f7810"
 dependencies = [
  "arrayref",
  "bs58 0.4.0",
@@ -3885,7 +3925,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "instant",
  "libc",
- "redox_syscall 0.2.6",
+ "redox_syscall 0.2.7",
  "smallvec 1.6.1",
  "winapi 0.3.9",
 ]
@@ -4455,7 +4495,7 @@ checksum = "9ab346ac5921dc62ffa9f89b7a773907511cdfa5490c572ae9be1be33e8afa4a"
 dependencies = [
  "crossbeam-channel",
  "crossbeam-deque 0.8.0",
- "crossbeam-utils 0.8.3",
+ "crossbeam-utils 0.8.4",
  "lazy_static",
  "num_cpus",
 ]
@@ -4477,9 +4517,9 @@ checksum = "41cc0f7e4d5d4544e8861606a285bb08d3e70712ccc7d2b84d7c0ccfaf4b05ce"
 
 [[package]]
 name = "redox_syscall"
-version = "0.2.6"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8270314b5ccceb518e7e578952f0b72b88222d02e8f77f5ecf7abbb673539041"
+checksum = "85dd92e586f7355c633911e11f77f3d12f04b1b1bd76a198bd34ae3af8341ef2"
 dependencies = [
  "bitflags 1.2.1",
 ]
@@ -4502,7 +4542,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "528532f3d801c87aec9def2add9ca802fe569e44a544afe633765267840abe64"
 dependencies = [
  "getrandom 0.2.2",
- "redox_syscall 0.2.6",
+ "redox_syscall 0.2.7",
 ]
 
 [[package]]
@@ -4622,7 +4662,7 @@ dependencies = [
  "base64 0.13.0",
  "blake2b_simd",
  "constant_time_eq",
- "crossbeam-utils 0.8.3",
+ "crossbeam-utils 0.8.4",
 ]
 
 [[package]]
@@ -5282,7 +5322,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "libc",
  "rand 0.8.3",
- "redox_syscall 0.2.6",
+ "redox_syscall 0.2.7",
  "remove_dir_all",
  "winapi 0.3.9",
 ]
@@ -5686,6 +5726,20 @@ dependencies = [
  "tokio-codec",
  "tokio-io",
  "tokio-reactor",
+]
+
+[[package]]
+name = "tokio-util"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "571da51182ec208780505a32528fc5512a8fe1443ab960b3f2f3ef093cd16930"
+dependencies = [
+ "bytes 0.5.6",
+ "futures-core",
+ "futures-sink",
+ "log",
+ "pin-project-lite 0.1.12",
+ "tokio 0.2.25",
 ]
 
 [[package]]

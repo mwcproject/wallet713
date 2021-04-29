@@ -403,7 +403,7 @@ impl Wallet713Config {
         let chain_type = self.chain.clone();
         self.mwc_node_uri.clone().unwrap_or(match chain_type {
             ChainTypes::Mainnet =>
-                String::from("https://mwc713.mwc.mw;https://mwc71362.mwc.mw;https://mwc7133.mwc.mw;https://mwc7134.mwc.mw;https://mwc7135.mwc.mw;https://mwc7136.mwc.mw"),
+                String::from("https://mwc713.mwc.mw;https://mwc7132.mwc.mw;https://mwc7133.mwc.mw;https://mwc7134.mwc.mw;https://mwc7135.mwc.mw;https://mwc7136.mwc.mw"),
             _ =>
                 String::from("https://mwc713.floonet.mwc.mw;https://mwc7132.floonet.mwc.mw;https://mwc7133.floonet.mwc.mw;https://mwc7134.floonet.mwc.mw"),
         })
