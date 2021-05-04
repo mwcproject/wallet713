@@ -146,7 +146,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d0864d84b8e07b145449be9a8537db86bf9de5ce03b913214694643b4743502"
 dependencies = [
  "quote 1.0.9",
- "syn 1.0.71",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -280,7 +280,7 @@ checksum = "0b98e84bbb4cbcdd97da190ba0c58a1bb0de2c1fdf67d159e192ed766aeca722"
 dependencies = [
  "proc-macro2 1.0.26",
  "quote 1.0.9",
- "syn 1.0.71",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -456,9 +456,9 @@ dependencies = [
 
 [[package]]
 name = "bitcoin_hashes"
-version = "0.9.4"
+version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0aaf87b776808e26ae93289bc7d025092b6d909c193f0cdee0b3a86e7bd3c776"
+checksum = "3e6d72ba9671cb0929b5620e1bc30cdf5e206ccb3dbaa8964d67f6efc1e16129"
 dependencies = [
  "serde",
 ]
@@ -1292,7 +1292,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5e98e2ad1a782e33928b96fc3948e7c355e5af34ba4de7670fe8bac2a3b2006d"
 dependencies = [
  "quote 1.0.9",
- "syn 1.0.71",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -1561,7 +1561,7 @@ checksum = "aa4da3c766cd7a0db8242e326e9e4e081edd567072893ed320008189715366a4"
 dependencies = [
  "proc-macro2 1.0.26",
  "quote 1.0.9",
- "syn 1.0.71",
+ "syn 1.0.72",
  "synstructure",
 ]
 
@@ -1780,7 +1780,7 @@ dependencies = [
  "proc-macro-hack",
  "proc-macro2 1.0.26",
  "quote 1.0.9",
- "syn 1.0.71",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -1915,7 +1915,7 @@ dependencies = [
 [[package]]
 name = "grin_api"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#179db6cdcc1a5e2214691b3f418d150ce576d734"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#5a51ac3d791e28f1f405ba2b3b94295803046560"
 dependencies = [
  "bytes 0.5.6",
  "chrono",
@@ -1950,7 +1950,7 @@ dependencies = [
 [[package]]
 name = "grin_chain"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#179db6cdcc1a5e2214691b3f418d150ce576d734"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#5a51ac3d791e28f1f405ba2b3b94295803046560"
 dependencies = [
  "bit-vec",
  "bitflags 1.2.1",
@@ -1974,7 +1974,7 @@ dependencies = [
 [[package]]
 name = "grin_core"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#179db6cdcc1a5e2214691b3f418d150ce576d734"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#5a51ac3d791e28f1f405ba2b3b94295803046560"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -2000,7 +2000,7 @@ dependencies = [
 [[package]]
 name = "grin_keychain"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#179db6cdcc1a5e2214691b3f418d150ce576d734"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#5a51ac3d791e28f1f405ba2b3b94295803046560"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -2024,7 +2024,7 @@ dependencies = [
 [[package]]
 name = "grin_p2p"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#179db6cdcc1a5e2214691b3f418d150ce576d734"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#5a51ac3d791e28f1f405ba2b3b94295803046560"
 dependencies = [
  "async-std",
  "bitflags 1.2.1",
@@ -2058,7 +2058,7 @@ dependencies = [
 [[package]]
 name = "grin_pool"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#179db6cdcc1a5e2214691b3f418d150ce576d734"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#5a51ac3d791e28f1f405ba2b3b94295803046560"
 dependencies = [
  "blake2-rfc",
  "chrono",
@@ -2092,7 +2092,7 @@ dependencies = [
 [[package]]
 name = "grin_servers"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#179db6cdcc1a5e2214691b3f418d150ce576d734"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#5a51ac3d791e28f1f405ba2b3b94295803046560"
 dependencies = [
  "chrono",
  "dirs 1.0.5",
@@ -2130,7 +2130,7 @@ dependencies = [
 [[package]]
 name = "grin_store"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#179db6cdcc1a5e2214691b3f418d150ce576d734"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#5a51ac3d791e28f1f405ba2b3b94295803046560"
 dependencies = [
  "byteorder",
  "croaring-mw",
@@ -2150,7 +2150,7 @@ dependencies = [
 [[package]]
 name = "grin_util"
 version = "4.3.0"
-source = "git+https://github.com/mwcproject/mwc-node?branch=master#179db6cdcc1a5e2214691b3f418d150ce576d734"
+source = "git+https://github.com/mwcproject/mwc-node?branch=master#5a51ac3d791e28f1f405ba2b3b94295803046560"
 dependencies = [
  "backtrace",
  "base64 0.12.3",
@@ -2176,7 +2176,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#087ec087a56f5a9eb694e3c640fbad89d1659cd8"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#0d7fbe46b7cd8ae5072ab32f60d50e428b73291b"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -2202,7 +2202,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#087ec087a56f5a9eb694e3c640fbad89d1659cd8"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#0d7fbe46b7cd8ae5072ab32f60d50e428b73291b"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -2217,7 +2217,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#087ec087a56f5a9eb694e3c640fbad89d1659cd8"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#0d7fbe46b7cd8ae5072ab32f60d50e428b73291b"
 dependencies = [
  "chrono",
  "colored",
@@ -2251,7 +2251,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#087ec087a56f5a9eb694e3c640fbad89d1659cd8"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#0d7fbe46b7cd8ae5072ab32f60d50e428b73291b"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -2292,7 +2292,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#087ec087a56f5a9eb694e3c640fbad89d1659cd8"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#0d7fbe46b7cd8ae5072ab32f60d50e428b73291b"
 dependencies = [
  "base64 0.9.3",
  "bch",
@@ -2343,7 +2343,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "4.2.0"
-source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#087ec087a56f5a9eb694e3c640fbad89d1659cd8"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#0d7fbe46b7cd8ae5072ab32f60d50e428b73291b"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
@@ -3070,7 +3070,7 @@ version = "0.22.0"
 source = "git+https://github.com/mwcproject/rust-libp2p?branch=master#fac8313fc18aab84ff5cbc89ed26102f5d28a0d2"
 dependencies = [
  "quote 1.0.9",
- "syn 1.0.71",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -3415,7 +3415,7 @@ dependencies = [
  "proc-macro-error",
  "proc-macro2 1.0.26",
  "quote 1.0.9",
- "syn 1.0.71",
+ "syn 1.0.72",
  "synstructure",
 ]
 
@@ -3925,7 +3925,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "instant",
  "libc",
- "redox_syscall 0.2.7",
+ "redox_syscall 0.2.8",
  "smallvec 1.6.1",
  "winapi 0.3.9",
 ]
@@ -4006,7 +4006,7 @@ checksum = "3be26700300be6d9d23264c73211d8190e755b6b5ca7a1b28230025511b52a5e"
 dependencies = [
  "proc-macro2 1.0.26",
  "quote 1.0.9",
- "syn 1.0.71",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -4017,7 +4017,7 @@ checksum = "48c950132583b500556b1efd71d45b319029f2b71518d979fcc208e16b42426f"
 dependencies = [
  "proc-macro2 1.0.26",
  "quote 1.0.9",
- "syn 1.0.71",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -4116,7 +4116,7 @@ dependencies = [
  "proc-macro-error-attr",
  "proc-macro2 1.0.26",
  "quote 1.0.9",
- "syn 1.0.71",
+ "syn 1.0.72",
  "version_check 0.9.3",
 ]
 
@@ -4199,7 +4199,7 @@ dependencies = [
  "itertools",
  "proc-macro2 1.0.26",
  "quote 1.0.9",
- "syn 1.0.71",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -4517,9 +4517,9 @@ checksum = "41cc0f7e4d5d4544e8861606a285bb08d3e70712ccc7d2b84d7c0ccfaf4b05ce"
 
 [[package]]
 name = "redox_syscall"
-version = "0.2.7"
+version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85dd92e586f7355c633911e11f77f3d12f04b1b1bd76a198bd34ae3af8341ef2"
+checksum = "742739e41cd49414de871ea5e549afb7e2a3ac77b589bcbebe8c82fab37147fc"
 dependencies = [
  "bitflags 1.2.1",
 ]
@@ -4542,14 +4542,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "528532f3d801c87aec9def2add9ca802fe569e44a544afe633765267840abe64"
 dependencies = [
  "getrandom 0.2.2",
- "redox_syscall 0.2.7",
+ "redox_syscall 0.2.8",
 ]
 
 [[package]]
 name = "regex"
-version = "1.5.2"
+version = "1.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1efb2352a0f4d4b128f734b5c44c79ff80117351138733f12f982fe3e2b13343"
+checksum = "ce5f1ceb7f74abbce32601642fcf8e8508a8a8991e0621c7d750295b9095702b"
 dependencies = [
  "aho-corasick",
  "memchr 2.4.0",
@@ -4558,9 +4558,9 @@ dependencies = [
 
 [[package]]
 name = "regex-syntax"
-version = "0.6.24"
+version = "0.6.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00efb87459ba4f6fb2169d20f68565555688e1250ee6825cdf6254f8b48fafb2"
+checksum = "f497285884f3fcff424ffc933e56d7cbca511def0c9831a7f9b5f6153e3cc89b"
 
 [[package]]
 name = "remove_dir_all"
@@ -4689,9 +4689,9 @@ dependencies = [
 
 [[package]]
 name = "rustc-demangle"
-version = "0.1.18"
+version = "0.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e3bad0ee36814ca07d7968269dd4b7ec89ec2da10c4bb613928d3077083c232"
+checksum = "410f7acf3cb3a44527c5d9546bad4bf4e6c460915d5f9f2fc524498bfe8f70ce"
 
 [[package]]
 name = "rustc-hash"
@@ -4957,7 +4957,7 @@ checksum = "b093b7a2bb58203b5da3056c05b4ec1fed827dcfdb37347a8841695263b3d06d"
 dependencies = [
  "proc-macro2 1.0.26",
  "quote 1.0.9",
- "syn 1.0.71",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -5014,7 +5014,7 @@ checksum = "d08338d8024b227c62bd68a12c7c9883f5c66780abaef15c550dc56f46ee6515"
 dependencies = [
  "proc-macro2 1.0.26",
  "quote 1.0.9",
- "syn 1.0.71",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -5279,9 +5279,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.71"
+version = "1.0.72"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad184cc9470f9117b2ac6817bfe297307418819ba40552f9b3846f05c33d5373"
+checksum = "a1e8cdbefb79a9a5a65e0db8b47b723ee907b7c7f8496c76a1770b5c310bab82"
 dependencies = [
  "proc-macro2 1.0.26",
  "quote 1.0.9",
@@ -5296,7 +5296,7 @@ checksum = "b834f2d66f734cb897113e34aaff2f1ab4719ca946f9a7358dba8f8064148701"
 dependencies = [
  "proc-macro2 1.0.26",
  "quote 1.0.9",
- "syn 1.0.71",
+ "syn 1.0.72",
  "unicode-xid 0.2.2",
 ]
 
@@ -5322,7 +5322,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "libc",
  "rand 0.8.3",
- "redox_syscall 0.2.7",
+ "redox_syscall 0.2.8",
  "remove_dir_all",
  "winapi 0.3.9",
 ]
@@ -5382,7 +5382,7 @@ checksum = "7765189610d8241a44529806d6fd1f2e0a08734313a35d5b3a556f92b381f3c0"
 dependencies = [
  "proc-macro2 1.0.26",
  "quote 1.0.9",
- "syn 1.0.71",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -5573,7 +5573,7 @@ checksum = "e44da00bfc73a25f814cd8d7e57a68a5c31b74b3152a0a1d1f590c97ed06265a"
 dependencies = [
  "proc-macro2 1.0.26",
  "quote 1.0.9",
- "syn 1.0.71",
+ "syn 1.0.72",
 ]
 
 [[package]]
@@ -6098,7 +6098,7 @@ dependencies = [
  "log",
  "proc-macro2 1.0.26",
  "quote 1.0.9",
- "syn 1.0.71",
+ "syn 1.0.72",
  "wasm-bindgen-shared",
 ]
 
@@ -6132,7 +6132,7 @@ checksum = "d53739ff08c8a68b0fdbcd54c372b8ab800b1449ab3c9d706503bc7dd1621b2c"
 dependencies = [
  "proc-macro2 1.0.26",
  "quote 1.0.9",
- "syn 1.0.71",
+ "syn 1.0.72",
  "wasm-bindgen-backend",
  "wasm-bindgen-shared",
 ]
@@ -6406,7 +6406,7 @@ checksum = "a2c1e130bebaeab2f23886bf9acbaca14b092408c452543c857f66399cd6dab1"
 dependencies = [
  "proc-macro2 1.0.26",
  "quote 1.0.9",
- "syn 1.0.71",
+ "syn 1.0.72",
  "synstructure",
 ]
 
