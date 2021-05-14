@@ -1,6 +1,6 @@
 [package]
 name = "mwc713"
-version = "4.3.0"
+version = "4.3.1"
 authors = ["vault713 devs"]
 description = "A wallet that makes it easy to send, store, and swap MWC."
 keywords = [ "grin", "mimblewimble", "rust", "crypto", "cryptocurrency" ]

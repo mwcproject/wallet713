@@ -57,13 +57,13 @@ pub struct Wallet713Config {
     // Wallet state update frequency. In none, no updates will be run in the background.
     pub wallet_updater_frequency_sec: Option<u32>,
 
+    // Log filename for tor
+    pub tor_log_file: Option<String>,
+
     /// Electrum nodes for secondary coins
     /// Key: <coin>_[main|test]_[1|2]
     /// Value: url
     pub swap_electrumx_addr: Option<BTreeMap<String,String>>,
-
-    // Log filename for tor
-    pub tor_log_file: Option<String>,
 }
 
 pub const WALLET713_CONFIG_HELP: &str =
