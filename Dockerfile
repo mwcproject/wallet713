@@ -53,8 +53,6 @@ ENV LANG en_US.UTF-8
 
 COPY --from=builder /usr/src/wallet713/target/release/mwc713 /usr/local/bin/wallet713
 
-VOLUME /root/.wallet713
-
 EXPOSE 3415 3420 13415 13420
 
 ENTRYPOINT ["wallet713"]
