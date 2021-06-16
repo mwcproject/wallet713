@@ -2,7 +2,7 @@
 # based on: https://github.com/mimblewimble/grin/blob/master/etc/Dockerfile
 
 # Builder stage
-FROM rust:1.32 as builder
+FROM rust:latest as builder
 
 RUN set -ex && \
     apt-get update && \
@@ -22,6 +22,9 @@ RUN USER=root cargo new --bin wallet713
 
 WORKDIR /usr/src/wallet713
 
+# Copy source
+COPY ./src ./src
+
 # Copy manifest
 COPY ./Cargo.lock ./Cargo.lock
 COPY ./Cargo.toml ./Cargo.toml
@@ -29,7 +32,7 @@ COPY ./Cargo.toml ./Cargo.toml
 # Build dependencies
 RUN cargo build --release
 RUN rm ./src/*.rs
-RUN rm ./target/release/deps/wallet713*
+RUN rm -f ./target/release/deps/wallet713*
 
 # Copy src
 COPY ./src ./src
@@ -38,7 +41,7 @@ COPY ./src ./src
 RUN cargo build --release
 
 # Runtime stage
-FROM debian:9.4
+FROM debian:latest
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y locales openssl ca-certificates
 
@@ -48,7 +51,7 @@ RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
 
 ENV LANG en_US.UTF-8
 
-COPY --from=builder /usr/src/wallet713/target/release/wallet713 /usr/local/bin/wallet713
+COPY --from=builder /usr/src/wallet713/target/release/mwc713 /usr/local/bin/wallet713
 
 VOLUME /root/.wallet713
 
