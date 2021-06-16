@@ -53,3 +53,14 @@ If you'd like to run against floonet, use:
 $ cd target/release
 $ ./mwc713 --floonet
 ```
+
+### Running in Docker
+```
+$ docker build -t mwc713 .
+$ docker run --name mwc713 \
+        --rm \
+	-it \
+	-p 3415:3415 \
+	--mount type=volume,source=mwc713,target=/root/.mwc713 \
+	mwc713
+```
