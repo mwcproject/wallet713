@@ -7,73 +7,73 @@ extern crate log;
 extern crate serde_json;
 #[macro_use]
 extern crate clap;
-extern crate env_logger;
-extern crate blake2_rfc;
-extern crate path_clean;
-extern crate chrono;
 extern crate ansi_term;
+extern crate blake2_rfc;
+extern crate chrono;
 extern crate colored;
+extern crate commands;
+extern crate enquote;
+extern crate env_logger;
 extern crate failure;
 extern crate futures;
-extern crate rustls;
 extern crate mime;
 extern crate parking_lot;
+extern crate path_clean;
 extern crate rand;
 extern crate ring;
 #[cfg(not(target_os = "android"))]
 extern crate rpassword;
+extern crate rustls;
 #[cfg(not(target_os = "android"))]
 extern crate rustyline;
+extern crate semver;
 extern crate serde;
 extern crate sha2;
 extern crate tokio;
 extern crate url;
 extern crate uuid;
 extern crate ws;
-extern crate semver;
-extern crate commands;
-extern crate enquote;
 
 extern crate grin_api;
 extern crate grin_core;
 extern crate grin_keychain;
+extern crate grin_p2p;
 extern crate grin_store;
 extern crate grin_util;
-extern crate grin_p2p;
 extern crate grin_wallet_impls;
 #[macro_use]
 extern crate grin_wallet_libwallet;
+extern crate grin_wallet_config;
 extern crate grin_wallet_controller;
 extern crate grin_wallet_util;
-extern crate grin_wallet_config;
 
 extern crate ed25519_dalek;
 
-use grin_wallet_libwallet::SlatePurpose;
-use std::sync::mpsc::Receiver;
-use std::sync::mpsc::Sender;
-use grin_wallet_impls::adapters::HttpDataSender;
-use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
-use std::{env, thread};
-#[cfg(not(target_os = "android"))]
-use std::borrow::Cow::{self, Borrowed, Owned};
-use std::fs::File;
-use std::io::prelude::*;
-use std::io;
-use std::io::{Read, Write, BufReader};
-use std::path::Path;
 use grin_core::core::Transaction;
 use grin_core::ser;
+use grin_wallet_impls::adapters::HttpDataSender;
+use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
+use grin_wallet_libwallet::SlatePurpose;
+#[cfg(not(target_os = "android"))]
+use std::borrow::Cow::{self, Borrowed, Owned};
+use std::convert::TryFrom;
+use std::fs::File;
+use std::io;
+use std::io::prelude::*;
+use std::io::{BufReader, Read, Write};
+use std::path::Path;
+use std::sync::mpsc::Receiver;
+use std::sync::mpsc::Sender;
+use std::{env, thread};
 
 use grin_util::from_hex;
 use grin_util::ZeroingString;
 
-
 use clap::{App, Arg, ArgMatches, SubCommand};
 use colored::*;
 use grin_core::core;
-use grin_core::libtx::tx_fee;
 use grin_core::global::{init_global_chain_type, ChainTypes};
+use grin_core::libtx::tx_fee;
 #[cfg(not(target_os = "android"))]
 use rustyline::completion::{Completer, FilenameCompleter, Pair};
 #[cfg(not(target_os = "android"))]
@@ -96,37 +96,38 @@ mod wallet;
 
 use cli::Parser;
 use common::config::Wallet713Config;
-use common::{ErrorKind, Error, COLORED_PROMPT, Arc, Mutex};
 #[cfg(not(target_os = "android"))]
 use common::PROMPT;
-use wallet::Wallet;
-use contacts::DEFAULT_MWCMQS_PORT;
+use common::{Arc, Error, ErrorKind, Mutex, COLORED_PROMPT};
 use contacts::DEFAULT_MWCMQS_DOMAIN;
+use contacts::DEFAULT_MWCMQS_PORT;
+use wallet::Wallet;
 
+use grin_util::secp::key::PublicKey;
+use grin_wallet_impls::{
+    Address, AddressType, MWCMQPublisher, MWCMQSAddress, MWCMQSubscriber, Publisher, Subscriber,
+};
 use grin_wallet_libwallet::proof::tx_proof::TxProof;
 use grin_wallet_libwallet::set_replay_config;
+use grin_wallet_libwallet::swap::types::Currency;
 use grin_wallet_libwallet::Slate;
-use grin_util::secp::key::PublicKey;
-use grin_wallet_impls::{MWCMQPublisher, MWCMQSubscriber, MWCMQSAddress, Publisher, Subscriber, Address, AddressType};
 
-use contacts::{AddressBook, Backend, Contact,};
+use contacts::{AddressBook, Backend, Contact};
 
 use grin_wallet_libwallet::proof::crypto::Hex;
 
+use grin_util::secp::constants::SECRET_KEY_SIZE;
+use grin_wallet_controller::command;
+use grin_wallet_libwallet::proof::proofaddress;
+use grin_wallet_libwallet::proof::tx_proof;
+use std::borrow::Borrow;
+use std::fs;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
-use std::borrow::Borrow;
 use uuid::Uuid;
-use grin_wallet_controller::command;
-use grin_wallet_libwallet::proof::tx_proof;
-use grin_wallet_libwallet::proof::proofaddress;
-use std::fs;
-use grin_util::secp::constants::SECRET_KEY_SIZE;
-
 
 #[cfg(not(target_os = "android"))]
 const CLI_HISTORY_PATH: &str = ".history";
-
 
 fn getpassword() -> Result<String, Error> {
     let mwc_password = getenv("MWC_PASSWORD")?;
@@ -135,16 +136,16 @@ fn getpassword() -> Result<String, Error> {
     }
 
     #[cfg(not(target_os = "android"))]
-        return Ok(rpassword::prompt_password_stdout("Password: ").unwrap_or(String::from("")));
+    return Ok(rpassword::prompt_password_stdout("Password: ").unwrap_or(String::from("")));
 
     // Android doesn't have terminal system functions. That is why rpassword doesn't work
     #[cfg(target_os = "android")]
-        {
-            print!("Password: ");
-            let mut ret = String::new();
-            io::stdin().read_line(&mut ret)?;
-            Ok(ret)
-        }
+    {
+        print!("Password: ");
+        let mut ret = String::new();
+        io::stdin().read_line(&mut ret)?;
+        Ok(ret)
+    }
 }
 
 fn getenv(key: &str) -> Result<Option<String>, Error> {
@@ -168,7 +169,10 @@ fn do_config(
     let exists = Wallet713Config::exists(config_path, chain)?;
     if exists {
         config = Wallet713Config::from_file(config_path, chain)?;
-        println!("Using wallet configuration file at {}", config.config_home.clone().unwrap_or("UNKNOWN".to_string()));
+        println!(
+            "Using wallet configuration file at {}",
+            config.config_home.clone().unwrap_or("UNKNOWN".to_string())
+        );
     } else {
         config = Wallet713Config::default(chain);
         any_matches = true;
@@ -269,7 +273,6 @@ fn welcome(args: &ArgMatches) -> Result<Wallet713Config, Error> {
     Ok(config)
 }
 
-
 fn start_mwcmqs_listener(
     config: &Wallet713Config,
     wallet: Arc<Mutex<Wallet>>,
@@ -300,10 +303,12 @@ fn start_tor_listener(
     tor_running: &mut bool,
     start_libp2p: bool,
 ) -> Result<std::sync::Arc<std::sync::Mutex<u32>>, Error> {
-
     // Let's check if foreign API is running (was able to start)
     if !grin_wallet_controller::controller::is_foreign_api_running() {
-        return Err(ErrorKind::GenericError("Foreign API is not running. Unable to start tor listener.".to_string()).into());
+        return Err(ErrorKind::GenericError(
+            "Foreign API is not running. Unable to start tor listener.".to_string(),
+        )
+        .into());
     }
 
     let keychain_mask = Arc::new(Mutex::new(None));
@@ -312,59 +317,71 @@ fn start_tor_listener(
     let mutex = std::sync::Arc::new(std::sync::Mutex::new(1));
     let mutex_clone = mutex.clone();
 
-    let (input, output): (Sender<[u8; SECRET_KEY_SIZE]>, Receiver<[u8; SECRET_KEY_SIZE]>) = std::sync::mpsc::channel();
+    let (input, output): (
+        Sender<[u8; SECRET_KEY_SIZE]>,
+        Receiver<[u8; SECRET_KEY_SIZE]>,
+    ) = std::sync::mpsc::channel();
 
     // cloning for the thread
     let config2 = config.clone();
     let wallet2 = wallet.clone();
 
     thread::Builder::new()
-            .name("tor_listener".to_string())
-            .spawn(move || {
-                let wallet_data_dir = config2.get_wallet_data_dir();
-                let winst = wallet2.lock().get_wallet_instance().unwrap();
-                let onion_address = grin_wallet_controller::controller::get_tor_address(winst.clone(), keychain_mask.clone()).unwrap();
-                let p = grin_wallet_controller::controller::init_tor_listener(
-                    winst.clone(),
-                    keychain_mask.clone(),
-                    &addr,
-                    &config2.get_socks_addr(),
-                    &config2.libp2p_port,
-                    Some(&wallet_data_dir.clone()),
-                    &config2.tor_log_file,
-                );
+        .name("tor_listener".to_string())
+        .spawn(move || {
+            let wallet_data_dir = config2.get_wallet_data_dir();
+            let winst = wallet2.lock().get_wallet_instance().unwrap();
+            let onion_address = grin_wallet_controller::controller::get_tor_address(
+                winst.clone(),
+                keychain_mask.clone(),
+            )
+            .unwrap();
+            let p = grin_wallet_controller::controller::init_tor_listener(
+                winst.clone(),
+                keychain_mask.clone(),
+                &addr,
+                &config2.get_socks_addr(),
+                &config2.libp2p_port,
+                Some(&wallet_data_dir.clone()),
+                &config2.tor_log_file,
+            );
 
-                let _ = match p {
-                    Ok((p, tor_secret)) => {
-                        let url_str = &format!("http://{}.onion", onion_address);
-                        cli_message!("{}", &format!("Tor listener started for [{}]", url_str));
-                        input.send(tor_secret.0).unwrap();
-                        loop {
-                            std::thread::sleep(std::time::Duration::from_millis(30));
-                            let val = mutex_clone.lock().unwrap();
-                            if *val == 0 { break; }
+            let _ = match p {
+                Ok((p, tor_secret)) => {
+                    let url_str = &format!("http://{}.onion", onion_address);
+                    cli_message!("{}", &format!("Tor listener started for [{}]", url_str));
+                    input.send(tor_secret.0).unwrap();
+                    loop {
+                        std::thread::sleep(std::time::Duration::from_millis(30));
+                        let val = mutex_clone.lock().unwrap();
+                        if *val == 0 {
+                            break;
                         }
+                    }
 
-                        Some(p)
-                    },
-                    Err(e) => {
-                        cli_message!("ERROR: Unable to start Tor listener. {}", e);
-                        // all zero key - unable to start.
-                        let zero_buf : [u8; SECRET_KEY_SIZE] = [0; SECRET_KEY_SIZE];
-                        input.send(zero_buf).unwrap();
-                        None
-                    },
-                };
-                cli_message!("Tor listener has stopped.");
-            })?;
+                    Some(p)
+                }
+                Err(e) => {
+                    cli_message!("ERROR: Unable to start Tor listener. {}", e);
+                    // all zero key - unable to start.
+                    let zero_buf: [u8; SECRET_KEY_SIZE] = [0; SECRET_KEY_SIZE];
+                    input.send(zero_buf).unwrap();
+                    None
+                }
+            };
+            cli_message!("Tor listener has stopped.");
+        })?;
 
     let resp = output.recv();
     let tor_secret = resp.unwrap();
-    *tor_running = tor_secret.iter().filter(|b| **b!=0).count()>0;
+    *tor_running = tor_secret.iter().filter(|b| **b != 0).count() > 0;
 
     if start_libp2p && *tor_running {
         if config.libp2p_port.is_none() {
-            return Err(ErrorKind::ArgumentError("Please define libp2p_port value in config".to_string()).into())
+            return Err(ErrorKind::ArgumentError(
+                "Please define libp2p_port value in config".to_string(),
+            )
+            .into());
         }
 
         let libp2p_port = config.libp2p_port.unwrap();
@@ -382,10 +399,7 @@ fn start_tor_listener(
     Ok(mutex)
 }
 
-fn start_wallet_api(
-    config: &Wallet713Config,
-    wallet: Arc<Mutex<Wallet>>,
-) -> Result<(), Error> {
+fn start_wallet_api(config: &Wallet713Config, wallet: Arc<Mutex<Wallet>>) -> Result<(), Error> {
     if wallet.lock().is_locked() {
         return Ok(());
     }
@@ -395,14 +409,14 @@ fn start_wallet_api(
 
         if config.owner_api.unwrap_or(false) {
             cli_message!(
-                         "Starting listener for Owner API on [{}]",
-                         config.owner_api_address().bright_green()
-                     );
+                "Starting listener for Owner API on [{}]",
+                config.owner_api_address().bright_green()
+            );
             if config.owner_api_secret.is_none() {
                 cli_message!(
-                             "{}: No API secret for Owner API. It is recommended to set one.",
-                             "WARNING".bright_yellow()
-                         );
+                    "{}: No API secret for Owner API. It is recommended to set one.",
+                    "WARNING".bright_yellow()
+                );
             }
 
             let wallet_instance = wallet.lock().get_wallet_instance()?;
@@ -421,18 +435,18 @@ fn start_wallet_api(
                         owner_api_secret,
                         tls_config,
                         owner_api_include_foreign,
-                        None)
-                    {
-                        cli_message!( "{}: Owner API Listener failed. {}", e, "ERROR".bright_red() );
+                        None,
+                    ) {
+                        cli_message!("{}: Owner API Listener failed. {}", e, "ERROR".bright_red());
                     }
                 })?;
         }
 
         if config.foreign_api.unwrap_or(false) {
             cli_message!(
-                         "Starting listener for Foreign API on [{}]",
-                         config.foreign_api_address().bright_green()
-                     );
+                "Starting listener for Foreign API on [{}]",
+                config.foreign_api_address().bright_green()
+            );
             if config.foreign_api_secret.is_some() {
                 cli_message!(
                              "{}: Setting a Foreign API secret will prevent mwc-wallet from sending to this wallet as mwc-wallet does not support basic authentication. However both mwc-qt-wallet and mwc713 support basic authentication.",
@@ -459,9 +473,12 @@ fn start_wallet_api(
                         &socks_addr,
                         &libp2p_port,
                         &tor_log_file,
-                    )
-                    {
-                        cli_message!( "{}: Foreign API Listener failed. {}", "ERROR".bright_red(), e );
+                    ) {
+                        cli_message!(
+                            "{}: Foreign API Listener failed. {}",
+                            "ERROR".bright_red(),
+                            e
+                        );
                     }
                 })?;
         }
@@ -500,7 +517,11 @@ impl Highlighter for EditorHelper {
         self.1.highlight(line, pos)
     }
 
-    fn highlight_prompt<'b, 's: 'b, 'p: 'b>(&'s self, prompt: &'p str, default: bool) -> Cow<'b, str> {
+    fn highlight_prompt<'b, 's: 'b, 'p: 'b>(
+        &'s self,
+        prompt: &'p str,
+        default: bool,
+    ) -> Cow<'b, str> {
         if default {
             Borrowed(COLORED_PROMPT)
         } else {
@@ -549,7 +570,7 @@ fn main() {
 
     let disable_history = matches.is_present("disable-history");
 
-    let mut config: Wallet713Config = welcome(&matches ).unwrap_or_else(|e| {
+    let mut config: Wallet713Config = welcome(&matches).unwrap_or_else(|e| {
         panic!(
             "{}: could not read or create config! {}",
             "ERROR".bright_red(),
@@ -560,7 +581,6 @@ fn main() {
     //update the replay mitigation global configuration
     let replay_attack_config = config.get_replay_mitigation_config();
     set_replay_config(replay_attack_config);
-
 
     if disable_history {
         config.disable_history = Some(true);
@@ -575,14 +595,19 @@ fn main() {
         .expect("could not create an address book!");
     let address_book = Arc::new(Mutex::new(address_book));
 
-    println!("{}", format!("\nWelcome to wallet713 for MWC v{}\n", crate_version!()).bright_yellow().bold());
+    println!(
+        "{}",
+        format!("\nWelcome to wallet713 for MWC v{}\n", crate_version!())
+            .bright_yellow()
+            .bold()
+    );
 
-    let wallet = Arc::new(Mutex::new(Wallet::new() ));
+    let wallet = Arc::new(Mutex::new(Wallet::new()));
 
     let mut mwcmqs_broker: Option<(MWCMQPublisher, MWCMQSubscriber)> = None;
-    let mut tor_state: Option<std::sync::Arc<std::sync::Mutex<u32>>> = Some(std::sync::Arc::new(std::sync::Mutex::new(0)));
+    let mut tor_state: Option<std::sync::Arc<std::sync::Mutex<u32>>> =
+        Some(std::sync::Arc::new(std::sync::Mutex::new(0)));
     let mut tor_running: bool = false;
-
 
     let has_seed = Wallet::seed_exists(&config);
 
@@ -590,7 +615,7 @@ fn main() {
     if matches.subcommand_matches("state").is_some() {
         match has_seed {
             true => println!("Initialized"),
-            false => println!("Uninitialized")
+            false => println!("Uninitialized"),
         };
         std::process::exit(0);
     }
@@ -636,11 +661,20 @@ fn main() {
                 println!("Set an optional password to secure your wallet with. Leave blank for no password.");
                 println!();
                 let cmd = format!("init -p {}", &passphrase);
-                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(), &mut mwcmqs_broker, &mut out_is_safe, &mut tor_state, &mut tor_running) {
+                if let Err(err) = do_command(
+                    &cmd,
+                    &mut config,
+                    wallet.clone(),
+                    address_book.clone(),
+                    &mut mwcmqs_broker,
+                    &mut out_is_safe,
+                    &mut tor_state,
+                    &mut tor_running,
+                ) {
                     println!("{}: {}", "ERROR".bright_red(), err);
                     std::process::exit(1);
                 }
-            },
+            }
             "2" | "recover" | "restore" => {
                 println!("{}", "Recovering from mnemonic".bold());
                 print!("Mnemonic: ");
@@ -649,7 +683,12 @@ fn main() {
 
                 if let Some(recover) = matches.subcommand_matches("recover") {
                     if recover.is_present("words") {
-                        mnemonic = matches.subcommand_matches("recover").unwrap().value_of("words").unwrap().to_string();
+                        mnemonic = matches
+                            .subcommand_matches("recover")
+                            .unwrap()
+                            .value_of("words")
+                            .unwrap()
+                            .to_string();
                     }
                 } else {
                     if io::stdin().read_line(&mut mnemonic).unwrap() == 0 {
@@ -664,18 +703,27 @@ fn main() {
                 println!();
                 // TODO: refactor this
                 let cmd = format!("recover -m {} -p {}", mnemonic, &passphrase);
-                if let Err(err) = do_command(&cmd, &mut config, wallet.clone(), address_book.clone(),  &mut mwcmqs_broker, &mut out_is_safe, &mut tor_state, &mut tor_running) {
+                if let Err(err) = do_command(
+                    &cmd,
+                    &mut config,
+                    wallet.clone(),
+                    address_book.clone(),
+                    &mut mwcmqs_broker,
+                    &mut out_is_safe,
+                    &mut tor_state,
+                    &mut tor_running,
+                ) {
                     println!("{}: {}", "ERROR".bright_red(), err);
                     std::process::exit(1);
                 }
-            },
+            }
             "3" | "exit" => {
                 return;
-            },
+            }
             _ => {
                 println!("{}: invalid option", "ERROR".bright_red());
                 std::process::exit(1);
-            },
+            }
         }
 
         println!();
@@ -694,15 +742,21 @@ fn main() {
         let account = matches.value_of("account").unwrap_or("default").to_string();
         let has_wallet = if matches.is_present("passphrase") {
             let passphrase = password_prompt(matches.value_of("passphrase"));
-            let result = wallet.lock().unlock(&config, &account, grin_util::ZeroingString::from(passphrase.as_str()));
+            let result = wallet.lock().unlock(
+                &config,
+                &account,
+                grin_util::ZeroingString::from(passphrase.as_str()),
+            );
             if let Err(ref err) = result {
                 println!("{}: {}", "ERROR".bright_red(), err);
                 std::process::exit(1);
             }
             result.is_ok()
-        }
-        else {
-            wallet.lock().unlock(&config, &account, grin_util::ZeroingString::from("")).is_ok()
+        } else {
+            wallet
+                .lock()
+                .unlock(&config, &account, grin_util::ZeroingString::from(""))
+                .is_ok()
         };
 
         if has_wallet {
@@ -712,8 +766,7 @@ fn main() {
             if let Err(e) = start_wallet_api(&config, wallet.clone()) {
                 cli_message!("{}: {}", "ERROR".bright_red(), e);
             }
-        }
-        else {
+        } else {
             println!(
                 "{}",
                 "Unlock your existing wallet or type `init` to initiate a new one"
@@ -731,15 +784,12 @@ fn main() {
             Err(e) => cli_message!("{}: {}", "ERROR".bright_red(), e),
             Ok((publisher, subscriber)) => {
                 mwcmqs_broker = Some((publisher, subscriber));
-            },
+            }
         }
-
     }
 
-
-
     #[cfg(not(target_os = "android"))]
-        let mut rl = {
+    let mut rl = {
         let editor_config = Config::builder()
             .history_ignore_space(true)
             .completion_type(CompletionType::List)
@@ -755,19 +805,19 @@ fn main() {
     };
 
     #[cfg(not(target_os = "android"))]
-        let wallet713_home_path_buf = Wallet713Config::default_home_path(&config.chain).unwrap();
+    let wallet713_home_path_buf = Wallet713Config::default_home_path(&config.chain).unwrap();
     #[cfg(not(target_os = "android"))]
-        let wallet713_home_path = wallet713_home_path_buf.to_str().unwrap();
+    let wallet713_home_path = wallet713_home_path_buf.to_str().unwrap();
 
     #[cfg(not(target_os = "android"))]
+    {
+        if let Some(path) = Path::new(wallet713_home_path)
+            .join(CLI_HISTORY_PATH)
+            .to_str()
         {
-            if let Some(path) = Path::new(wallet713_home_path)
-                .join(CLI_HISTORY_PATH)
-                .to_str()
-            {
-                let _ = rl.load_history(path).is_ok();
-            }
+            let _ = rl.load_history(path).is_ok();
         }
+    }
 
     let prompt_plus = matches.value_of("ready-phrase").unwrap_or("").to_string();
 
@@ -777,7 +827,7 @@ fn main() {
         }
 
         #[cfg(not(target_os = "android"))]
-            let command = match rl.readline(PROMPT) {
+        let command = match rl.readline(PROMPT) {
             Ok(command) => command.trim().to_string(),
             Err(e) => {
                 cli_message!("Error: Unable to read input. {}", e);
@@ -786,15 +836,14 @@ fn main() {
         };
 
         #[cfg(target_os = "android")]
-            let command = {
-                let mut cmd = String::new();
-                if io::stdin().read_line(&mut cmd).unwrap() > 0 {
-                    cmd.trim().to_string()
-                }
-                else {
-                    continue;
-                }
-            };
+        let command = {
+            let mut cmd = String::new();
+            if io::stdin().read_line(&mut cmd).unwrap() > 0 {
+                cmd.trim().to_string()
+            } else {
+                continue;
+            }
+        };
 
         if command == "exit" {
             let mut ptr = tor_state.as_ref().unwrap().lock().unwrap();
@@ -831,34 +880,40 @@ fn main() {
         }
 
         #[cfg(not(target_os = "android"))]
-            {
-                if out_is_safe {
-                    if config.disable_history() != true {
-                        rl.add_history_entry(command);
-                    }
+        {
+            if out_is_safe {
+                if config.disable_history() != true {
+                    rl.add_history_entry(command);
                 }
             }
+        }
     }
 
     #[cfg(not(target_os = "android"))]
+    {
+        if let Some(path) = Path::new(wallet713_home_path)
+            .join(CLI_HISTORY_PATH)
+            .to_str()
         {
-            if let Some(path) = Path::new(wallet713_home_path)
-                .join(CLI_HISTORY_PATH)
-                .to_str()
-            {
-                let _ = rl.save_history(path).is_ok();
-            }
+            let _ = rl.save_history(path).is_ok();
         }
+    }
 }
 
-fn show_address(config: &Wallet713Config, wallet: Arc<Mutex<Wallet>>, include_index: bool) -> Result<(), Error> {
-
+fn show_address(
+    config: &Wallet713Config,
+    wallet: Arc<Mutex<Wallet>>,
+    include_index: bool,
+) -> Result<(), Error> {
     let address_pub_key = wallet.lock().get_payment_proof_address_pubkey()?;
 
     println!(
         "{}: {}",
         "Your mwcmqs address".bright_yellow(),
-        config.get_mwcmqs_address(&address_pub_key)?.get_stripped().bright_green()
+        config
+            .get_mwcmqs_address(&address_pub_key)?
+            .get_stripped()
+            .bright_green()
     );
     if include_index {
         println!(
@@ -870,9 +925,8 @@ fn show_address(config: &Wallet713Config, wallet: Arc<Mutex<Wallet>>, include_in
 }
 
 fn password_prompt(opt: Option<&str>) -> String {
-    opt.map(String::from).unwrap_or_else(|| {
-        getpassword().unwrap()
-    })
+    opt.map(String::from)
+        .unwrap_or_else(|| getpassword().unwrap())
 }
 
 // fn proof_ok(
@@ -947,13 +1001,17 @@ fn do_command(
     *out_is_safe = true;
 
     #[cfg(not(target_os = "android"))]
-        let home_dir = dirs::home_dir()
+    let home_dir = dirs::home_dir()
         .map(|p| p.to_str().unwrap().to_string())
         .unwrap_or("~".to_string());
 
     #[cfg(target_os = "android")]
-        let home_dir = std::env::current_exe() //  dirs::home_dir()
-        .map(|p| { let mut p = p.clone(); p.pop();  p.to_str().unwrap().to_string()})
+    let home_dir = std::env::current_exe() //  dirs::home_dir()
+        .map(|p| {
+            let mut p = p.clone();
+            p.pop();
+            p.to_str().unwrap().to_string()
+        })
         .unwrap_or("~".to_string());
 
     let matches = Parser::parse(command)?;
@@ -997,7 +1055,9 @@ fn do_command(
             }
 
             if show_addr {
-                let address = wallet.lock().get_provable_address(proofaddress::ProofAddressType::Onion)?;
+                let address = wallet
+                    .lock()
+                    .get_provable_address(proofaddress::ProofAddressType::Onion)?;
                 println!(
                     "{}: {}",
                     "Your file/http wallet address".bright_yellow(),
@@ -1025,11 +1085,12 @@ fn do_command(
 
             let passphrase = grin_util::ZeroingString::from(passphrase);
 
-            let seed = wallet
-                .lock()
-                .init(config, passphrase.clone(), true)?;
+            let seed = wallet.lock().init(config, passphrase.clone(), true)?;
 
-            println!("{}", "Press ENTER when you have done so".bright_green().bold());
+            println!(
+                "{}",
+                "Press ENTER when you have done so".bright_green().bold()
+            );
 
             let mut line = String::new();
             io::stdout().flush().unwrap();
@@ -1099,7 +1160,11 @@ fn do_command(
             let libp2p = args.is_present("libp2p");
 
             if libp2p && !tor {
-                return Err(ErrorKind::ArgumentError("libp2p can be started with tor. Please specify both --tor --libp2p".to_string()).into());
+                return Err(ErrorKind::ArgumentError(
+                    "libp2p can be started with tor. Please specify both --tor --libp2p"
+                        .to_string(),
+                )
+                .into());
             }
 
             if mwcmqs {
@@ -1110,8 +1175,7 @@ fn do_command(
                 if is_running {
                     Err(ErrorKind::AlreadyListening("mwcmqs".to_string()))?
                 } else {
-                    let (publisher, subscriber) =
-                        start_mwcmqs_listener(&config, wallet.clone())?;
+                    let (publisher, subscriber) = start_mwcmqs_listener(&config, wallet.clone())?;
                     *mwcmqs_broker = Some((publisher, subscriber));
                 }
             }
@@ -1119,9 +1183,16 @@ fn do_command(
                 if !(*tor_running) {
                     if config.foreign_api() {
                         cli_message!("Starting Tor listener...");
-                        *tor_state = Some(start_tor_listener(&config, wallet.clone(), tor_running, libp2p)?);
+                        *tor_state = Some(start_tor_listener(
+                            &config,
+                            wallet.clone(),
+                            tor_running,
+                            libp2p,
+                        )?);
                     } else {
-                        return Err(ErrorKind::ArgumentError("Foreign API must be enabled to use Tor.".to_string()))?;
+                        return Err(ErrorKind::ArgumentError(
+                            "Foreign API must be enabled to use Tor.".to_string(),
+                        ))?;
                     }
                 } else {
                     cli_message!("INFO: Tor listener already started.");
@@ -1148,7 +1219,10 @@ fn do_command(
                     if success {
                         *mwcmqs_broker = None;
                     } else {
-                        println!("{}: Could not contact mwcmqs. Network down?", "WARNING".bright_yellow());
+                        println!(
+                            "{}: Could not contact mwcmqs. Network down?",
+                            "WARNING".bright_yellow()
+                        );
                     }
                 } else {
                     Err(ErrorKind::ClosedListener("mwcmqs".to_string()))?
@@ -1162,7 +1236,6 @@ fn do_command(
                     *tor_running = false;
                 } else {
                     cli_message!("INFO: Tor listener is not running.");
-
                 }
             }
         }
@@ -1173,7 +1246,9 @@ fn do_command(
             let confirmations = u64::from_str_radix(confirmations, 10)
                 .map_err(|_| ErrorKind::InvalidMinConfirmations(confirmations.to_string()))?;
 
-            wallet.lock().info(!args.is_present("--no-refresh"), confirmations, )?;
+            wallet
+                .lock()
+                .info(!args.is_present("--no-refresh"), confirmations)?;
         }
         Some("txs_count") => {
             let count = wallet.lock().txs_count()?;
@@ -1189,12 +1264,17 @@ fn do_command(
             let no_refresh = args.is_present("no-refresh");
 
             let tx_id: Option<u32> = match args.value_of("id") {
-                Some(s) => Some(u32::from_str_radix(s, 10).map_err(|_| ErrorKind::InvalidTxIdNumber(s.to_string()))?),
+                Some(s) => Some(
+                    u32::from_str_radix(s, 10)
+                        .map_err(|_| ErrorKind::InvalidTxIdNumber(s.to_string()))?,
+                ),
                 _ => None,
             };
             let tx_slate_id: Option<Uuid> = match args.value_of("txid") {
-                Some(s) => Some( Uuid::parse_str(s).map_err(|_| ErrorKind::InvalidTxUuid(s.to_string()))?),
-                _ => None
+                Some(s) => {
+                    Some(Uuid::parse_str(s).map_err(|_| ErrorKind::InvalidTxUuid(s.to_string()))?)
+                }
+                _ => None,
             };
 
             let pagination_length = u32::from_str_radix(pagination_length, 10)
@@ -1203,21 +1283,26 @@ fn do_command(
             let pagination_start = u32::from_str_radix(pagination_start, 10)
                 .map_err(|_| ErrorKind::InvalidPaginationStart(pagination_length.to_string()))?;
 
-            let pagination_length : Option<u32> = if pagination_length>0 {
+            let pagination_length: Option<u32> = if pagination_length > 0 {
                 Some(pagination_length)
-            }
-            else {
+            } else {
                 None
             };
 
-            let pagination_start: Option<u32> = if pagination_start>0 {
+            let pagination_start: Option<u32> = if pagination_start > 0 {
                 Some(pagination_start)
-            }
-            else {
+            } else {
                 None
             };
 
-            wallet.lock().txs(!no_refresh, show_full_info, pagination_start, pagination_length, tx_id, tx_slate_id )?;
+            wallet.lock().txs(
+                !no_refresh,
+                show_full_info,
+                pagination_start,
+                pagination_length,
+                tx_id,
+                tx_slate_id,
+            )?;
         }
         Some("txs-bulk-validate") => {
             let args = matches.subcommand_matches("txs-bulk-validate").unwrap();
@@ -1226,10 +1311,11 @@ fn do_command(
             let outputs_fn = args.value_of("outputs").unwrap();
             let result_fn = args.value_of("result").unwrap();
 
-            wallet.lock().txs_bulk_validate(kernels_fn, outputs_fn, result_fn )?;
+            wallet
+                .lock()
+                .txs_bulk_validate(kernels_fn, outputs_fn, result_fn)?;
 
             cli_message!("Please check results in CSV format at {}", result_fn);
-
         }
         Some("contacts") => {
             let arg_matches = matches.subcommand_matches("contacts").unwrap();
@@ -1255,22 +1341,22 @@ fn do_command(
             let pagination_start = u32::from_str_radix(pagination_start, 10)
                 .map_err(|_| ErrorKind::InvalidPaginationStart(pagination_length.to_string()))?;
 
-            let pagination_length : Option<u32> = if pagination_length>0 {
+            let pagination_length: Option<u32> = if pagination_length > 0 {
                 Some(pagination_length)
-            }
-            else {
+            } else {
                 None
             };
 
-            let pagination_start: Option<u32> = if pagination_start>0 {
+            let pagination_start: Option<u32> = if pagination_start > 0 {
                 Some(pagination_start)
-            }
-            else {
+            } else {
                 None
             };
 
             let show_spent = args.is_present("show-spent");
-            wallet.lock().outputs(!no_refresh, show_spent, pagination_start, pagination_length)?;
+            wallet
+                .lock()
+                .outputs(!no_refresh, show_spent, pagination_start, pagination_length)?;
         }
         Some("repost") => {
             let args = matches.subcommand_matches("repost").unwrap();
@@ -1290,117 +1376,127 @@ fn do_command(
             wallet.lock().cancel(id)?;
         }
         Some("getnextkey") => {
-            let args =  matches.subcommand_matches("getnextkey").unwrap();
+            let args = matches.subcommand_matches("getnextkey").unwrap();
             let amount = args.value_of("amount").unwrap_or("0");
             let amount = amount.parse::<u64>().unwrap();
 
             if amount <= 0 {
                 cli_message!("Error: amount greater than 0 must be specified");
-            }
-            else
-            {
+            } else {
                 wallet.lock().getnextkey(amount)?;
             }
         }
-	Some("encryptslate") => {
-		let args = matches.subcommand_matches("encryptslate").unwrap();
- 		let to = args.value_of("to");
-		let slate = args.value_of("slate").unwrap();
-		let slate = Slate::deserialize_upgrade_plain(&slate)?;
+        Some("encryptslate") => {
+            let args = matches.subcommand_matches("encryptslate").unwrap();
+            let to = args.value_of("to");
+            let slate = args.value_of("slate").unwrap();
+            let slate = Slate::deserialize_upgrade_plain(&slate)?;
 
-		if to.is_none() {
-			return Err(ErrorKind::ToNotSpecified("".to_string()).into());
-		}
-		let to = to.unwrap();
-        let mwcmqs_address = MWCMQSAddress::from_str(&to.to_string())?;
+            if to.is_none() {
+                return Err(ErrorKind::ToNotSpecified("".to_string()).into());
+            }
+            let to = to.unwrap();
+            let mwcmqs_address = MWCMQSAddress::from_str(&to.to_string())?;
 
-		if let Some((publisher, _)) = mwcmqs_broker {
-                        let slate = publisher.encrypt_slate(&slate, mwcmqs_address.borrow())?;
-			println!("slate='{}'", slate);
-		} else {
-            let address_pub_key = wallet.lock().get_payment_proof_address_pubkey()?;
-            let mwcmqs_address_for_publisher = config.get_mwcmqs_address(&address_pub_key)?;
-            let mwcmqs_secret_key = wallet.lock().get_payment_proof_address_secret()?;
-            let addr_name = mwcmqs_address.get_stripped();
+            if let Some((publisher, _)) = mwcmqs_broker {
+                let slate = publisher.encrypt_slate(&slate, mwcmqs_address.borrow())?;
+                println!("slate='{}'", slate);
+            } else {
+                let address_pub_key = wallet.lock().get_payment_proof_address_pubkey()?;
+                let mwcmqs_address_for_publisher = config.get_mwcmqs_address(&address_pub_key)?;
+                let mwcmqs_secret_key = wallet.lock().get_payment_proof_address_secret()?;
+                let addr_name = mwcmqs_address.get_stripped();
 
-            let keychain_mask = Arc::new(Mutex::new(None));
+                let keychain_mask = Arc::new(Mutex::new(None));
 
-            let controller = grin_wallet_controller::controller::Controller::new(
-                &addr_name,
-                wallet.lock().get_wallet_instance()?,
-                keychain_mask,
-                config.max_auto_accept_invoice,
-                false,
-            );
+                let controller = grin_wallet_controller::controller::Controller::new(
+                    &addr_name,
+                    wallet.lock().get_wallet_instance()?,
+                    keychain_mask,
+                    config.max_auto_accept_invoice,
+                    false,
+                );
 
-            let publisher = MWCMQPublisher::new(
-                mwcmqs_address_for_publisher,
-                &mwcmqs_secret_key,
-                config.clone().mwcmqs_domain.unwrap_or(DEFAULT_MWCMQS_DOMAIN.to_string()),
-                config.clone().mwcmqs_port.unwrap_or(DEFAULT_MWCMQS_PORT),
-                false,
-                Box::new(controller.clone())
-            );
+                let publisher = MWCMQPublisher::new(
+                    mwcmqs_address_for_publisher,
+                    &mwcmqs_secret_key,
+                    config
+                        .clone()
+                        .mwcmqs_domain
+                        .unwrap_or(DEFAULT_MWCMQS_DOMAIN.to_string()),
+                    config.clone().mwcmqs_port.unwrap_or(DEFAULT_MWCMQS_PORT),
+                    false,
+                    Box::new(controller.clone()),
+                );
 
-            let slate = publisher.encrypt_slate(&slate, mwcmqs_address.borrow())?;
-            println!("slate='{}'", slate);
-		}
-	}
-	Some("decryptslate") => {
-		let args = matches.subcommand_matches("decryptslate").unwrap();
-		let slate = args.value_of("slate").unwrap();
-        let public_key = wallet.lock().get_payment_proof_address_pubkey()?;
-		let source_address = ProvableAddress::from_pub_key(&public_key);
-		let mut data = "http://example.com/?".to_string();
-		data.push_str(slate);
-
-		let url = Url::parse(&data)?;
-		let mut pairs = url.query_pairs();
-		let mut from = String::new();
-		let mut signature = String::new();
-		let mut mapmessage = String::new();
-
-        while pairs.count()>0 {
-			let next = pairs.next();
-			let next = next.unwrap();
-			if next.0 == "from" { from = next.1.to_string(); }
-			if next.0 == "signature" { signature = next.1.to_string(); }
-			if next.0 == "mapmessage" { mapmessage = next.1.to_string(); }
-		}
-
- 		if let Some((publisher, _)) = mwcmqs_broker {
-            let decrypted_slate = publisher.decrypt_slate(from, mapmessage, signature, &source_address)?;
-			println!("slate='{}'", decrypted_slate);
-		}
-        else
-        {
-            let mwcmqs_address = config.get_mwcmqs_address(&public_key)?;
-            let mwcmqs_secret_key = wallet.lock().get_payment_proof_address_secret()?;
-            let addr_name = mwcmqs_address.get_stripped();
-
-            let keychain_mask = Arc::new(Mutex::new(None));
-
-            let controller = grin_wallet_controller::controller::Controller::new(
-                &addr_name,
-                wallet.lock().get_wallet_instance()?,
-                keychain_mask,
-                config.max_auto_accept_invoice,
-                false,
-            );
-
-            let publisher = MWCMQPublisher::new(
-                mwcmqs_address.clone(),
-                &mwcmqs_secret_key,
-                config.clone().mwcmqs_domain.unwrap_or(DEFAULT_MWCMQS_DOMAIN.to_string()),
-                config.clone().mwcmqs_port.unwrap_or(DEFAULT_MWCMQS_PORT),
-                false,
-                Box::new(controller.clone())
-            );
-
-            let decrypted_slate = publisher.decrypt_slate(from, mapmessage, signature, &source_address)?;
-            println!("slate='{}'", decrypted_slate);
+                let slate = publisher.encrypt_slate(&slate, mwcmqs_address.borrow())?;
+                println!("slate='{}'", slate);
+            }
         }
-	}
+        Some("decryptslate") => {
+            let args = matches.subcommand_matches("decryptslate").unwrap();
+            let slate = args.value_of("slate").unwrap();
+            let public_key = wallet.lock().get_payment_proof_address_pubkey()?;
+            let source_address = ProvableAddress::from_pub_key(&public_key);
+            let mut data = "http://example.com/?".to_string();
+            data.push_str(slate);
+
+            let url = Url::parse(&data)?;
+            let mut pairs = url.query_pairs();
+            let mut from = String::new();
+            let mut signature = String::new();
+            let mut mapmessage = String::new();
+
+            while pairs.count() > 0 {
+                let next = pairs.next();
+                let next = next.unwrap();
+                if next.0 == "from" {
+                    from = next.1.to_string();
+                }
+                if next.0 == "signature" {
+                    signature = next.1.to_string();
+                }
+                if next.0 == "mapmessage" {
+                    mapmessage = next.1.to_string();
+                }
+            }
+
+            if let Some((publisher, _)) = mwcmqs_broker {
+                let decrypted_slate =
+                    publisher.decrypt_slate(from, mapmessage, signature, &source_address)?;
+                println!("slate='{}'", decrypted_slate);
+            } else {
+                let mwcmqs_address = config.get_mwcmqs_address(&public_key)?;
+                let mwcmqs_secret_key = wallet.lock().get_payment_proof_address_secret()?;
+                let addr_name = mwcmqs_address.get_stripped();
+
+                let keychain_mask = Arc::new(Mutex::new(None));
+
+                let controller = grin_wallet_controller::controller::Controller::new(
+                    &addr_name,
+                    wallet.lock().get_wallet_instance()?,
+                    keychain_mask,
+                    config.max_auto_accept_invoice,
+                    false,
+                );
+
+                let publisher = MWCMQPublisher::new(
+                    mwcmqs_address.clone(),
+                    &mwcmqs_secret_key,
+                    config
+                        .clone()
+                        .mwcmqs_domain
+                        .unwrap_or(DEFAULT_MWCMQS_DOMAIN.to_string()),
+                    config.clone().mwcmqs_port.unwrap_or(DEFAULT_MWCMQS_PORT),
+                    false,
+                    Box::new(controller.clone()),
+                );
+
+                let decrypted_slate =
+                    publisher.decrypt_slate(from, mapmessage, signature, &source_address)?;
+                println!("slate='{}'", decrypted_slate);
+            }
+        }
         Some("receive") => {
             let args = matches.subcommand_matches("receive").unwrap();
             let key_id = args.value_of("key_id");
@@ -1412,24 +1508,29 @@ fn do_command(
 
             let slate = if let Some(slate_content) = slate_content {
                 slate_content.to_string()
-            }
-            else if let Some(input) = input.clone() {
+            } else if let Some(input) = input.clone() {
                 let mut file = File::open(input.replace("~", &home_dir))?;
                 let mut slate = String::new();
                 file.read_to_string(&mut slate)?;
-                if slate.len()<3 {
+                if slate.len() < 3 {
                     return Err(ErrorKind::ArgumentError(format!("File {} is empty", input)).into());
                 }
                 slate
-            }
-            else {
-                return Err(ErrorKind::ArgumentError("Please define '--content' or '--file' argument".to_string()).into());
+            } else {
+                return Err(ErrorKind::ArgumentError(
+                    "Please define '--content' or '--file' argument".to_string(),
+                )
+                .into());
             };
 
-            let (mut slate, content, sender, _recipient ) = w.deserialize_slate( &slate )?;
+            let (mut slate, content, sender, _recipient) = w.deserialize_slate(&slate)?;
             if let Some(content) = &content {
                 if *content != SlatePurpose::SendInitial {
-                    return Err(ErrorKind::GenericError(format!("The slate doesn't contain initial send data, the slate content is {:?}", content)).into());
+                    return Err(ErrorKind::GenericError(format!(
+                        "The slate doesn't contain initial send data, the slate content is {:?}",
+                        content
+                    ))
+                    .into());
                 }
             }
 
@@ -1445,56 +1546,68 @@ fn do_command(
 
                     if len == 0 {
                         done = true;
-                    }
-                    else
-                    {
+                    } else {
                         line = line.trim().to_string();
                         nvec.push(line.parse::<u64>()?);
                     }
-
                 }
                 Some(nvec)
-            }
-            else {
+            } else {
                 None
             };
 
             let (file, source_name) = if let Some(input) = input {
                 let source_name = input.to_string();
-                ( Some(File::create(&format!("{}.response", input.replace("~", &home_dir)))?), source_name )
-            }
-            else {
-                ( None, "slatepack".to_string() )
+                (
+                    Some(File::create(&format!(
+                        "{}.response",
+                        input.replace("~", &home_dir)
+                    ))?),
+                    source_name,
+                )
+            } else {
+                (None, "slatepack".to_string())
             };
 
             let address = if let Some(sender) = &sender {
                 ProvableAddress::from_tor_pub_key(sender).public_key
-            }
-            else {
+            } else {
                 "file".to_string()
             };
 
             // Processing with a new receive account
-            w.process_sender_initiated_slate(Some(address), &mut slate,
-                                             message.map(|s|s.to_string()),
-                                             key_id, output_amounts, None )?;
+            w.process_sender_initiated_slate(
+                Some(address),
+                &mut slate,
+                message.map(|s| s.to_string()),
+                key_id,
+                output_amounts,
+                None,
+            )?;
             let message = &slate.participant_data[0].message;
             let amount = core::amount_to_hr_string(slate.amount, false);
             if message.is_some() {
-                cli_message!("{} received. amount = [{}], message = [{:?}]", source_name, amount, message.clone().unwrap());
-            }
-            else {
+                cli_message!(
+                    "{} received. amount = [{}], message = [{:?}]",
+                    source_name,
+                    amount,
+                    message.clone().unwrap()
+                );
+            } else {
                 cli_message!("{} received. amount = [{}]", source_name, amount);
             }
 
-            let slate_str = w.serialize_slate(&slate,
-                SlatePurpose::SendResponse, sender, content.is_some())?;
+            let slate_str = w.serialize_slate(
+                &slate,
+                SlatePurpose::SendResponse,
+                sender,
+                content.is_some(),
+            )?;
 
             if let Some(mut file) = file {
                 file.write_all(slate_str.as_bytes())?;
                 cli_message!("{}.response created successfully.", source_name);
-            }
-            else {
+            } else {
                 cli_message!("Slatepack: {}", slate_str);
             }
         }
@@ -1504,7 +1617,7 @@ fn do_command(
             let mut file = File::open(input.replace("~", &home_dir))?;
             let mut slate = String::new();
             file.read_to_string(&mut slate)?;
-            if slate.len()<3 {
+            if slate.len() < 3 {
                 return Err(ErrorKind::ArgumentError(format!("File {} is empty", input)).into());
             }
             let slate = Slate::deserialize_upgrade_plain(&slate)?;
@@ -1523,34 +1636,35 @@ fn do_command(
             let slate = if let Some(slate_content) = slate_content {
                 source_name = "slatepack".to_string();
                 slate_content.to_string()
-            }
-            else if let Some(input) = input.clone() {
+            } else if let Some(input) = input.clone() {
                 source_name = input.to_string();
                 let mut file = File::open(input.replace("~", &home_dir))?;
                 let mut slate = String::new();
                 file.read_to_string(&mut slate)?;
-                if slate.len()<3 {
+                if slate.len() < 3 {
                     return Err(ErrorKind::ArgumentError(format!("File {} is empty", input)).into());
                 }
                 slate
-            }
-            else {
-                return Err(ErrorKind::ArgumentError("Please difine '--content' of '--file' argument".to_string()).into());
+            } else {
+                return Err(ErrorKind::ArgumentError(
+                    "Please difine '--content' of '--file' argument".to_string(),
+                )
+                .into());
             };
 
             let (mut slate, content, _sender, _recipient) = {
                 let w = wallet.lock();
-                 w.deserialize_slate(&slate)?
+                w.deserialize_slate(&slate)?
             };
 
             if let Some(content) = content {
                 if content != SlatePurpose::SendResponse && content != SlatePurpose::FullSlate {
                     cli_message!("Error: Not a valid response slate!");
-                    return Ok(())
+                    return Ok(());
                 }
             }
 
-            if slate.participant_data.len()<2 && !slate.compact_slate {
+            if slate.participant_data.len() < 2 && !slate.compact_slate {
                 cli_message!("Error: Not a valid response slate!");
             } else {
                 wallet.lock().finalize_post_slate(&mut slate, fluff)?;
@@ -1563,12 +1677,16 @@ fn do_command(
             let mut file = File::open(input.replace("~", &home_dir))?;
             let mut txn_file = String::new();
             file.read_to_string(&mut txn_file)?;
-            if txn_file.len()<3 {
+            if txn_file.len() < 3 {
                 return Err(ErrorKind::ArgumentError(format!("File {} is empty", input)).into());
             }
-            let tx_bin = from_hex(&txn_file)
-                .map_err(|_s| ErrorKind::GenericError(format!("Unable to parse the content of the file {}", input)))?;
-            let mut txn : Transaction = ser::deserialize(&mut &tx_bin[..], ser::ProtocolVersion(1) )?;
+            let tx_bin = from_hex(&txn_file).map_err(|_s| {
+                ErrorKind::GenericError(format!(
+                    "Unable to parse the content of the file {}",
+                    input
+                ))
+            })?;
+            let mut txn: Transaction = ser::deserialize(&mut &tx_bin[..], ser::ProtocolVersion(1))?;
             let fluff = args.is_present("fluff");
             wallet.lock().submit(&mut txn, fluff)?;
         }
@@ -1588,7 +1706,7 @@ fn do_command(
             };
             let url_str = format!("{}{}v2/foreign", &to.to_string(), trailing);
 
-            let proof_key= http_sender.check_receiver_proof_address(&url_str, None)?;
+            let proof_key = http_sender.check_receiver_proof_address(&url_str, None)?;
             cli_message!("Proof pub key of the listening wallet: {}", proof_key);
         }
         Some("send") => {
@@ -1608,18 +1726,20 @@ fn do_command(
 
             let outputs_arg = args.value_of("outputs");
 
-            let output_list : Option<Vec<String>> = if outputs_arg.is_none() {
+            let output_list: Option<Vec<String>> = if outputs_arg.is_none() {
                 if strategy == "custom" {
                     return Err(ErrorKind::CustomWithNoOutputs.into());
                 }
                 None
-            }
-            else
-            {
+            } else {
                 if strategy != "custom" {
                     return Err(ErrorKind::NonCustomWithOutputs.into());
                 }
-                let ret: Vec<String> = outputs_arg.unwrap().split(",").map(|s| s.to_string()).collect();
+                let ret: Vec<String> = outputs_arg
+                    .unwrap()
+                    .split(",")
+                    .map(|s| s.to_string())
+                    .collect();
                 Some(ret)
             };
 
@@ -1640,8 +1760,10 @@ fn do_command(
                 .map_err(|_| ErrorKind::InvalidNumOutputs(change_outputs.to_string()))?;
 
             let mut version = match args.value_of("version") {
-                Some(v) => Some(u16::from_str_radix(v, 10)
-                    .map_err(|_| ErrorKind::InvalidSlateVersion(v.to_string()))?),
+                Some(v) => Some(
+                    u16::from_str_radix(v, 10)
+                        .map_err(|_| ErrorKind::InvalidSlateVersion(v.to_string()))?,
+                ),
                 None => None,
             };
             let fluff = args.is_present("fluff");
@@ -1651,47 +1773,66 @@ fn do_command(
             let mut ntotal = 0;
             if amount == "ALL" {
                 // Update from the node once. No reasons to do that twice in tthe row
-                let max_available = wallet.lock().output_count(true, confirmations, &output_list)?;
-                let total_value = wallet.lock().total_value(false, confirmations, &output_list)?;
+                let max_available =
+                    wallet
+                        .lock()
+                        .output_count(true, confirmations, &output_list)?;
+                let total_value = wallet
+                    .lock()
+                    .total_value(false, confirmations, &output_list)?;
                 let fee = tx_fee(max_available, 1, 1, None);
-                ntotal = if total_value >= fee { total_value - fee } else { 0 };
+                ntotal = if total_value >= fee {
+                    total_value - fee
+                } else {
+                    0
+                };
             }
 
             let amount = match amount == "ALL" {
                 true => ntotal,
-                false => core::amount_from_hr_string(amount).map_err(|_| ErrorKind::InvalidAmount(amount.to_string()))?,
+                false => core::amount_from_hr_string(amount)
+                    .map_err(|_| ErrorKind::InvalidAmount(amount.to_string()))?,
             };
 
             let slatepack_recipient_param = args.value_of("slatepack_recipient");
             // Let's convert to dalek PK
-            let (slatepack_recipient_dalek_pk, slatepack_recipient_address ) = match slatepack_recipient_param {
-                Some(addr) => {
-                    let recipient_address = proofaddress::ProvableAddress::from_str(addr)?;
-                    let recipient_pk = recipient_address.tor_public_key()?;
-                    (Some(recipient_pk), Some(recipient_address))
-                }
-                None => (None, None),
-            };
+            let (slatepack_recipient_dalek_pk, slatepack_recipient_address) =
+                match slatepack_recipient_param {
+                    Some(addr) => {
+                        let recipient_address = proofaddress::ProvableAddress::from_str(addr)?;
+                        let recipient_pk = recipient_address.tor_public_key()?;
+                        (Some(recipient_pk), Some(recipient_address))
+                    }
+                    None => (None, None),
+                };
 
             let slatepack_format = args.is_present("slatepack");
 
-            let lock_later : Option<bool> = Some(args.is_present("lock_later"));
+            let lock_later: Option<bool> = Some(args.is_present("lock_later"));
 
             let min_fee = match args.value_of("min_fee") {
-                Some(min_fee) => {
-                    match core::amount_from_hr_string(min_fee) {
-                        Ok(min_fee) => Some(min_fee),
-                        Err(e) => return Err(ErrorKind::ArgumentError(format!("Could not parse minimal fee as a number, {}",e)).into()),
+                Some(min_fee) => match core::amount_from_hr_string(min_fee) {
+                    Ok(min_fee) => Some(min_fee),
+                    Err(e) => {
+                        return Err(ErrorKind::ArgumentError(format!(
+                            "Could not parse minimal fee as a number, {}",
+                            e
+                        ))
+                        .into())
                     }
-                }
+                },
                 None => None,
             };
 
             // Preparign for sync update progress printing
-            let running = Arc::new( AtomicBool::new(true) );
+            let running = Arc::new(AtomicBool::new(true));
             let (tx, rx) = mpsc::channel();
             // Starting printing to console thread.
-            let updater = grin_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(rx, running.clone())?;
+            let updater =
+                grin_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(
+                    rx,
+                    running.clone(),
+                )?;
             let status_send_channel = Some(tx);
 
             // Store slate in a file
@@ -1723,37 +1864,35 @@ fn do_command(
                     min_fee,
                 );
 
-
                 let slate = match slate {
                     Ok(slate) => slate,
                     Err(error) => {
                         fs::remove_file(temp_file_name)?;
-                        return Err(error);} //delete the temp file.
+                        return Err(error);
+                    } //delete the temp file.
                 };
 
                 if slatepack_recipient_dalek_pk.is_some() || slate.compact_slate {
                     warn!("Slatepack and lock later requires mwc-wallet 4.0.0 or later");
                     warn!("Please ensure the other party is running mwc-wallet v4.0.0 or later before sending");
-                }
-                else if slate.payment_proof.is_some() || slate.ttl_cutoff_height.is_some() {
+                } else if slate.payment_proof.is_some() || slate.ttl_cutoff_height.is_some() {
                     warn!("Transaction contains features that require mwc-wallet 3.0.0 or later");
                     warn!("Please ensure the other party is running mwc-wallet v3.0.0 or later before sending");
                 }
 
-                let slate_str = w.serialize_slate(&slate,
-                                                  SlatePurpose::SendInitial,
-                                                  slatepack_recipient_dalek_pk,
-                                                  slatepack_format)?;
+                let slate_str = w.serialize_slate(
+                    &slate,
+                    SlatePurpose::SendInitial,
+                    slatepack_recipient_dalek_pk,
+                    slatepack_format,
+                )?;
 
                 file.write_all(slate_str.as_bytes())?;
                 //copy the .bak file to the file name without .bak, and delete the .bak file
-                fs::copy(&temp_file_name,input)?;
+                fs::copy(&temp_file_name, input)?;
                 fs::remove_file(temp_file_name)?;
 
-                w.tx_lock_outputs(
-                    &slate,
-                    address,
-                    0)?;
+                w.tx_lock_outputs(&slate, address, 0)?;
 
                 cli_message!("{} created successfully.", input);
 
@@ -1762,8 +1901,7 @@ fn do_command(
                 let _ = updater.join();
 
                 return Ok(());
-            }
-            else if let Some(to) = to {
+            } else if let Some(to) = to {
                 let mut to = to.to_string();
                 let mut display_to = None;
 
@@ -1774,12 +1912,12 @@ fn do_command(
                 }
                 // try parse as a general address and fallback to mwcmqs address
                 let address = Address::parse(&to);
-                let address: Result<Box<dyn Address>, Error> = match address {
-                    Ok(address) => Ok(address),
-                    Err(e) => {
-                        Ok(Box::new(MWCMQSAddress::from_str(&to).map_err(|_| e)?) as Box<dyn Address>)
-                    }
-                };
+                let address: Result<Box<dyn Address>, Error> =
+                    match address {
+                        Ok(address) => Ok(address),
+                        Err(e) => Ok(Box::new(MWCMQSAddress::from_str(&to).map_err(|_| e)?)
+                            as Box<dyn Address>),
+                    };
 
                 let to = address?;
                 if display_to.is_none() {
@@ -1792,7 +1930,12 @@ fn do_command(
                     AddressType::Https => "http",
                 };
 
-                let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &apisecret, Some(config.get_tor_config()))?;
+                let sender = grin_wallet_impls::create_sender(
+                    method,
+                    &to.to_string(),
+                    &apisecret,
+                    Some(config.get_tor_config()),
+                )?;
                 let other_wallet_version = sender.check_other_wallet_version(&to.to_string())?;
                 if let Some(other_wallet_version) = &other_wallet_version {
                     if version.is_none() {
@@ -1827,23 +1970,29 @@ fn do_command(
 
                 let original_slate = slate.clone();
                 let (dalek_secret, _dalek_pk) = w.get_slatepack_keys()?;
-                slate = sender.send_tx(&slate,
-                                       SlatePurpose::SendInitial,
-                                       &dalek_secret,
-                                       slatepack_recipient_dalek_pk,
-                                       other_wallet_version,
+                slate = sender.send_tx(
+                    &slate,
+                    SlatePurpose::SendInitial,
+                    &dalek_secret,
+                    slatepack_recipient_dalek_pk,
+                    other_wallet_version,
                 )?;
                 //check the expected proof address
                 //compare the expected listening wallet proof address  to the value the returned slate. If they don't match, return error
                 if let Some(expected_addr) = expected_proof_address {
                     if let Some(ref p) = slate.payment_proof {
                         let receiver_a = p.clone().receiver_address;
-                        if receiver_a.public_key.len() == 56 && receiver_a.public_key != expected_addr {
-                            return Err(ErrorKind::ProofAddresMismatch(receiver_a.public_key, expected_addr.to_string()).into());
+                        if receiver_a.public_key.len() == 56
+                            && receiver_a.public_key != expected_addr
+                        {
+                            return Err(ErrorKind::ProofAddresMismatch(
+                                receiver_a.public_key,
+                                expected_addr.to_string(),
+                            )
+                            .into());
                         }
                     }
                 }
-
 
                 // Sender can change that, restoring original value
                 slate.ttl_cutoff_height = original_slate.ttl_cutoff_height.clone();
@@ -1855,14 +2004,13 @@ fn do_command(
 
                 let ret_id = w.get_id(slate.id)?;
                 cli_message!(
-                    "Transaction [{}] for [{}] MWCs sent successfully to [{}]",	
+                    "Transaction [{}] for [{}] MWCs sent successfully to [{}]",
                     slate.id.to_string(),
                     core::amount_to_hr_string(slate.amount, false),
                     display_to.unwrap()
                 );
                 println!("txid={:?}", ret_id);
-            }
-            else {
+            } else {
                 // it must be a slatepack. May be not encrypted
                 // if slatepack_recipient_dalek_pk is none - not encryptrd. Otherwise - encrypted
 
@@ -1889,21 +2037,24 @@ fn do_command(
                     &status_send_channel,
                     ttl_blocks,
                     do_proof,
-                    Some( slatepack_recipient_address.clone().unwrap_or( ProvableAddress::blank() ) ), // Need to provide some address to trigger compact slate
+                    Some(
+                        slatepack_recipient_address
+                            .clone()
+                            .unwrap_or(ProvableAddress::blank()),
+                    ), // Need to provide some address to trigger compact slate
                     lock_later,
                     min_fee,
                 )?;
 
-                let slate_str = w.serialize_slate(&slate,
-                                                  SlatePurpose::SendInitial,
-                                                  slatepack_recipient_dalek_pk,
-                                                  true)?; // must be a latepack
+                let slate_str = w.serialize_slate(
+                    &slate,
+                    SlatePurpose::SendInitial,
+                    slatepack_recipient_dalek_pk,
+                    true,
+                )?; // must be a latepack
 
                 // Still colling, lock_later should handle that...
-                w.tx_lock_outputs(
-                    &slate,
-                    address,
-                    0)?;
+                w.tx_lock_outputs(&slate, address, 0)?;
 
                 cli_message!("Slatepack: {}", slate_str);
 
@@ -1927,14 +2078,15 @@ fn do_command(
 
             let slatepack_recipient_param = args.value_of("slatepack_recipient");
             // Let's convert to dalek PK
-            let (slatepack_recipient_dalek_pk, slatepack_recipient_address ) = match slatepack_recipient_param {
-                Some(addr) => {
-                    let recipient_address = proofaddress::ProvableAddress::from_str(addr)?;
-                    let recipient_pk = recipient_address.tor_public_key()?;
-                    (Some(recipient_pk), Some(recipient_address))
-                }
-                None => (None, None),
-            };
+            let (slatepack_recipient_dalek_pk, slatepack_recipient_address) =
+                match slatepack_recipient_param {
+                    Some(addr) => {
+                        let recipient_address = proofaddress::ProvableAddress::from_str(addr)?;
+                        let recipient_pk = recipient_address.tor_public_key()?;
+                        (Some(recipient_pk), Some(recipient_address))
+                    }
+                    None => (None, None),
+                };
 
             let mut to = to.to_string();
             let mut display_to = None;
@@ -1958,11 +2110,22 @@ fn do_command(
                 display_to = Some(to.get_stripped());
             }
 
-            let mut slate = wallet.lock().initiate_receive_tx(Some(to.to_string()) ,amount, outputs, slatepack_recipient_address)?;
+            let mut slate = wallet.lock().initiate_receive_tx(
+                Some(to.to_string()),
+                amount,
+                outputs,
+                slatepack_recipient_address,
+            )?;
 
             let method = match to.address_type() {
                 AddressType::MWCMQS => "mwcmqs",
-                AddressType::Https => return Err(ErrorKind::HttpRequest(format!("Invoice doesn't support address type: {:?}", to.address_type())).into()),
+                AddressType::Https => {
+                    return Err(ErrorKind::HttpRequest(format!(
+                        "Invoice doesn't support address type: {:?}",
+                        to.address_type()
+                    ))
+                    .into())
+                }
             };
 
             let w = wallet.lock();
@@ -1971,18 +2134,20 @@ fn do_command(
             let original_slate = slate.clone();
             let (dalek_secret, _dalek_pk) = w.get_slatepack_keys()?;
             let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &None, None)?;
-            slate = sender.send_tx(&slate,
-                                  SlatePurpose::InvoiceInitial,
-                                  &dalek_secret,
-                                  slatepack_recipient_dalek_pk,
-                                  sender.check_other_wallet_version(&to.to_string())?
+            slate = sender.send_tx(
+                &slate,
+                SlatePurpose::InvoiceInitial,
+                &dalek_secret,
+                slatepack_recipient_dalek_pk,
+                sender.check_other_wallet_version(&to.to_string())?,
             )?;
             // Sender can chenge that, restoring original value
             slate.ttl_cutoff_height = original_slate.ttl_cutoff_height.clone();
             // Checking is sender didn't do any harm to slate
-            Slate::compare_slates_invoice( &original_slate, &slate)?;
+            Slate::compare_slates_invoice(&original_slate, &slate)?;
 
-            { // Do exactly what send does..
+            {
+                // Do exactly what send does..
                 let w = wallet.lock();
                 w.tx_lock_outputs(&slate, Some(to.to_string()), 0)?;
                 w.finalize_post_slate(&mut slate, fluff)?;
@@ -2039,20 +2204,18 @@ fn do_command(
             if let Some(words) = args.values_of("words") {
                 println!("recovering... please wait as this could take a few minutes to complete.");
 
-                if  getenv("MWC_MNEMONIC")?.is_some() {
+                if getenv("MWC_MNEMONIC")?.is_some() {
                     let envvar = env::var("MWC_MNEMONIC")?;
                     let words: Vec<&str> = envvar.split(" ").collect();
                     {
                         println!("Recovering with environment variable words: {:?}", words);
                         let mut w = wallet.lock();
-                        w.restore_seed( config, &words, passphrase.clone())?;
+                        w.restore_seed(config, &words, passphrase.clone())?;
                         let seed = w.init(config, passphrase.clone(), false)?;
                         w.complete(seed, config, "default", passphrase.clone(), true)?;
                         w.restore_state()?;
                     }
-                }
-                else
-                {
+                } else {
                     let words: Vec<&str> = words.collect();
                     {
                         println!("Recovering with commandline specified words: {:?}", words);
@@ -2090,23 +2253,24 @@ fn do_command(
             }
             println!("checking and repairing... please wait as this could take a few minutes to complete.");
             let wallet = wallet.lock();
-            wallet.check_repair( start_height, !args.is_present("--no-delete_unconfirmed"))?;
+            wallet.check_repair(start_height, !args.is_present("--no-delete_unconfirmed"))?;
             cli_message!("check and repair done!");
         }
-        Some("sync") => {
-            match wallet.lock().sync() {
-                Ok(synced) => if synced {
+        Some("sync") => match wallet.lock().sync() {
+            Ok(synced) => {
+                if synced {
                     cli_message!("Your wallet data successfully synchronized with a node");
-                }
-                else {
+                } else {
                     cli_message!("Warning: Unable to sync wallet with a node");
-                },
-                Err(e) => cli_message!("Warning: Unable to sync wallet with a node. {}", e),
+                }
             }
-        }
+            Err(e) => cli_message!("Warning: Unable to sync wallet with a node. {}", e),
+        },
         Some("dump-wallet-data") => {
             let args = matches.subcommand_matches("dump-wallet-data").unwrap();
-            let file_name = args.value_of("file").map(|input| input.replace("~", &home_dir));
+            let file_name = args
+                .value_of("file")
+                .map(|input| input.replace("~", &home_dir));
             wallet.lock().dump_wallet_data(file_name)?;
         }
         Some("set-recv") => {
@@ -2115,9 +2279,7 @@ fn do_command(
             if wallet.lock().account_path(account)?.is_some() {
                 grin_wallet_libwallet::set_receive_account(account.to_string());
                 cli_message!("Incoming funds will be received in account: {}", account);
-            }
-            else
-            {
+            } else {
                 cli_message!("Account {} does not exist!", account);
             }
         }
@@ -2144,36 +2306,46 @@ fn do_command(
             let pub_key_file = args.value_of("pubkey_file").unwrap();
 
             let file = File::open(pub_key_file)
-                .map_err(|e| ErrorKind::FileNotFound( pub_key_file.to_string(), format!("{}",e)) )?;
+                .map_err(|e| ErrorKind::FileNotFound(pub_key_file.to_string(), format!("{}", e)))?;
 
             let output_fn = format!("{}.commits", pub_key_file);
 
             if std::fs::metadata(output_fn.clone()).is_ok() {
-                std::fs::remove_file(output_fn.clone()).map_err( |_| ErrorKind::FileUnableToDelete(output_fn.clone()) )?;
+                std::fs::remove_file(output_fn.clone())
+                    .map_err(|_| ErrorKind::FileUnableToDelete(output_fn.clone()))?;
             }
-
 
             let mut pub_keys = Vec::new();
 
             for line in io::BufReader::new(file).lines() {
-                let pubkey_str = line.map_err(|e| ErrorKind::FileNotFound( pub_key_file.to_string(), format!("{}",e)) )?;
+                let pubkey_str = line.map_err(|e| {
+                    ErrorKind::FileNotFound(pub_key_file.to_string(), format!("{}", e))
+                })?;
                 if pubkey_str.is_empty() {
                     continue;
                 }
 
-                match  PublicKey::from_hex(&pubkey_str ) {
-                    Ok(pk) => { pub_keys.push(pk); }
-                    _ => { cli_message!(
-                                "{}: unable to read a public key `{}`. Will be skipped.",
-                                "WARNING".bright_yellow(), pubkey_str );
+                match PublicKey::from_hex(&pubkey_str) {
+                    Ok(pk) => {
+                        pub_keys.push(pk);
+                    }
+                    _ => {
+                        cli_message!(
+                            "{}: unable to read a public key `{}`. Will be skipped.",
+                            "WARNING".bright_yellow(),
+                            pubkey_str
+                        );
                     }
                 }
             }
 
             println!("Scaning outputs for {} public keys. Please wait as this could take a few minutes to complete.", pub_keys.len() );
             let mut wallet = wallet.lock();
-            wallet.scan_outputs( pub_keys, output_fn.clone() )?;
-            cli_message!("scanning of the outputs is completed! result file location: {}", output_fn );
+            wallet.scan_outputs(pub_keys, output_fn.clone())?;
+            cli_message!(
+                "scanning of the outputs is completed! result file location: {}",
+                output_fn
+            );
         }
         Some("export-proof") => {
             let args = matches.subcommand_matches("export-proof").unwrap();
@@ -2201,12 +2373,16 @@ fn do_command(
             let input = args.value_of("file").unwrap();
             let path = Path::new(&input.replace("~", &home_dir)).to_path_buf();
             if !path.exists() {
-                return Err(ErrorKind::FileNotFound(input.to_string(), "path doesn't exist".to_string()).into());
+                return Err(ErrorKind::FileNotFound(
+                    input.to_string(),
+                    "path doesn't exist".to_string(),
+                )
+                .into());
             }
             let mut file = File::open(path)?;
             let mut proof = String::new();
             file.read_to_string(&mut proof)?;
-            if proof.len()<3 {
+            if proof.len() < 3 {
                 return Err(ErrorKind::ArgumentError(format!("File {} is empty", input)).into());
             }
             let tx_pf: TxProof = serde_json::from_str(&proof)?;
@@ -2221,7 +2397,9 @@ fn do_command(
             }
         }
         Some("swap_create_from_offer") => {
-            let args = matches.subcommand_matches("swap_create_from_offer").unwrap();
+            let args = matches
+                .subcommand_matches("swap_create_from_offer")
+                .unwrap();
             let filename = args.value_of("file").unwrap();
             let w = wallet.lock();
             let swap_id = w.swap_create_from_offer(filename.to_string())?;
@@ -2231,14 +2409,17 @@ fn do_command(
             let args = matches.subcommand_matches("swap_start").unwrap();
 
             let mwc_amount = args.value_of("mwc_amount").unwrap();
-            let mwc_amount = core::amount_from_hr_string(mwc_amount).map_err(|_| ErrorKind::InvalidAmount(mwc_amount.to_string()))?;
+            let mwc_amount = core::amount_from_hr_string(mwc_amount)
+                .map_err(|_| ErrorKind::InvalidAmount(mwc_amount.to_string()))?;
 
             let confirmations = args.value_of("confirmations").unwrap_or("10");
             let confirmations = u64::from_str_radix(confirmations, 10)?;
 
             let secondary_currency = args.value_of("secondary_currency").unwrap();
             match secondary_currency {
-                "btc" | "bch" | "ltc" | "zcash" | "dash" | "doge" => (),
+                "btc" | "bch" | "ltc" | "zcash" | "dash" | "doge" | "ether" |
+                "usdt"| "busd"| "bnb" | "usdc" | "link" | "trx" | "dai" | "tusd" |
+                "pax" | "wbtc"| "tst" => (),
                 _ => return Err(ErrorKind::GenericError(format!("Invalid secondary_currency value. Expected btc, bch, ltc, zcash, dash or doge. Get {}", secondary_currency)).into()),
             }
 
@@ -2264,25 +2445,36 @@ fn do_command(
             let electrum_node_uri1 = args.value_of("electrum_uri1").map(|s| String::from(s));
             let electrum_node_uri2 = args.value_of("electrum_uri1").map(|s| String::from(s));
 
+            let eth_swap_contract_address = args
+                .value_of("eth_swap_contract_address")
+                .map(|s| String::from(s));
+            let erc20_swap_contract_address = args
+                .value_of("erc20_swap_contract_address")
+                .map(|s| String::from(s));
+            let eth_infura_project_id = args
+                .value_of("eth_infura_project_id")
+                .map(|s| String::from(s));
+            let eth_redirect_to_private_wallet = args.is_present("eth_redirect_to_private_wallet");
+
             let dry_run = args.is_present("dry_run");
 
             let secondary_fee = match args.value_of("secondary_fee") {
-                Some(fee_str) => Some(
-                    fee_str.parse::<f32>()
-                        .map_err(|e| ErrorKind::ArgumentError(format!("Invalid secondary_fee value, {}", e)))?
-                ),
+                Some(fee_str) => Some(fee_str.parse::<f32>().map_err(|e| {
+                    ErrorKind::ArgumentError(format!("Invalid secondary_fee value, {}", e))
+                })?),
                 None => None,
             };
 
             let w = wallet.lock();
             let swap_id = w.swap_start(
                 mwc_amount,
-                args.value_of("outputs").map(|s| s.split(",").map(|s| s.to_string()).collect()),
+                args.value_of("outputs")
+                    .map(|s| s.split(",").map(|s| s.to_string()).collect()),
                 secondary_currency.to_string(),
                 secondary_amount.to_string(),
                 secondary_address.to_string(),
                 secondary_fee,
-                who_lock_first=="seller",
+                who_lock_first == "seller",
                 Some(confirmations),
                 mwc_confirmations,
                 secondary_confirmations,
@@ -2292,6 +2484,10 @@ fn do_command(
                 dest.to_string(),
                 electrum_node_uri1,
                 electrum_node_uri2,
+                eth_swap_contract_address,
+                erc20_swap_contract_address,
+                eth_infura_project_id,
+                eth_redirect_to_private_wallet,
                 dry_run,
                 args.value_of("tag").map(|s| s.to_string()),
             )?;
@@ -2303,12 +2499,20 @@ fn do_command(
             let args = matches.subcommand_matches("swap").unwrap();
 
             let swap_id = args.value_of("swap_id").map(|s| String::from(s));
-            let adjust = args.value_of("adjust").map(|s| s.split(",").map(|s| String::from(s)).collect()).unwrap_or(vec![]);
+            let adjust = args
+                .value_of("adjust")
+                .map(|s| s.split(",").map(|s| String::from(s)).collect())
+                .unwrap_or(vec![]);
             let method = args.value_of("method").map(|s| String::from(s));
             let mut destination = args.value_of("dest").map(|s| String::from(s));
             let apisecret = args.value_of("apisecret").map(|s| String::from(s));
             let secondary_fee = match args.value_of("secondary_fee") {
-                Some(s) => Some( s.parse::<f32>().map_err(|e| ErrorKind::GenericError(format!("Unable to parse secondary_fee value {}, {}", s,e)))?),
+                Some(s) => Some(s.parse::<f32>().map_err(|e| {
+                    ErrorKind::GenericError(format!(
+                        "Unable to parse secondary_fee value {}, {}",
+                        s, e
+                    ))
+                })?),
                 None => None,
             };
             let message_file_name = args.value_of("message_file_name").map(|s| String::from(s));
@@ -2321,14 +2525,30 @@ fn do_command(
             // Flag if want to print the data in Json format
             let json_format = args.is_present("json_format");
 
-            let electrum_node_uri1 = args.value_of("electrum_uri1").map(|s| String::from(s)).filter(|s| !s.is_empty());
-            let electrum_node_uri2 = args.value_of("electrum_uri1").map(|s| String::from(s)).filter(|s| !s.is_empty());
+            let electrum_node_uri1 = args
+                .value_of("electrum_uri1")
+                .map(|s| String::from(s))
+                .filter(|s| !s.is_empty());
+            let electrum_node_uri2 = args
+                .value_of("electrum_uri1")
+                .map(|s| String::from(s))
+                .filter(|s| !s.is_empty());
+
+            let eth_swap_contract_address = args
+                .value_of("eth_swap_contract_address")
+                .map(|s| String::from(s));
+            let erc20_swap_contract_address = args
+                .value_of("erc20_swap_contract_address")
+                .map(|s| String::from(s));
+            let eth_infura_project_id = args
+                .value_of("eth_infura_project_id")
+                .map(|s| String::from(s));
+            let eth_redirect_to_private_wallet = args.is_present("eth_redirect_to_private_wallet");
 
             let subcommand = if args.is_present("list") {
                 if args.is_present("check") {
                     command::SwapSubcommand::ListAndCheck
-                }
-                else {
+                } else {
                     command::SwapSubcommand::List
                 }
             } else if args.is_present("remove") {
@@ -2352,7 +2572,9 @@ fn do_command(
             } else if args.is_present("stop_auto_swap") {
                 command::SwapSubcommand::StopAllAutoSwap
             } else {
-                return Err(ErrorKind::GenericError("Please define some action to do".to_string()).into());
+                return Err(
+                    ErrorKind::GenericError("Please define some action to do".to_string()).into(),
+                );
             };
 
             let params = command::SwapArgs {
@@ -2370,6 +2592,10 @@ fn do_command(
                 json_format,
                 electrum_node_uri1,
                 electrum_node_uri2,
+                eth_swap_contract_address,
+                erc20_swap_contract_address,
+                eth_infura_project_id,
+                eth_redirect_to_private_wallet,
                 wait_for_backup1: args.is_present("wait_for_backup1"),
                 tag: args.value_of("tag").map(|s| String::from(s)),
             };
@@ -2382,7 +2608,8 @@ fn do_command(
                 config.get_tor_config(),
                 config.get_tls_config(false),
                 params,
-                true)?;
+                true,
+            )?;
         }
         Some("decode_slatepack") => {
             let args = matches.subcommand_matches("decode_slatepack").unwrap();
@@ -2390,12 +2617,16 @@ fn do_command(
             let content = match args.value_of("slatepack") {
                 Some(str) => str.to_string(),
                 None => {
-                    let input = args.value_of("file").ok_or(ErrorKind::ArgumentError("Please specify '--slatepack' of '--file' option".to_string()))?;
+                    let input = args.value_of("file").ok_or(ErrorKind::ArgumentError(
+                        "Please specify '--slatepack' of '--file' option".to_string(),
+                    ))?;
                     let mut file = File::open(input.replace("~", &home_dir))?;
                     let mut slate = String::new();
                     file.read_to_string(&mut slate)?;
-                    if slate.len()<3 {
-                        return Err(ErrorKind::ArgumentError(format!("File {} is empty", input)).into());
+                    if slate.len() < 3 {
+                        return Err(
+                            ErrorKind::ArgumentError(format!("File {} is empty", input)).into()
+                        );
                     }
                     slate
                 }
@@ -2403,20 +2634,27 @@ fn do_command(
 
             let w = wallet.lock();
 
-            let (slate, content, sender, recipient) = w.deserialize_slate( &content )?;
+            let (slate, content, sender, recipient) = w.deserialize_slate(&content)?;
             // Converting slate back to not encoded format
 
             // Receiver 'None' make slate not encrypted. It should be plain json that all we like
             // fast 'false' - generate JSON instead of binary slate
-            let slate_content = w.serialize_slate( &slate, SlatePurpose::FullSlate, None, false)?;
+            let slate_content = w.serialize_slate(&slate, SlatePurpose::FullSlate, None, false)?;
 
-            let sender = sender.map( |pk| proofaddress::ProvableAddress::from_tor_pub_key(&pk).public_key );
-            let recipient = recipient.map( |pk| proofaddress::ProvableAddress::from_tor_pub_key(&pk).public_key );
+            let sender =
+                sender.map(|pk| proofaddress::ProvableAddress::from_tor_pub_key(&pk).public_key);
+            let recipient =
+                recipient.map(|pk| proofaddress::ProvableAddress::from_tor_pub_key(&pk).public_key);
 
             cli_message!("Slate: {}", slate_content);
-            cli_message!("Content: {}", content.map(|s| format!("{:?}",s) ).unwrap_or("N/A".to_string()) );
-            cli_message!("Sender: {}", sender.unwrap_or("None".to_string()) );
-            cli_message!("Recipient: {}", recipient.unwrap_or("None".to_string()) );
+            cli_message!(
+                "Content: {}",
+                content
+                    .map(|s| format!("{:?}", s))
+                    .unwrap_or("N/A".to_string())
+            );
+            cli_message!("Sender: {}", sender.unwrap_or("None".to_string()));
+            cli_message!("Recipient: {}", recipient.unwrap_or("None".to_string()));
         }
         Some("integrity") => {
             let args = matches.subcommand_matches("integrity").unwrap();
@@ -2428,7 +2666,10 @@ fn do_command(
                 let fee_str = args.value_of("create").unwrap().split(",");
                 for fs in fee_str {
                     let fee_amount = core::amount_from_hr_string(fs).map_err(|e| {
-                        ErrorKind::ArgumentError(format!("Unable to parse create fee amount, {}", e))
+                        ErrorKind::ArgumentError(format!(
+                            "Unable to parse create fee amount, {}",
+                            e
+                        ))
                     })?;
                     fee.push(fee_amount);
                 }
@@ -2438,7 +2679,8 @@ fn do_command(
             } else {
                 return Err(ErrorKind::ArgumentError(
                     "Expected check, create or withdraw parameter".to_string(),
-                ).into());
+                )
+                .into());
             };
 
             let reserve = match args.value_of("reserve") {
@@ -2458,7 +2700,7 @@ fn do_command(
                     reserve,
                     fee,
                     json: args.is_present("json"),
-                }
+                },
             )?;
         }
         Some("messaging") => {
@@ -2502,10 +2744,13 @@ fn do_command(
                     check_integrity_expiration: args.is_present("check_integrity"),
                     check_integrity_retain: args.is_present("check_integrity_retain"),
                     json: args.is_present("json"),
-                })?;
+                },
+            )?;
         }
         Some("send_marketplace_message") => {
-            let args = matches.subcommand_matches("send_marketplace_message").unwrap();
+            let args = matches
+                .subcommand_matches("send_marketplace_message")
+                .unwrap();
             grin_wallet_controller::command::send_marketplace_message(
                 wallet.lock().get_wallet_instance()?,
                 None,
@@ -2514,15 +2759,57 @@ fn do_command(
                     command: args.value_of("command").unwrap().to_string(),
                     offer_id: args.value_of("offer_id").unwrap().to_string(),
                     tor_address: args.value_of("tor_address").unwrap().to_string(),
-                }
+                },
             )?;
         }
         Some("check_tor_connection") => {
             grin_wallet_controller::command::check_tor_connection(
                 wallet.lock().get_wallet_instance()?,
                 None,
-                &config.get_tor_config()
+                &config.get_tor_config(),
             )?;
+        }
+        Some("eth_info") => {
+            let args = matches.subcommand_matches("eth_info").unwrap();
+            let currency = match args.value_of("currency") {
+                Some(s) => Some(Currency::try_from(s).map_err(|e| {
+                    ErrorKind::ArgumentError(format!("Unable to parse currency value, {}", e))
+                })?),
+                None => None,
+            };
+            if currency.is_none() {
+                return Err(ErrorKind::GenericError("Unsupported coin type!".to_string()).into());
+            }
+
+            let eth_args = command::EthArgs {
+                subcommand: command::EthSubcommand::Info,
+                currency: currency.unwrap(),
+                dest: None,
+                amount: None,
+            };
+            grin_wallet_controller::command::eth(wallet.lock().get_wallet_instance()?, eth_args)?;
+        }
+        Some("eth_send") => {
+            let args = matches.subcommand_matches("eth_send").unwrap();
+            let currency = match args.value_of("currency") {
+                Some(s) => Some(Currency::try_from(s).map_err(|e| {
+                    ErrorKind::ArgumentError(format!("Unable to parse currency value, {}", e))
+                })?),
+                None => None,
+            };
+            if currency.is_none() {
+                return Err(ErrorKind::GenericError("Unsupported coin type!".to_string()).into());
+            }
+            let dest = args.value_of("dest").unwrap();
+            let amount = args.value_of("amount").unwrap();
+
+            let eth_args = command::EthArgs {
+                subcommand: command::EthSubcommand::Send,
+                currency: currency.unwrap(),
+                dest: Some(dest.to_string()),
+                amount: Some(amount.to_string()),
+            };
+            grin_wallet_controller::command::eth(wallet.lock().get_wallet_instance()?, eth_args)?;
         }
         Some(subcommand) => {
             cli_message!(
@@ -2545,5 +2832,4 @@ pub fn enable_ansi_support() {
 }
 
 #[cfg(not(windows))]
-pub fn enable_ansi_support() {
-}
+pub fn enable_ansi_support() {}

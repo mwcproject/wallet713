@@ -7,14 +7,14 @@ use std::path::{Path, PathBuf};
 use grin_core::global::ChainTypes;
 use grin_util::logger::LoggingConfig;
 
-use grin_util::secp::key::PublicKey;
-use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
-use crate::contacts::{ DEFAULT_GRINBOX_PORT};
 use crate::common::Error;
-use grin_wallet_impls::MWCMQSAddress;
-use grin_wallet_libwallet::ReplayMitigationConfig;
-use grin_wallet_config::{MQSConfig, TorConfig};
+use crate::contacts::DEFAULT_GRINBOX_PORT;
 use contacts::{DEFAULT_MWCMQS_DOMAIN, DEFAULT_MWCMQS_PORT};
+use grin_util::secp::key::PublicKey;
+use grin_wallet_config::{MQSConfig, TorConfig};
+use grin_wallet_impls::MWCMQSAddress;
+use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
+use grin_wallet_libwallet::ReplayMitigationConfig;
 use std::collections::BTreeMap;
 
 const WALLET713_HOME: &str = ".mwc713";
@@ -42,8 +42,8 @@ pub struct Wallet713Config {
     pub disable_history: Option<bool>,
     pub foreign_api_address: Option<String>,
     pub foreign_api_secret: Option<String>,
-    pub replay_mitigation_flag : Option<bool>,
-    pub replay_mitigation_min_amount : Option<u64>,
+    pub replay_mitigation_flag: Option<bool>,
+    pub replay_mitigation_min_amount: Option<u64>,
 
     /// If enabled both tls_certificate_file and tls_certificate_key, TSL will be applicable to all rest API
     /// TLS certificate file
@@ -57,13 +57,22 @@ pub struct Wallet713Config {
     // Wallet state update frequency. In none, no updates will be run in the background.
     pub wallet_updater_frequency_sec: Option<u32>,
 
-    // Log filename for tor
-    pub tor_log_file: Option<String>,
+    /// ethereum swap contract address
+    pub swap_eth_contract_addr: Option<String>,
+
+    /// erc20 swap contract address
+    pub swap_erc20_contract_addr: Option<String>,
+
+    /// ethereum swap infura project id
+    pub swap_eth_infura_project_id: Option<String>,
 
     /// Electrum nodes for secondary coins
     /// Key: <coin>_[main|test]_[1|2]
     /// Value: url
-    pub swap_electrumx_addr: Option<BTreeMap<String,String>>,
+    pub swap_electrumx_addr: Option<BTreeMap<String, String>>,
+
+    // Log filename for tor
+    pub tor_log_file: Option<String>,
 }
 
 pub const WALLET713_CONFIG_HELP: &str =
@@ -152,6 +161,15 @@ pub const WALLET713_CONFIG_HELP: &str =
 # If will be set, will run 'sync' command with defined time interval
 # wallet_updater_frequency_sec =
 
+# [swap_eth_contract_addr]
+# swap_eth_contract_addr = \"A21b2c034dF046a3DB790dd20b0C5C0040a74c67\"
+
+# [swap_erc20_contract_addr]
+# swap_erc20_contract_addr = \"8955539Ea48A5d9196cdB2f8a7F67eB0dC7d15df\"
+
+# [swap_eth_infura_project_id]
+# swap_eth_infura_project_id = \"7f1274674be54d2881bf3c0168bf9855\"
+
 # Electrum X servers that are used for Atomic Swap operations. Each Secondary Currency need
 # its own dedicated Electrum X instance. We highly advise to use your own instance, instead of
 # using those community servers.
@@ -188,15 +206,13 @@ pub const WALLET713_CONFIG_HELP: &str =
 
 ";
 
-
-impl Default for Wallet713Config{
+impl Default for Wallet713Config {
     fn default() -> Wallet713Config {
         Wallet713Config::default(&ChainTypes::Mainnet)
     }
 }
 
 impl Wallet713Config {
-
     pub fn default(chain: &ChainTypes) -> Wallet713Config {
         Wallet713Config {
             chain: chain.clone(),
@@ -219,18 +235,33 @@ impl Wallet713Config {
             disable_history: None,
             foreign_api_address: None,
             foreign_api_secret: None,
-            replay_mitigation_flag : None,
-            replay_mitigation_min_amount : None,
+            replay_mitigation_flag: None,
+            replay_mitigation_min_amount: None,
             tls_certificate_file: None,
             tls_certificate_key: None,
             config_home: None,
             wallet_updater_frequency_sec: None,
-            swap_electrumx_addr: Some( Self::get_default_electrumx_servers() ),
+            swap_eth_contract_addr: Some(Self::get_default_eth_swap_contract_addr()),
+            swap_erc20_contract_addr: Some(Self::get_default_erc20_swap_contract_addr()),
+            swap_eth_infura_project_id: Some(Self::get_default_eth_infura_project_id()),
+            swap_electrumx_addr: Some(Self::get_default_electrumx_servers()),
             tor_log_file: None,
         }
     }
 
-    fn get_default_electrumx_servers() -> BTreeMap<String,String> {
+    fn get_default_eth_swap_contract_addr() -> String {
+        "A21b2c034dF046a3DB790dd20b0C5C0040a74c67".to_string()
+    }
+
+    fn get_default_erc20_swap_contract_addr() -> String {
+        "8955539Ea48A5d9196cdB2f8a7F67eB0dC7d15df".to_string()
+    }
+
+    fn get_default_eth_infura_project_id() -> String {
+        "d00e825c599c45a19b18dc4003626bee".to_string()
+    }
+
+    fn get_default_electrumx_servers() -> BTreeMap<String, String> {
         [
             ("btc_main_1", "btc.main1.swap.mwc.mw:18337"),
             ("btc_main_2", "btc.main2.swap.mwc.mw:18337"),
@@ -256,21 +287,25 @@ impl Wallet713Config {
             ("zcash_main_2", "zcash.main2.swap.mwc.mw:18355"),
             ("zcash_test_1", "zcash.test1.swap.mwc.mw:18353"),
             ("zcash_test_2", "zcash.test1.swap.mwc.mw:18353"),
-        ].iter().cloned()
-            .map(|i| (i.0.to_string(), i.1.to_string()) )
-            .collect::<BTreeMap<String,String>>()
+        ]
+        .iter()
+        .cloned()
+        .map(|i| (i.0.to_string(), i.1.to_string()))
+        .collect::<BTreeMap<String, String>>()
     }
 
     #[cfg(not(target_os = "android"))]
-    fn get_config_path(config_path: Option<&str>, chain: &ChainTypes) -> Result<String,Error> {
+    fn get_config_path(config_path: Option<&str>, chain: &ChainTypes) -> Result<String, Error> {
         let default_path_buf = Wallet713Config::default_config_path(chain)?;
         let default_path = default_path_buf.to_str().unwrap();
         let config_path = config_path.unwrap_or(default_path);
         Ok(String::from(config_path))
     }
     #[cfg(target_os = "android")]
-    fn get_config_path(config_path: Option<&str>, _chain: &ChainTypes) -> Result<String,Error> {
-        Ok(String::from(config_path.expect("Please specify --config parameter") ))
+    fn get_config_path(config_path: Option<&str>, _chain: &ChainTypes) -> Result<String, Error> {
+        Ok(String::from(
+            config_path.expect("Please specify --config parameter"),
+        ))
     }
 
     pub fn exists(config_path: Option<&str>, chain: &ChainTypes) -> Result<bool, Error> {
@@ -294,15 +329,22 @@ impl Wallet713Config {
         let default_elecetumx_servers = Self::get_default_electrumx_servers();
         if config.swap_electrumx_addr.is_none() {
             config.swap_electrumx_addr = Some(default_elecetumx_servers);
-        }
-        else {
+        } else {
             let mut settings = config.swap_electrumx_addr.unwrap();
-            for (k,v) in default_elecetumx_servers {
+            for (k, v) in default_elecetumx_servers {
                 if !settings.contains_key(&k) {
-                    settings.insert(k,v);
+                    settings.insert(k, v);
                 }
             }
             config.swap_electrumx_addr = Some(settings);
+        }
+
+        if config.swap_eth_contract_addr.is_none() {
+            config.swap_eth_contract_addr = Some(Self::get_default_eth_swap_contract_addr());
+        }
+
+        if config.swap_eth_infura_project_id.is_none() {
+            config.swap_eth_infura_project_id = Some(Self::get_default_eth_infura_project_id());
         }
 
         Ok(config)
@@ -326,7 +368,7 @@ impl Wallet713Config {
 
         // Android doesn't have Home dir. binary dir will be used instead of home dir
         #[cfg(target_os = "android")]
-            panic!("Home path doesn't exist under Android");
+        panic!("Home path doesn't exist under Android");
 
         path.push(WALLET713_HOME);
         path.push(chain.shortname());
@@ -344,10 +386,15 @@ impl Wallet713Config {
     }
 
     pub fn get_socks_addr(&self) -> String {
-        self.socks_addr.clone().unwrap_or("127.0.0.1:59051".to_string())
+        self.socks_addr
+            .clone()
+            .unwrap_or("127.0.0.1:59051".to_string())
     }
 
-    pub fn get_mwcmqs_address(&self, address_public_key: &PublicKey) -> Result<MWCMQSAddress, Error> {
+    pub fn get_mwcmqs_address(
+        &self,
+        address_public_key: &PublicKey,
+    ) -> Result<MWCMQSAddress, Error> {
         Ok(MWCMQSAddress::new(
             ProvableAddress::from_pub_key(&address_public_key),
             Some(self.mwcmqs_domain()),
@@ -361,12 +408,14 @@ impl Wallet713Config {
     }
 
     pub fn mwcmqs_domain(&self) -> String {
-        self.mwcmqs_domain.clone().unwrap_or("mqs.mwc.mw".to_string())
+        self.mwcmqs_domain
+            .clone()
+            .unwrap_or("mqs.mwc.mw".to_string())
     }
 
     // mwc-wallet using top level dir + data dir. We need to follow it
     pub fn get_top_level_directory(&self) -> Result<String, Error> {
-        let dir = String::from( self.get_data_path()?.parent().unwrap().to_str().unwrap() );
+        let dir = String::from(self.get_data_path()?.parent().unwrap().to_str().unwrap());
         Ok(dir)
     }
 
@@ -424,7 +473,6 @@ impl Wallet713Config {
         self.grinbox_listener_auto_start.unwrap_or(true)
     }
 
-
     pub fn owner_api_address(&self) -> String {
         let chain_type = self.chain.clone();
         self.owner_api_address
@@ -456,14 +504,17 @@ impl Wallet713Config {
     }
 
     /// If enabled both tls_certificate_file and tls_certificate_key, TSL will be applicable to all rest API
-  /// TLS certificate file
+    /// TLS certificate file
     pub fn is_tls_enabled(&self) -> bool {
         self.tls_certificate_file.is_some() && self.tls_certificate_key.is_some()
     }
 
     pub fn get_mqs_config(&self) -> MQSConfig {
         grin_wallet_config::MQSConfig {
-            mwcmqs_domain: self.mwcmqs_domain.clone().unwrap_or(DEFAULT_MWCMQS_DOMAIN.to_string()),
+            mwcmqs_domain: self
+                .mwcmqs_domain
+                .clone()
+                .unwrap_or(DEFAULT_MWCMQS_DOMAIN.to_string()),
             mwcmqs_port: self.mwcmqs_port.clone().unwrap_or(DEFAULT_MWCMQS_PORT),
         }
     }
@@ -471,7 +522,10 @@ impl Wallet713Config {
     pub fn get_replay_mitigation_config(&self) -> ReplayMitigationConfig {
         ReplayMitigationConfig {
             replay_mitigation_flag: self.replay_mitigation_flag.clone().unwrap_or(false),
-            replay_mitigation_min_amount: self.replay_mitigation_min_amount.clone().unwrap_or(50000000000),
+            replay_mitigation_min_amount: self
+                .replay_mitigation_min_amount
+                .clone()
+                .unwrap_or(50000000000),
         }
     }
 
@@ -482,9 +536,12 @@ impl Wallet713Config {
         }
         let wallet_data_dir = top_level_dir + "/" + &self.get_wallet_data_directory().unwrap();
 
-        absolute_path(wallet_data_dir).unwrap().into_os_string().into_string().unwrap()
+        absolute_path(wallet_data_dir)
+            .unwrap()
+            .into_os_string()
+            .into_string()
+            .unwrap()
     }
-
 
     pub fn get_tor_config(&self) -> TorConfig {
         let mut tor_config = grin_wallet_config::TorConfig::default();
@@ -497,10 +554,12 @@ impl Wallet713Config {
     pub fn get_tls_config(&self, print_message: bool) -> Option<grin_api::TLSConfig> {
         if self.is_tls_enabled() {
             if print_message {
-                cli_message!( "TLS is enabled. Wallet will use secure connection for Rest API" );
+                cli_message!("TLS is enabled. Wallet will use secure connection for Rest API");
             }
-            Some(grin_api::TLSConfig::new(self.tls_certificate_file.clone().unwrap(),
-                                          self.tls_certificate_key.clone().unwrap()))
+            Some(grin_api::TLSConfig::new(
+                self.tls_certificate_file.clone().unwrap(),
+                self.tls_certificate_key.clone().unwrap(),
+            ))
         } else {
             // We are stopping to print this message because our users really doesn't care. The QT wallet has such warring into the seetings.
             // Those warnings suppose to be more important.
@@ -510,23 +569,27 @@ impl Wallet713Config {
             None
         }
     }
-
 }
 
 impl fmt::Display for Wallet713Config {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "wallet713_data_path={}\nmwcmq_port={}\nmwc_node_uri={}\nmwc_node_secret={}",
-               self.wallet713_data_path,
-               self.mwcmq_port.unwrap_or(DEFAULT_GRINBOX_PORT),
-               self.mwc_node_uri.clone().unwrap_or(String::from("provided by vault713")),
-               "{...}")?;
+        write!(
+            f,
+            "wallet713_data_path={}\nmwcmq_port={}\nmwc_node_uri={}\nmwc_node_secret={}",
+            self.wallet713_data_path,
+            self.mwcmq_port.unwrap_or(DEFAULT_GRINBOX_PORT),
+            self.mwc_node_uri
+                .clone()
+                .unwrap_or(String::from("provided by vault713")),
+            "{...}"
+        )?;
         Ok(())
     }
 }
 
 fn absolute_path<P>(path: P) -> io::Result<PathBuf>
-    where
-        P: AsRef<Path>,
+where
+    P: AsRef<Path>,
 {
     use path_clean::PathClean;
 
@@ -535,7 +598,8 @@ fn absolute_path<P>(path: P) -> io::Result<PathBuf>
         path.to_path_buf()
     } else {
         std::env::current_dir()?.join(path)
-    }.clean();
+    }
+    .clean();
 
     Ok(absolute_path)
 }
@@ -544,64 +608,64 @@ fn absolute_path<P>(path: P) -> io::Result<PathBuf>
 #[derive(Debug)]
 #[allow(dead_code)]
 pub enum ConfigError {
-	/// Error with parsing of config file
-	ParseError(String, String),
+    /// Error with parsing of config file
+    ParseError(String, String),
 
-	/// Error with fileIO while reading config file
-	FileIOError(String, String),
+    /// Error with fileIO while reading config file
+    FileIOError(String, String),
 
-	/// No file found
-	FileNotFoundError(String),
+    /// No file found
+    FileNotFoundError(String),
 
-	/// Error serializing config values
-	SerializationError(String),
+    /// Error serializing config values
+    SerializationError(String),
 }
 
 impl fmt::Display for ConfigError {
-	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-		match *self {
-			ConfigError::ParseError(ref file_name, ref message) => write!(
-				f,
-				"Error parsing configuration file at {} - {}",
-				file_name, message
-			),
-			ConfigError::FileIOError(ref file_name, ref message) => {
-				write!(f, "{} {}", message, file_name)
-			}
-			ConfigError::FileNotFoundError(ref file_name) => {
-				write!(f, "Configuration file not found: {}", file_name)
-			}
-			ConfigError::SerializationError(ref message) => {
-				write!(f, "Error serializing configuration: {}", message)
-			}
-		}
-	}
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            ConfigError::ParseError(ref file_name, ref message) => write!(
+                f,
+                "Error parsing configuration file at {} - {}",
+                file_name, message
+            ),
+            ConfigError::FileIOError(ref file_name, ref message) => {
+                write!(f, "{} {}", message, file_name)
+            }
+            ConfigError::FileNotFoundError(ref file_name) => {
+                write!(f, "Configuration file not found: {}", file_name)
+            }
+            ConfigError::SerializationError(ref message) => {
+                write!(f, "Error serializing configuration: {}", message)
+            }
+        }
+    }
 }
 
 impl From<io::Error> for ConfigError {
-	fn from(error: io::Error) -> ConfigError {
-		ConfigError::FileIOError(
-			String::from(""),
-			String::from(format!("Error loading config file: {}", error)),
-		)
-	}
+    fn from(error: io::Error) -> ConfigError {
+        ConfigError::FileIOError(
+            String::from(""),
+            String::from(format!("Error loading config file: {}", error)),
+        )
+    }
 }
 
 /// Wallet should be split into a separate configuration file
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct GlobalWalletConfig {
-	/// Keep track of the file we've read
-	pub config_file_path: Option<PathBuf>,
-	/// Wallet members
-	pub members: Option<GlobalWalletConfigMembers>,
+    /// Keep track of the file we've read
+    pub config_file_path: Option<PathBuf>,
+    /// Wallet members
+    pub members: Option<GlobalWalletConfigMembers>,
 }
 
 /// Wallet internal members
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct GlobalWalletConfigMembers {
-	/// Wallet configuration
-	#[serde(default)]
-	pub wallet: Wallet713Config,
-	/// Logging config
-	pub logging: Option<LoggingConfig>,
+    /// Wallet configuration
+    #[serde(default)]
+    pub wallet: Wallet713Config,
+    /// Logging config
+    pub logging: Option<LoggingConfig>,
 }

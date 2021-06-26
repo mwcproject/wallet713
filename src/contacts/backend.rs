@@ -2,17 +2,14 @@ use std::cell::RefCell;
 use std::fs::create_dir_all;
 use std::path::Path;
 
-use grin_core::ser::Error as CoreError;
-use grin_store::{self, option_to_not_found, to_key};
-use grin_store::Store;
 use grin_core::ser;
+use grin_core::ser::Error as CoreError;
+use grin_store::Store;
+use grin_store::{self, option_to_not_found, to_key};
 
 use super::types::{AddressBookBackend, AddressBookBatch, Contact};
-use grin_wallet_impls:: {
-    Address,
-
-};
 use common::Error;
+use grin_wallet_impls::Address;
 
 const DB_DIR: &'static str = "contacts";
 const CONTACT_PREFIX: u8 = 'X' as u8;
@@ -29,12 +26,15 @@ impl Backend {
         let store = match Store::new(db_path.to_str().unwrap(), None, Some(DB_DIR), None) {
             Ok(store) => store,
             Err(err) => {
-                println!("Error: Unable to open contacts DB, storage is corrupted, {}", err);
+                println!(
+                    "Error: Unable to open contacts DB, storage is corrupted, {}",
+                    err
+                );
                 // Let's recreate the DB. Ignoring any cleaning up errors. The last step let's report an error
                 let _ = std::fs::remove_dir_all(&db_path);
                 let _ = create_dir_all(&db_path);
                 Store::new(db_path.to_str().unwrap(), None, Some(DB_DIR), None)?
-            },
+            }
         };
 
         let res = Backend { db: store };
@@ -45,10 +45,9 @@ impl Backend {
 impl AddressBookBackend for Backend {
     fn get_contact(&mut self, name: &[u8]) -> Result<Contact, Error> {
         let contact_key = to_key(CONTACT_PREFIX, &mut name.to_vec());
-        option_to_not_found(
-            self.db.get_ser(&contact_key),
-            || format!("Contact id: {:x?}", name.to_vec()),
-        )
+        option_to_not_found(self.db.get_ser(&contact_key), || {
+            format!("Contact id: {:x?}", name.to_vec())
+        })
         .map_err(|e| e.into())
     }
 
@@ -113,16 +112,23 @@ impl ser::Writeable for Contact {
 impl ser::Readable for Contact {
     fn read<R: ser::Reader>(reader: &mut R) -> Result<Contact, CoreError> {
         let data = reader.read_bytes_len_prefix()?;
-        let data = std::str::from_utf8(&data).map_err(|e| CoreError::CorruptedData(format!("Unable to read contacts data, {}", e)))?;
+        let data = std::str::from_utf8(&data).map_err(|e| {
+            CoreError::CorruptedData(format!("Unable to read contacts data, {}", e))
+        })?;
 
-        let json: serde_json::Value =
-            serde_json::from_str(&data).map_err(|e| CoreError::CorruptedData(format!("Unable to read contacts data, {}", e)))?;
+        let json: serde_json::Value = serde_json::from_str(&data).map_err(|e| {
+            CoreError::CorruptedData(format!("Unable to read contacts data, {}", e))
+        })?;
 
-        let address = Address::parse(json["address"].as_str().unwrap())
-            .map_err(|_| CoreError::CorruptedData("Unable to read contacts data, Not found 'address'".to_string()))?;
+        let address = Address::parse(json["address"].as_str().unwrap()).map_err(|_| {
+            CoreError::CorruptedData(
+                "Unable to read contacts data, Not found 'address'".to_string(),
+            )
+        })?;
 
-        let contact = Contact::new(json["name"].as_str().unwrap(), address)
-            .map_err(|_| CoreError::CorruptedData("Unable to read contacts data, Not found 'name'".to_string()))?;
+        let contact = Contact::new(json["name"].as_str().unwrap(), address).map_err(|_| {
+            CoreError::CorruptedData("Unable to read contacts data, Not found 'name'".to_string())
+        })?;
 
         Ok(contact)
     }
