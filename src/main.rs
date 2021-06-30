@@ -2454,7 +2454,8 @@ fn do_command(
             let eth_infura_project_id = args
                 .value_of("eth_infura_project_id")
                 .map(|s| String::from(s));
-            let eth_redirect_to_private_wallet = args.is_present("eth_redirect_to_private_wallet");
+            let eth_redirect_to_private_wallet =
+                Some(args.is_present("eth_redirect_to_private_wallet"));
 
             let dry_run = args.is_present("dry_run");
 
@@ -2543,7 +2544,8 @@ fn do_command(
             let eth_infura_project_id = args
                 .value_of("eth_infura_project_id")
                 .map(|s| String::from(s));
-            let eth_redirect_to_private_wallet = args.is_present("eth_redirect_to_private_wallet");
+            let eth_redirect_to_private_wallet =
+                Some(args.is_present("eth_redirect_to_private_wallet"));
 
             let subcommand = if args.is_present("list") {
                 if args.is_present("check") {

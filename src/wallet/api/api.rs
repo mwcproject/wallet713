@@ -1478,7 +1478,7 @@ pub fn swap_start<'a, L, C, K>(
     eth_swap_contract_address: Option<String>,
     erc20_swap_contract_address: Option<String>,
     eth_infura_project_id: Option<String>,
-    eth_redirect_to_private_wallet: bool,
+    eth_redirect_to_private_wallet: Option<bool>,
     dry_run: bool,
     tag: Option<String>,
 ) -> Result<String, Error>
