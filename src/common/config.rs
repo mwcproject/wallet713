@@ -258,7 +258,7 @@ impl Wallet713Config {
     }
 
     fn get_default_eth_infura_project_id() -> String {
-        "d00e825c599c45a19b18dc4003626bee".to_string()
+        "7f1274674be54d2881bf3c0168bf9855".to_string()
     }
 
     fn get_default_electrumx_servers() -> BTreeMap<String, String> {
@@ -341,6 +341,10 @@ impl Wallet713Config {
 
         if config.swap_eth_contract_addr.is_none() {
             config.swap_eth_contract_addr = Some(Self::get_default_eth_swap_contract_addr());
+        }
+
+        if config.swap_erc20_contract_addr.is_none() {
+            config.swap_erc20_contract_addr = Some(Self::get_default_erc20_swap_contract_addr());
         }
 
         if config.swap_eth_infura_project_id.is_none() {
