@@ -2339,6 +2339,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_api"
 version = "4.3.0"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#bcb6c36647a83834bfd38ba6a17b0b48cd42b05a"
 dependencies = [
  "base64 0.9.3",
  "chrono",
@@ -2364,6 +2365,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_config"
 version = "4.3.0"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#bcb6c36647a83834bfd38ba6a17b0b48cd42b05a"
 dependencies = [
  "dirs 1.0.5",
  "failure",
@@ -2378,6 +2380,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_controller"
 version = "4.3.0"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#bcb6c36647a83834bfd38ba6a17b0b48cd42b05a"
 dependencies = [
  "chrono",
  "colored",
@@ -2412,6 +2415,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_impls"
 version = "4.3.0"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#bcb6c36647a83834bfd38ba6a17b0b48cd42b05a"
 dependencies = [
  "blake2-rfc",
  "byteorder",
@@ -2452,6 +2456,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_libwallet"
 version = "4.3.0"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#bcb6c36647a83834bfd38ba6a17b0b48cd42b05a"
 dependencies = [
  "base64 0.9.3",
  "bch",
@@ -2511,6 +2516,7 @@ dependencies = [
 [[package]]
 name = "grin_wallet_util"
 version = "4.3.0"
+source = "git+https://github.com/mwcproject/mwc-wallet?branch=master#bcb6c36647a83834bfd38ba6a17b0b48cd42b05a"
 dependencies = [
  "data-encoding",
  "ed25519-dalek",
@@ -3305,7 +3311,7 @@ dependencies = [
  "libp2p-core",
  "log",
  "socket2 0.3.19",
- "tokio 1.7.1",
+ "tokio 1.8.0",
 ]
 
 [[package]]
@@ -5745,18 +5751,18 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.25"
+version = "1.0.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa6f76457f59514c7eeb4e59d891395fab0b2fd1d40723ae737d64153392e9c6"
+checksum = "93119e4feac1cbe6c798c34d3a53ea0026b0b1de6a120deef895137c0529bfe2"
 dependencies = [
  "thiserror-impl",
 ]
 
 [[package]]
 name = "thiserror-impl"
-version = "1.0.25"
+version = "1.0.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a36768c0fbf1bb15eca10defa29526bda730a2376c2ab4393ccfa16fb1a318d"
+checksum = "060d69a0afe7796bf42e9e2ff91f5ee691fb15c53d38b4b62a9a53eb23164745"
 dependencies = [
  "proc-macro2 1.0.27",
  "quote 1.0.9",
@@ -5877,9 +5883,9 @@ dependencies = [
 
 [[package]]
 name = "tokio"
-version = "1.7.1"
+version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fb2ed024293bb19f7a5dc54fe83bf86532a44c12a2bb8ba40d64a4509395ca2"
+checksum = "570c2eb13b3ab38208130eccd41be92520388791207fde783bda7c1e8ace28d4"
 dependencies = [
  "autocfg 1.0.1",
  "libc",
