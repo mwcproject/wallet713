@@ -2419,7 +2419,7 @@ fn do_command(
             match secondary_currency {
                 "btc" | "bch" | "ltc" | "zcash" | "dash" | "doge" | "ether" |
                 "usdt"| "busd"| "bnb" | "usdc" | "link" | "trx" | "dai" | "tusd" |
-                "pax" | "wbtc"| "tst" => (),
+                "usdp" | "wbtc"| "tst" => (),
                 _ => return Err(ErrorKind::GenericError(format!("Invalid secondary_currency value. Expected btc, bch, ltc, zcash, dash or doge. Get {}", secondary_currency)).into()),
             }
 
