@@ -162,10 +162,10 @@ pub const WALLET713_CONFIG_HELP: &str =
 # wallet_updater_frequency_sec =
 
 # [swap_eth_contract_addr]
-# swap_eth_contract_addr = \"A21b2c034dF046a3DB790dd20b0C5C0040a74c67\"
+# swap_eth_contract_addr = \"2FA243fC8f9EAF014f8d6E909157B6A48cEE0bdC\"
 
 # [swap_erc20_contract_addr]
-# swap_erc20_contract_addr = \"8955539Ea48A5d9196cdB2f8a7F67eB0dC7d15df\"
+# swap_erc20_contract_addr = \"Dd62a95626453F54E686cF0531bCbf6766150794\"
 
 # [swap_eth_infura_project_id]
 # swap_eth_infura_project_id = \"7f1274674be54d2881bf3c0168bf9855\"
