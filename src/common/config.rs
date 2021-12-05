@@ -168,7 +168,7 @@ pub const WALLET713_CONFIG_HELP: &str =
 # swap_erc20_contract_addr = \"Dd62a95626453F54E686cF0531bCbf6766150794\"
 
 # [swap_eth_infura_project_id]
-# swap_eth_infura_project_id = \"7f1274674be54d2881bf3c0168bf9855\"
+# swap_eth_infura_project_id = \"f4f464384c194595a5e07453943775bb\"
 
 # Electrum X servers that are used for Atomic Swap operations. Each Secondary Currency need
 # its own dedicated Electrum X instance. We highly advise to use your own instance, instead of
