@@ -227,7 +227,7 @@ fn do_contacts(args: &ArgMatches, address_book: Arc<Mutex<AddressBook>>) -> Resu
             .expect("missing argument: address");
 
         // try parse as a general address and fallback to mwcmqs address
-        let contact_address = Address::parse(address);
+        let contact_address = <dyn Address>::parse(address);
         let contact_address: Result<Box<dyn Address>, Error> = match contact_address {
             Ok(address) => Ok(address),
             Err(e) => {
@@ -1911,7 +1911,7 @@ fn do_command(
                     display_to = Some(contact.get_name().to_string());
                 }
                 // try parse as a general address and fallback to mwcmqs address
-                let address = Address::parse(&to);
+                let address = <dyn Address>::parse(&to);
                 let address: Result<Box<dyn Address>, Error> =
                     match address {
                         Ok(address) => Ok(address),
@@ -2097,7 +2097,7 @@ fn do_command(
             }
 
             // try parse as a general address
-            let address = Address::parse(&to);
+            let address = <dyn Address>::parse(&to);
             let address: Result<Box<dyn Address>, Error> = match address {
                 Ok(address) => Ok(address),
                 Err(e) => {

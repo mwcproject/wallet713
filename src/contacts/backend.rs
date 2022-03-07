@@ -120,7 +120,7 @@ impl ser::Readable for Contact {
             CoreError::CorruptedData(format!("Unable to read contacts data, {}", e))
         })?;
 
-        let address = Address::parse(json["address"].as_str().unwrap()).map_err(|_| {
+        let address = <dyn Address>::parse(json["address"].as_str().unwrap()).map_err(|_| {
             CoreError::CorruptedData(
                 "Unable to read contacts data, Not found 'address'".to_string(),
             )
