@@ -6,4 +6,6 @@ export OPENSSL_INCLUDE_DIR=/usr/include/openssl/
 export OPENSSL_STATIC=yes
 export RUSTFLAGS="-Clink-arg=-Wl,--allow-multiple-definition"
 
+ROARING_ARCH=x86-64-v2
+
 cargo build --release
