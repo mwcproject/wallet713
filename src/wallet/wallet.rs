@@ -175,8 +175,9 @@ impl Wallet {
         account: &str,
         passphrase: grin_util::ZeroingString,
         create_new: bool,
+        short_seed: bool
     ) -> Result<WalletSeed, Error> {
-        let seed = self.init_seed(&config, passphrase.clone(), create_new, true, Some(seed))?;
+        let seed = self.init_seed(&config, passphrase.clone(), create_new, true, Some(seed), short_seed)?;
         //self.init_backend(&wallet_config, &config, passphrase)?;
         self.unlock(config, account, passphrase)?;
         Ok(seed)
@@ -187,8 +188,9 @@ impl Wallet {
         config: &Wallet713Config,
         passphrase: grin_util::ZeroingString,
         create_new: bool,
+        short_seed: bool
     ) -> Result<WalletSeed, Error> {
-        let seed = self.init_seed(&config, passphrase, create_new, false, None)?;
+        let seed = self.init_seed(&config, passphrase, create_new, false, None, short_seed)?;
         Ok(seed)
     }
 
@@ -850,9 +852,14 @@ impl Wallet {
         create_new: bool,
         create_file: bool,
         seed: Option<WalletSeed>,
+        short_seed: bool
     ) -> Result<WalletSeed, Error> {
         let data_file_dir = config.get_data_path_str()?;
         let result = WalletSeed::from_file(&data_file_dir, passphrase.clone());
+        let seed_lenght = match short_seed {
+            true => 16,
+            false => 32
+        };
         let seed = match result {
             Ok(seed) => seed,
             Err(_) => {
@@ -860,7 +867,7 @@ impl Wallet {
                 if create_new {
                     WalletSeed::init_file_impl(
                         &data_file_dir,
-                        32,
+                        seed_lenght,
                         None,
                         passphrase,
                         create_file,

@@ -73,6 +73,10 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("[passphrase] -p, --passphrase=<passphrase> 'the passphrase to use'")
                             .min_values(0)
                     )
+                    .arg(
+                        Arg::from_usage("[short] -s, --short 'short seed mnemonic'")
+                            .takes_value(false)
+                    )
             )
             .subcommand(
                 SubCommand::with_name("unlock")
@@ -331,6 +335,10 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("[passphrase] -p, --passphrase=<passphrase> 'the passphrase to use'")
                             .min_values(0)
                     )
+                    .arg(
+                        Arg::from_usage("[short] -s, --short 'short seed mnemonic'")
+                            .takes_value(false)
+                    )
             )
             .subcommand(
                 SubCommand::with_name("recover")
@@ -341,6 +349,10 @@ impl<'a, 'b> Parser {
                     )
                     .arg(
                         Arg::from_usage("[words] -m, --mnemonic=<words>... 'the seed mnemonic'")
+                    )
+                    .arg(
+                        Arg::from_usage("[short] -s, --short 'short seed mnemonic'")
+                            .takes_value(false)
                     )
                     .arg(
                         Arg::from_usage("[display] -d, --display= 'display the current mnemonic'")
