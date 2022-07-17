@@ -1,6 +1,6 @@
 use clap::{App, AppSettings, Arg, ArgGroup, ArgMatches, SubCommand};
-use common::Error;
 use commands::tokenizer::{tokenize, TokenType};
+use common::Error;
 use enquote::unquote;
 
 #[derive(Clone)]
@@ -11,15 +11,13 @@ impl<'a, 'b> Parser {
         let command = command.trim();
         let mut tokens = tokenize(command)?;
         tokens.retain(|&token| token.token_type != TokenType::Whitespace);
-        let matches = Parser::parser().get_matches_from_safe(
-            tokens.iter().map(|token| {
-                let unquoted = unquote(token.text);
-                match unquoted {
-                    Ok(_) => unquoted.unwrap(),
-                    Err(_) => token.text.to_string()
-                }
-            })
-        )?;
+        let matches = Parser::parser().get_matches_from_safe(tokens.iter().map(|token| {
+            let unquoted = unquote(token.text);
+            match unquoted {
+                Ok(_) => unquoted.unwrap(),
+                Err(_) => token.text.to_string(),
+            }
+        }))?;
         Ok(matches)
     }
 
@@ -74,6 +72,10 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("[passphrase] -p, --passphrase=<passphrase> 'the passphrase to use'")
                             .min_values(0)
+                    )
+                    .arg(
+                        Arg::from_usage("[short] -s, --short 'short seed mnemonic'")
+                            .takes_value(false)
                     )
             )
             .subcommand(
@@ -333,6 +335,10 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("[passphrase] -p, --passphrase=<passphrase> 'the passphrase to use'")
                             .min_values(0)
                     )
+                    .arg(
+                        Arg::from_usage("[short] -s, --short 'short seed mnemonic'")
+                            .takes_value(false)
+                    )
             )
             .subcommand(
                 SubCommand::with_name("recover")
@@ -343,6 +349,10 @@ impl<'a, 'b> Parser {
                     )
                     .arg(
                         Arg::from_usage("[words] -m, --mnemonic=<words>... 'the seed mnemonic'")
+                    )
+                    .arg(
+                        Arg::from_usage("[short] -s, --short 'short seed mnemonic'")
+                            .takes_value(false)
                     )
                     .arg(
                         Arg::from_usage("[display] -d, --display= 'display the current mnemonic'")
@@ -754,6 +764,25 @@ impl<'a, 'b> Parser {
                     )
                     .arg(
                         Arg::from_usage("-a, --tor_address=<tor_address> 'Another wallet tor address'")
+                    )
+            )
+            .subcommand(
+                SubCommand::with_name("eth_info")
+                    .about("displays ethereum wallet info")
+                    .arg(
+                        Arg::from_usage("-c, --currency=<currency> 'currency'")
+                    )
+            )
+            .subcommand(
+                SubCommand::with_name("eth_send")
+                    .about("displays ethereum wallet info")
+                    .arg(
+                        Arg::from_usage("-d, --dest=<dest> 'dest to send'")
+                    ).arg(
+                        Arg::from_usage("-c, --currency=<currency> 'coin to send'")
+                    )
+                    .arg(
+                        Arg::from_usage("-a, --amount=<amount> 'amount to send'")
                     )
             )
             .subcommand(

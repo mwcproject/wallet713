@@ -1,7 +1,15 @@
 steps:
   - script: '.ci\win64_cargo.bat  test --all'
+    env:
+      LIBCLANG_PATH: C:\Program Files\LLVM\lib
+      LLVM_CONFIG_PATH: C:\Program Files\LLVM\bin\llvm-config
+      ROARING_ARCH: x86-64-v2
     displayName: Cargo Test All
   - script: 'build_static64.bat'
+    env:
+      LIBCLANG_PATH: C:\Program Files\LLVM\lib
+      LLVM_CONFIG_PATH: C:\Program Files\LLVM\bin\llvm-config
+      ROARING_ARCH: x86-64-v2
     displayName: Build Release
   - script: |
       SET MY_TAG=$(Build.SourceBranch)
