@@ -43,7 +43,8 @@ RUN cargo build --release
 # Runtime stage
 FROM debian:latest
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y locales openssl ca-certificates
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive \
+	apt-get install -y ca-certificates locales openssl tor vim
 
 RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
     dpkg-reconfigure --frontend=noninteractive locales && \
