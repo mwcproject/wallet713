@@ -9,7 +9,8 @@ pub struct Parser {}
 impl<'a, 'b> Parser {
     pub fn parse(command: &str) -> Result<ArgMatches, Error> {
         let command = command.trim();
-        let mut tokens = tokenize(command)?;
+        let mut tokens = tokenize(command)
+            .map_err(|e| Error::TokenizerError(format!("Unable to parse command: {}, {}", command, e)))?;
         tokens.retain(|&token| token.token_type != TokenType::Whitespace);
         let matches = Parser::parser().get_matches_from_safe(tokens.iter().map(|token| {
             let unquoted = unquote(token.text);
@@ -17,7 +18,7 @@ impl<'a, 'b> Parser {
                 Ok(_) => unquoted.unwrap(),
                 Err(_) => token.text.to_string(),
             }
-        }))?;
+        })).map_err(|e| Error::ClapError(format!("{}", e)))?;
         Ok(matches)
     }
 
@@ -216,6 +217,12 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("[libp2p] -p, --libp2p 'start the libp2p with Tor listener'")
                     )
+                    .arg(
+                        Arg::from_usage("[bridge_line] -b, --bridge_line <bridge_line> 'bridge connection line for tor'")
+                    )
+                    .arg(
+                        Arg::from_usage("[client_option] -c, --client_option <client_option> 'client params for tor'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("stop")
@@ -291,6 +298,11 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("[min_fee] --min_fee=<fee> 'Minimal fee value. By default wallet selecting the minimal fee accepted by the network. This value can increase the fee if needed.'")
                     )
+                    .arg(
+                        Arg::from_usage("[amount_includes_fee] -i, --amount_includes_fee 'If send amount includes transaction fee.'")
+                    )
+
+
             )
             .subcommand(
                 SubCommand::with_name("invoice")
