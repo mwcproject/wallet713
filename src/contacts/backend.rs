@@ -45,14 +45,24 @@ impl Backend {
 impl AddressBookBackend for Backend {
     fn get_contact(&mut self, name: &[u8]) -> Result<Contact, Error> {
         let contact_key = to_key(CONTACT_PREFIX, &mut name.to_vec());
-        option_to_not_found(self.db.get_ser(&contact_key), || {
+        option_to_not_found(self.db.get_ser(&contact_key, None), || {
             format!("Contact id: {:x?}", name.to_vec())
         })
         .map_err(|e| e.into())
     }
 
     fn contacts(&self) -> Box<dyn Iterator<Item = Contact>> {
-        Box::new(self.db.iter(&[CONTACT_PREFIX]).unwrap().map(|x| x.1))
+        let protocol_version = self.db.protocol_version();
+        let prefix_iter = self.db.iter(&[CONTACT_PREFIX], move |_, mut v| {
+            ser::deserialize(
+                &mut v,
+                protocol_version,
+                ser::DeserializationMode::default(),
+            )
+            .map_err(From::from)
+        });
+        let iter = prefix_iter.expect("deserialize").into_iter();
+        Box::new(iter)
     }
 
     fn batch<'a>(&'a self) -> Result<Box<dyn AddressBookBatch + 'a>, Error> {

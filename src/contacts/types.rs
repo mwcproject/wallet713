@@ -1,6 +1,6 @@
 use std::fmt::{self, Debug, Display};
 
-use common::{Error, ErrorKind};
+use common::{Error};
 
 pub const DEFAULT_MWCMQS_DOMAIN: &str = "mqs.mwc.mw";
 
@@ -37,7 +37,7 @@ impl AddressBook {
     pub fn add_contact(&mut self, contact: &Contact) -> Result<(), Error> {
         let result = self.get_contact(&contact.name);
         if result.is_ok() {
-            return Err(ErrorKind::ContactAlreadyExists(contact.name.clone()))?;
+            return Err(Error::ContactAlreadyExists(contact.name.clone()));
         }
         let mut batch = self.backend.batch()?;
         batch.save_contact(contact)?;
@@ -63,7 +63,7 @@ impl AddressBook {
                 return Ok(contact);
             }
         }
-        Err(ErrorKind::_ContactNotFound(address.to_string()))?
+        Err(Error::_ContactNotFound(address.to_string()))
     }
 
     pub fn contacts(&self) -> Box<dyn Iterator<Item = Contact>> {

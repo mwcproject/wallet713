@@ -7,7 +7,7 @@ use grin_p2p::types::PeerInfoDisplay;
 pub use grin_util::secp::Message;
 use grin_util::secp::{ContextFlag, Secp256k1, Signature};
 
-use crate::common::{Arc, Error, ErrorKind, Mutex};
+use crate::common::{Arc, Error, Mutex};
 use grin_core::core::Transaction;
 use grin_keychain::Identifier;
 use grin_util::secp::key::{PublicKey, SecretKey};
@@ -16,10 +16,7 @@ use grin_wallet_libwallet::api_impl::types::SwapStartArgs;
 use grin_wallet_libwallet::proof::crypto::Hex;
 use grin_wallet_libwallet::proof::proofaddress;
 use grin_wallet_libwallet::proof::tx_proof::TxProof;
-use grin_wallet_libwallet::{
-    AcctPathMapping, NodeClient, OutputCommitMapping, OutputData, Slate, SlatePurpose,
-    StatusMessage, TxLogEntry, TxLogEntryType, WalletInfo, WalletInst, WalletLCProvider,
-};
+use grin_wallet_libwallet::{AcctPathMapping, NodeClient, OutputCommitMapping, OutputData, Slate, SlatePurpose, StatusMessage, TxLogEntry, TxLogEntryType, WalletInfo, WalletInst, WalletLCProvider};
 
 use ed25519_dalek::PublicKey as DalekPublicKey;
 use grin_keychain::{ExtKeychainPath, SwitchCommitmentType};
@@ -83,14 +80,14 @@ pub fn verifysignature(message: &str, signature: &str, pubkey: &str) -> Result<(
 
     let secp = Secp256k1::with_caps(ContextFlag::VerifyOnly);
     let pk = grin_util::from_hex(pubkey).map_err(|e| {
-        ErrorKind::GenericError(format!("Unable to parse public key HEX value {}", e))
+        Error::GenericError(format!("Unable to parse public key HEX value {}", e))
     })?;
-    let pk = PublicKey::from_slice(&pk)?;
+    let pk = PublicKey::from_slice(&secp, &pk)?;
 
     let signature = grin_util::from_hex(signature).map_err(|e| {
-        ErrorKind::GenericError(format!("Unable to parse signature HEX value {}", e))
+        Error::GenericError(format!("Unable to parse signature HEX value {}", e))
     })?;
-    let signature = Signature::from_der(&signature)?;
+    let signature = Signature::from_der(&secp, &signature)?;
 
     match secp.verify(&msg, &signature, &pk) {
         Ok(_) => println!("Message, signature and public key are valid!"),
@@ -109,7 +106,7 @@ where
     K: Keychain + 'a,
 {
     wallet_lock!(wallet_inst, w);
-    let id = keys::next_available_key(&mut **w, None)?;
+    let id = keys::next_available_key(&mut **w, None, None)?;
     let keychain = w.keychain(None)?;
     let sec_key = keychain.derive_key(amount, &id, SwitchCommitmentType::Regular)?;
     let pubkey = PublicKey::from_secret_key(keychain.secp(), &sec_key)?;
@@ -147,7 +144,7 @@ where
         }
     }
 
-    Err(ErrorKind::GenericError(format!(
+    Err(Error::GenericError(format!(
         "Not found account name for path {:?}",
         cur_acc_path
     ))
@@ -213,6 +210,7 @@ where
         None,
         None,
         Some(slate_id),
+        None,
         None,
         false,
         None,
@@ -289,6 +287,7 @@ where
             None,
             tx_id,
             tx_slate_id,
+            None,
             Some(&parent_key_id),
             false,
             None,
@@ -326,6 +325,7 @@ where
         None,
         tx_id,
         tx_slate_id,
+        None,
         Some(&parent_key_id),
         false,
         pagination_start,
@@ -601,7 +601,7 @@ where
     // Normally there is a single kernel in tx. If any of kernels found - will make all transaction valid.
     {
         let file = File::open(kernels_fn)
-            .map_err(|e| ErrorKind::FileNotFound(kernels_fn.to_string(), format!("{}", e)))?;
+            .map_err(|e| Error::FileNotFound(kernels_fn.to_string(), format!("{}", e)))?;
         let reader = BufReader::new(file);
 
         // Read the file line by line using the lines() iterator from std::io::BufRead.
@@ -619,7 +619,7 @@ where
     {
         {
             let file = File::open(outputs_fn)
-                .map_err(|e| ErrorKind::FileNotFound(outputs_fn.to_string(), format!("{}", e)))?;
+                .map_err(|e| Error::FileNotFound(outputs_fn.to_string(), format!("{}", e)))?;
             let reader = BufReader::new(file);
 
             // Read the file line by line using the lines() iterator from std::io::BufRead.
@@ -661,8 +661,6 @@ where
                 }
             }
 
-            drop(t);
-
             if validated {
                 txs[i].validated = true;
                 txs[i].validation_flags += "S";
@@ -672,7 +670,7 @@ where
 
     // Done, now let's do a reporting
     let mut res_file = File::create(result_fn)
-        .map_err(|e| ErrorKind::FileUnableToCreate(result_fn.to_string(), format!("{}", e)))?;
+        .map_err(|e| Error::FileUnableToCreate(result_fn.to_string(), format!("{}", e)))?;
 
     write!(res_file, "id,uuid,type,address,create time,height,amount,fee,messages,node validation,validation flags,validation warnings\n" )?;
 
@@ -706,6 +704,7 @@ where
                 TxLogEntryType::TxSent => "Sent",
                 TxLogEntryType::TxReceivedCancelled => "ReceivedCancelled",
                 TxLogEntryType::TxSentCancelled => "SentCancelled",
+                TxLogEntryType::TxReverted => "Reverted",
             },
             t.tx_log.address.clone().unwrap_or("None".to_string()),
             t.tx_log.creation_ts.format("%Y-%m-%d %H:%M:%S"),
@@ -793,6 +792,7 @@ pub fn init_send_tx<'a, L, C, K>(
     slatepack_recipient: Option<ProvableAddress>,
     late_lock: Option<bool>,
     min_fee: Option<u64>,
+    amount_includes_fee: bool,
 ) -> Result<Slate, Error>
 where
     L: WalletLCProvider<'a, C, K>,
@@ -857,40 +857,41 @@ where
         minimum_confirmations,
         max_outputs,
         num_change_outputs,
-        /// If `true`, attempt to use up as many outputs as
-        /// possible to create the transaction, up the 'soft limit' of `max_outputs`. This helps
-        /// to reduce the size of the UTXO set and the amount of data stored in the wallet, and
-        /// minimizes fees. This will generally result in many inputs and a large change output(s),
-        /// usually much larger than the amount being sent. If `false`, the transaction will include
-        /// as many outputs as are needed to meet the amount, (and no more) starting with the smallest
-        /// value outputs.
+        // If `true`, attempt to use up as many outputs as
+        // possible to create the transaction, up the 'soft limit' of `max_outputs`. This helps
+        // to reduce the size of the UTXO set and the amount of data stored in the wallet, and
+        // minimizes fees. This will generally result in many inputs and a large change output(s),
+        // usually much larger than the amount being sent. If `false`, the transaction will include
+        // as many outputs as are needed to meet the amount, (and no more) starting with the smallest
+        // value outputs.
         selection_strategy_is_use_all: selection_strategy_is_use_all,
         message,
-        /// Optionally set the output target slate version (acceptable
-        /// down to the minimum slate version compatible with the current. If `None` the slate
-        /// is generated with the latest version.
+        // Optionally set the output target slate version (acceptable
+        // down to the minimum slate version compatible with the current. If `None` the slate
+        // is generated with the latest version.
         target_slate_version: version,
-        /// Number of blocks from current after which TX should be ignored
+        // Number of blocks from current after which TX should be ignored
         ttl_blocks: ttl_blocks,
-        /// If set, require a payment proof for the particular recipient
+        // If set, require a payment proof for the particular recipient
         payment_proof_recipient_address: proof_address,
-        /// If true, just return an estimate of the resulting slate, containing fees and amounts
-        /// locked without actually locking outputs or creating the transaction. Note if this is set to
-        /// 'true', the amount field in the slate will contain the total amount locked, not the provided
-        /// transaction amount
+        // If true, just return an estimate of the resulting slate, containing fees and amounts
+        // locked without actually locking outputs or creating the transaction. Note if this is set to
+        // 'true', the amount field in the slate will contain the total amount locked, not the provided
+        // transaction amount
         address: address_decorated,
         estimate_only: None,
-        /// Sender arguments. If present, the underlying function will also attempt to send the
-        /// transaction to a destination and optionally finalize the result
-        /// Whether or not to exclude change outputs, not needed in mwc713.
+        // Sender arguments. If present, the underlying function will also attempt to send the
+        // transaction to a destination and optionally finalize the result
+        // Whether or not to exclude change outputs, not needed in mwc713.
         exclude_change_outputs: Some(false),
-        /// Number of confirmations for change outputs, default fine, not used in mwc713.
+        // Number of confirmations for change outputs, default fine, not used in mwc713.
         minimum_confirmations_change_outputs: 1,
         send_args: None,
         outputs,
         slatepack_recipient,
         late_lock,
         min_fee,
+        amount_includes_fee: Some(amount_includes_fee),
     };
 
     let s = grin_wallet_libwallet::owner::init_send_tx(&mut **w, None, &params, false, routputs)?;
@@ -1229,19 +1230,20 @@ where
         None,
         Some(id),
         None,
+        None,
         Some(&parent_key_id),
         false,
         None,
         None,
     )?;
     if txs.len() != 1 {
-        return Err(ErrorKind::TransactionHasNoProof)?;
+        return Err(Error::TransactionHasNoProof)?;
     }
     let uuid = txs[0]
         .tx_slate_id
-        .ok_or_else(|| ErrorKind::TransactionHasNoProof)?;
+        .ok_or_else(|| Error::TransactionHasNoProof)?;
     TxProof::get_stored_tx_proof(w.get_data_file_dir(), &uuid.to_string())
-        .map_err(|_| ErrorKind::TxStoredProof.into())
+        .map_err(|_| Error::TxStoredProof.into())
 }
 
 // pub fn verify_tx_proof(
@@ -1340,7 +1342,7 @@ where
     let keychain = w.keychain(None)?;
 
     proofaddress::payment_proof_address(&keychain, addr_type).map_err(|e| {
-        ErrorKind::GenericError(format!("Unable to get payment proof addess, {}", e)).into()
+        Error::GenericError(format!("Unable to get payment proof addess, {}", e)).into()
     })
 }
 
@@ -1355,7 +1357,7 @@ where
     wallet_lock!(wallet_inst, w);
     let keychain = w.keychain(None)?;
     proofaddress::payment_proof_address_pubkey(&keychain).map_err(|e| {
-        ErrorKind::GenericError(format!("Unable to get payment proof public key, {}", e)).into()
+        Error::GenericError(format!("Unable to get payment proof public key, {}", e)).into()
     })
 }
 
@@ -1370,7 +1372,7 @@ where
     wallet_lock!(wallet_inst, w);
     let keychain = w.keychain(None)?;
     proofaddress::payment_proof_address_secret(&keychain, None).map_err(|e| {
-        ErrorKind::GenericError(format!("Unable to get payment proof secret, {}", e)).into()
+        Error::GenericError(format!("Unable to get payment proof secret, {}", e)).into()
     })
 }
 
@@ -1394,9 +1396,9 @@ where
         dest_acct_name: active_account,
         amount,
         message,
-        /// Optionally set the output target slate version (acceptable
-        /// down to the minimum slate version compatible with the current. If `None` the slate
-        /// is generated with the latest version.
+        // Optionally set the output target slate version (acceptable
+        // down to the minimum slate version compatible with the current. If `None` the slate
+        // is generated with the latest version.
         target_slate_version: None,
         address,
         slatepack_recipient,
@@ -1428,6 +1430,8 @@ where
 {
     wallet_lock!(wallet_inst, w);
 
+    let dest_acct_name: Option<String> = dest_acct_name.map(|s| s.to_string());
+
     let s = grin_wallet_libwallet::foreign::receive_tx(
         &mut **w,
         None,
@@ -1435,11 +1439,12 @@ where
         address,
         key_id,
         output_amounts,
-        dest_acct_name,
+        &dest_acct_name,
         message,
         false,
         true,
     )?;
+
     Ok(s.0)
 }
 
@@ -1493,18 +1498,18 @@ where
             // Validating destination address
             let _ = grin_wallet_impls::MWCMQSAddress::from_str(&buyer_communication_address)
                 .map_err(|e| {
-                    ErrorKind::ArgumentError(format!("Invalid destination address, {}", e))
+                    Error::ArgumentError(format!("Invalid destination address, {}", e))
                 })?;
         }
         "tor" => {
             let _ = grin_wallet_impls::adapters::validate_tor_address(&buyer_communication_address)
                 .map_err(|e| {
-                    ErrorKind::ArgumentError(format!("Invalid destination address, {}", e))
+                    Error::ArgumentError(format!("Invalid destination address, {}", e))
                 })?;
         }
         "file" => (), // not validating the fine name. Files are secondary and testing method.
         _ => {
-            return Err(ErrorKind::ArgumentError(format!(
+            return Err(Error::ArgumentError(format!(
                 "Invalid communication method '{}'. Valid methods: mwcmqs, tor, file",
                 buyer_communication_method
             ))
@@ -1561,9 +1566,11 @@ where
     wallet_lock!(wallet_inst, w);
     let keychain = w.keychain(None)?;
 
-    let secret = proofaddress::payment_proof_address_dalek_secret(&keychain, None)?;
+    let secp = Secp256k1::with_caps(ContextFlag::VerifyOnly);
 
-    let slate_data = PathToSlateGetter::build_form_str(slate_str.to_string()).get_tx(&secret)?;
+    let secret = proofaddress::payment_proof_address_dalek_secret(&keychain, None)?;
+    let height = w.w2n_client().get_chain_tip()?.0;
+    let slate_data = PathToSlateGetter::build_form_str(slate_str.to_string()).get_tx(Some(&secret), height, &secp)?;
 
     match slate_data {
         SlateGetData::PlainSlate(slate) => Ok((slate, None, None, None)),
@@ -1596,6 +1603,7 @@ where
     wallet_lock!(wallet_inst, w);
     let keychain = w.keychain(None)?;
     let secret = proofaddress::payment_proof_address_dalek_secret(&keychain, None)?;
+    let secp = Secp256k1::with_caps(ContextFlag::SignOnly);
     let slate_str = PathToSlatePutter::build_encrypted(
         None,
         content,
@@ -1603,6 +1611,6 @@ where
         receiver,
         slatepack_format,
     )
-    .put_tx(slate, &secret, false)?;
+    .put_tx(slate, Some(&secret), false, &secp)?;
     Ok(slate_str)
 }

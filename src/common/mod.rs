@@ -1,12 +1,10 @@
 #[macro_use]
 pub mod macros;
 pub mod config;
-mod error_kind;
+mod error;
 
-pub use self::error_kind::ErrorKind;
-pub use self::macros::*;
-pub use failure::Error;
-pub use parking_lot::{Mutex, MutexGuard};
+pub use self::error::Error;
+pub use parking_lot::Mutex;
 pub use std::sync::Arc;
 
 pub const COLORED_PROMPT: &'static str = "\x1b[36mwallet713>\x1b[0m ";
