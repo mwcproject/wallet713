@@ -2387,7 +2387,7 @@ fn do_command(
                 .map_err(|_| Error::InvalidTxId(id.to_string()))?;
             let w = wallet.lock();
             let tx_proof = w.get_tx_proof(id)?;
-            let secp = Secp256k1::new();
+            let secp = Secp256k1::with_caps(ContextFlag::Commit);
             match tx_proof::verify_tx_proof_wrapper(&tx_proof, &secp) {
                 Ok((sender, receiver, amount, outputs, kernel)) => {
                     let mut file = File::create(input.replace("~", &home_dir))?;
@@ -2417,7 +2417,7 @@ fn do_command(
                 return Err(Error::ArgumentError(format!("File {} is empty", input)));
             }
             let tx_pf: TxProof = serde_json::from_str(&proof).map_err(|e| Error::JsonError(format!("Unable to parse Json {}, {}", proof, e)))?;
-            let secp = Secp256k1::new();
+            let secp = Secp256k1::with_caps(ContextFlag::Commit);
             match tx_proof::verify_tx_proof_wrapper(&tx_pf, &secp) {
                 Ok((sender, receiver, amount, outputs, kernel)) => {
                     tx_proof::proof_ok(sender, receiver, amount, outputs, kernel);
