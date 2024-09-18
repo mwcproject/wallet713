@@ -573,12 +573,12 @@ fn main() {
             SubCommand::with_name("init")
             .about("initializes the wallet")
             .arg(Arg::from_usage("[short] -s --short 'short seed mnemonic'"))
+            .arg(Arg::from_usage("[seed_length] -l, --seed_length=<seed_length> 'seed mnemonic length, one of 12, 15, 18, 21, 24'"))
         )
         .subcommand(
             SubCommand::with_name("recover")
                 .about("recover wallet from mnemonic or displays the current mnemonic")
                 .arg(Arg::from_usage("[words] -m, --mnemonic=<words>... 'the seed mnemonic'"))
-                .arg(Arg::from_usage("[short] -s, --short 'short seed mnemonic'"))
         )
         .subcommand(SubCommand::with_name("state").about("print wallet initialization state and exit"))
         .get_matches();
@@ -675,13 +675,14 @@ fn main() {
                 println!();
                 println!("Set an optional password to secure your wallet with. Leave blank for no password.");
                 println!();
-                let mut short_seed = "";
+                let mut seed_length = "24";
                 if let Some(init) = matches.subcommand_matches("init") {
+                    seed_length = init.value_of("seed_length").unwrap_or("24");
                     if init.is_present("short") {
-                        short_seed = "-s "
+                        seed_length = "12";
                     }
                 };
-                let cmd = format!("init {}-p {}", short_seed, &passphrase);
+                let cmd = format!("init --seed_length {} -p {}", seed_length, &passphrase);
                 if let Err(err) = do_command(
                     &cmd,
                     &mut config,
@@ -701,18 +702,12 @@ fn main() {
                 print!("Mnemonic: ");
                 io::stdout().flush().unwrap();
                 let mut mnemonic = String::new();
-                let mut short_seed = "";
                 if let Some(recover) = matches.subcommand_matches("recover") {
                     if recover.is_present("words") {
-                        mnemonic = matches
-                            .subcommand_matches("recover")
-                            .unwrap()
+                        mnemonic = recover
                             .value_of("words")
                             .unwrap()
                             .to_string();
-                    }
-                    if recover.is_present("short") {
-                        short_seed = "-s "
                     }
                 } else {
                     if io::stdin().read_line(&mut mnemonic).unwrap() == 0 {
@@ -726,7 +721,7 @@ fn main() {
                 println!("Set an optional password to secure your wallet with. Leave blank for no password.");
                 println!();
                 // TODO: refactor this
-                let cmd = format!("recover {}-m {} -p {}", short_seed, mnemonic, &passphrase);
+                let cmd = format!("recover -m {} -p {}", mnemonic, &passphrase);
                 if let Err(err) = do_command(
                     &cmd,
                     &mut config,
@@ -1109,9 +1104,16 @@ fn do_command(
 
             let passphrase = grin_util::ZeroingString::from(passphrase);
 
-            let short_seed = args.is_present("short");
+            let mut seed_length = args.value_of("seed_length")
+                .unwrap_or("24")
+                .parse::<usize>()
+                .map_err(|_| Error::ArgumentError("Expected integer 'seed_length' value".to_string()))?;
 
-            let seed = wallet.lock().init(config, passphrase.clone(), true, short_seed)?;
+            if args.is_present("short") {
+                seed_length = 12;
+            }
+
+            let seed = wallet.lock().init(config, passphrase.clone(), true, seed_length)?;
 
             println!(
                 "{}",
@@ -1124,7 +1126,7 @@ fn do_command(
 
             {
                 let mut wallet_inst = wallet.lock();
-                wallet_inst.complete(seed, config, "default", passphrase, true, short_seed)?;
+                wallet_inst.complete(seed, config, "default", passphrase, true, seed_length)?;
                 wallet_inst.update_tip_as_last_scanned()?;
             }
             show_address(config, wallet, false)?;
@@ -2195,12 +2197,20 @@ fn do_command(
             println!("restoring... please wait as this could take a few minutes to complete.");
 
             let passphrase = ZeroingString::from(passphrase.as_str());
-            let short_seed = args.is_present("short");
+
+            let mut seed_length = args.value_of("seed_length")
+                .unwrap_or("24")
+                .parse::<usize>()
+                .map_err(|_| Error::ArgumentError("Expected integer 'seed_length' value".to_string()))?;
+
+            if args.is_present("short") {
+                seed_length = 12;
+            }
 
             {
                 let mut w = wallet.lock();
-                let seed = w.init(config, passphrase.clone(), false, short_seed)?;
-                w.complete(seed, config, "default", passphrase.clone(), true, short_seed)?;
+                let seed = w.init(config, passphrase.clone(), false, seed_length)?;
+                w.complete(seed, config, "default", passphrase.clone(), true, seed_length)?;
                 w.restore_state()?;
                 w.update_tip_as_last_scanned()?;
             }
@@ -2230,30 +2240,24 @@ fn do_command(
                 if getenv("MWC_MNEMONIC")?.is_some() {
                     let envvar = env::var("MWC_MNEMONIC")?;
                     let words: Vec<&str> = envvar.split(" ").collect();
-                    let short_seed = match words.len() {
-                        16 => true,
-                        _ => false
-                    };
+                    let seed_words = words.len();
                     {
                         println!("Recovering with environment variable words: {:?}", words);
                         let mut w = wallet.lock();
                         w.restore_seed(config, &words, passphrase.clone())?;
-                        let seed = w.init(config, passphrase.clone(), false, short_seed)?;
-                        w.complete(seed, config, "default", passphrase.clone(), true, short_seed)?;
+                        let seed = w.init(config, passphrase.clone(), false, seed_words)?;
+                        w.complete(seed, config, "default", passphrase.clone(), true, seed_words)?;
                         w.restore_state()?;
                     }
                 } else {
                     let words: Vec<&str> = words.collect();
-                    let short_seed = match words.len() {
-                        16 => true,
-                        _ => false
-                    };
+                    let seed_words = words.len();
                     {
                         println!("Recovering with commandline specified words: {:?}", words);
                         let mut w = wallet.lock();
                         w.restore_seed(config, &words, passphrase.clone())?;
-                        let seed = w.init(config, passphrase.clone(), false, short_seed)?;
-                        w.complete(seed, config, "default", passphrase.clone(), true, short_seed)?;
+                        let seed = w.init(config, passphrase.clone(), false, seed_words)?;
+                        w.complete(seed, config, "default", passphrase.clone(), true, seed_words)?;
                         w.restore_state()?;
                     }
                 }

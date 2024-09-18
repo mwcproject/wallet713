@@ -2,6 +2,8 @@ use std::env::VarError;
 
 #[derive(Clone, Eq, PartialEq, Debug, thiserror::Error)]
 pub enum Error {
+    #[error("Wallet seed length must be a number between 12 and 24, divisible by 3. Requested {0} wordrs.")]
+    WalletSeedIncorrectLength(usize),
     #[error("could not open wallet seed!")]
     WalletSeedCouldNotBeOpened,
     #[error("transaction doesn't have a proof!")]
