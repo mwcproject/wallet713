@@ -176,9 +176,9 @@ impl Wallet {
         account: &str,
         passphrase: grin_util::ZeroingString,
         create_new: bool,
-        short_seed: bool
+        seed_words_num: usize,
     ) -> Result<WalletSeed, Error> {
-        let seed = self.init_seed(&config, passphrase.clone(), create_new, true, Some(seed), short_seed)?;
+        let seed = self.init_seed(&config, passphrase.clone(), create_new, true, Some(seed), seed_words_num)?;
         //self.init_backend(&wallet_config, &config, passphrase)?;
         self.unlock(config, account, passphrase)?;
         Ok(seed)
@@ -189,9 +189,9 @@ impl Wallet {
         config: &Wallet713Config,
         passphrase: grin_util::ZeroingString,
         create_new: bool,
-        short_seed: bool
+        seed_words_num: usize
     ) -> Result<WalletSeed, Error> {
-        let seed = self.init_seed(&config, passphrase, create_new, false, None, short_seed)?;
+        let seed = self.init_seed(&config, passphrase, create_new, false, None, seed_words_num)?;
         Ok(seed)
     }
 
@@ -870,14 +870,14 @@ impl Wallet {
         create_new: bool,
         create_file: bool,
         seed: Option<WalletSeed>,
-        short_seed: bool
+        seed_words_num: usize
     ) -> Result<WalletSeed, Error> {
         let data_file_dir = config.get_data_path_str()?;
         let result = WalletSeed::from_file(&data_file_dir, passphrase.clone());
-        let seed_lenght = match short_seed {
-            true => 16,
-            false => 32
-        };
+        if seed_words_num < 12 || seed_words_num>24 || seed_words_num % 3 !=0 {
+            return Err(Error::WalletSeedIncorrectLength(seed_words_num));
+        }
+        let seed_lenght = seed_words_num * 4 / 3;
         let seed = match result {
             Ok(seed) => seed,
             Err(_) => {
