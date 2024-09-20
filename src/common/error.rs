@@ -36,8 +36,8 @@ pub enum Error {
     InvalidNumOutputs(String),
     #[error("invalid slate version given: `{0}`")]
     InvalidSlateVersion(String),
-    #[error("could not unlock wallet! are you using the correct passphrase?")]
-    WalletUnlockFailed,
+    #[error("could not unlock wallet! {0}")]
+    WalletUnlockFailed(String),
     #[error("Zero-conf Transactions are not allowed. Must have at least 1 confirmation.")]
     ZeroConfNotAllowed,
     #[error("The wallet is locked. Please use `unlock` first.")]

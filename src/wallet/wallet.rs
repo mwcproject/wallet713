@@ -81,7 +81,12 @@ impl Wallet {
         self.create_wallet_instance(config, account, passphrase)
             .map_err(|e| {
                 warn!("Unable to unlock wallet, {}", e);
-                Error::WalletUnlockFailed
+                let mut err_str = format!("{}", e);
+                if err_str.contains("check password?") {
+                    err_str = "are you using the correct passphrase?".to_string(); // magic phrase that is expected by QT wallet
+                }
+
+                Error::WalletUnlockFailed( err_str )
             })?;
         Ok(())
     }
