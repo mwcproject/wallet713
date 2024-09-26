@@ -40,6 +40,7 @@ extern crate grin_wallet_controller;
 extern crate grin_wallet_util;
 
 extern crate ed25519_dalek;
+extern crate grin_wallet_api;
 
 use grin_core::core::Transaction;
 use grin_core::ser;
@@ -118,6 +119,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 use grin_core::ser::DeserializationMode;
 use grin_util::secp::{ContextFlag, Secp256k1};
+use grin_wallet_api::Owner;
 use grin_wallet_config::types::{TorBridgeConfig, TorProxyConfig};
 use rustyline::validate::Validator;
 use uuid::Uuid;
@@ -2847,6 +2849,27 @@ fn do_command(
                 amount: Some(amount.to_string()),
             };
             grin_wallet_controller::command::eth(wallet.lock().get_wallet_instance()?, eth_args)?;
+        }
+        Some("rewind_hash") => {
+            let mut owner_api = Owner::new(wallet.lock().get_wallet_instance()?, None, None);
+            grin_wallet_controller::command::rewind_hash(&mut owner_api, None, true)?;
+        }
+        Some("scan_rewind_hash") => {
+            let args = matches.subcommand_matches("scan_rewind_hash").unwrap();
+
+            let args = grin_wallet_controller::command::ViewWalletScanArgs {
+                rewind_hash: args.value_of("rewind_hash").unwrap().to_string(),
+                start_height: match args.value_of("start_height").map(|s| s.parse::<u64>()) {
+                    Some( res ) => Some(res.map_err(|e| Error::ArgumentError(format!("Unable to parse 'start_height' value, {}", e)))?),
+                    None => None,
+                },
+                backwards_from_tip: match args.value_of("backwards_from_tip").map(|s| s.parse::<u64>()) {
+                    Some( res ) => Some(res.map_err(|e| Error::ArgumentError(format!("Unable to parse 'backwards_from_tip' value, {}", e)))?),
+                    None => None,
+                },
+            };
+            let mut owner_api = Owner::new(wallet.lock().get_wallet_instance()?, None, None);
+            grin_wallet_controller::command::scan_rewind_hash(&mut owner_api,args,true, true)?;
         }
         Some(subcommand) => {
             cli_message!(

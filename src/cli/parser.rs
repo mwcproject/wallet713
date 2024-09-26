@@ -796,5 +796,21 @@ impl<'a, 'b> Parser {
                 SubCommand::with_name("check_tor_connection")
                     .about("check this wallet tor connection")
             )
+            .subcommand(
+                SubCommand::with_name("rewind_hash")
+                    .about("Return the hash of the wallet root public key")
+            )
+            .subcommand(
+                SubCommand::with_name("scan_rewind_hash")
+                    .about("Scan the UTXO set, return the outputs and the total of MWC owned by a view wallet rewind hash.")
+                    .arg(
+                        Arg::from_usage("-h, --rewind_hash=<rewind_hash> 'Rewind hash of the wallet to be scanned in order to retrieve all the outputs and balance'")
+                    ).arg(
+                        Arg::from_usage("[start_height] -s, --start_height=<height> 'If given, the first block from which to start the scan (default 1)'")
+                    )
+                    .arg(
+                        Arg::from_usage("[backwards_from_tip] -b, --backwards_from_tip=<blocks> 'If given, start scan b blocks back from the tip'")
+                    )
+            )
     }
 }
