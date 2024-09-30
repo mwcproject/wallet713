@@ -2871,6 +2871,23 @@ fn do_command(
             let mut owner_api = Owner::new(wallet.lock().get_wallet_instance()?, None, None);
             grin_wallet_controller::command::scan_rewind_hash(&mut owner_api,args,true, true)?;
         }
+        Some("generate_ownership_proof") => {
+            let args = matches.subcommand_matches("generate_ownership_proof").unwrap();
+            let mut owner_api = Owner::new(wallet.lock().get_wallet_instance()?, None, None);
+            command::generate_ownership_proof(&mut owner_api,
+                                              None,
+                                              command::GenerateOwnershipProofArgs {
+                                                  message: args.value_of("message").unwrap().to_string(),
+                                                  include_public_root_key: args.is_present("include_public_root_key"),
+                                                  include_tor_address: args.is_present("include_tor_address"),
+                                                  include_mqs_address: args.is_present("include_mqs_address"),
+                                              })?;
+        }
+        Some("validate_ownership_proof") => {
+            let args = matches.subcommand_matches("validate_ownership_proof").unwrap();
+            let mut owner_api = Owner::new(wallet.lock().get_wallet_instance()?, None, None);
+            command::validate_ownership_proof(&mut owner_api, None, args.value_of("proof").unwrap())?;
+        }
         Some(subcommand) => {
             cli_message!(
                 "{}: subcommand `{}` not implemented!",
