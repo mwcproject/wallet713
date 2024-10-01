@@ -1727,6 +1727,7 @@ fn do_command(
         Some("send") => {
             let args = matches.subcommand_matches("send").unwrap();
             let to = args.value_of("to");
+            let self_send = args.is_present("self");
             let expected_proof_address = args.value_of("expectedproof");
             let input = args.value_of("file");
             let message = args.value_of("message").map(|s| s.to_string());
@@ -1912,6 +1913,43 @@ fn do_command(
                 // Stopping updater, sync should be done by now
                 running.store(false, Ordering::Relaxed);
                 let _ = updater.join();
+
+                return Ok(());
+            }
+            else if self_send {
+                let w = wallet.lock();
+                let mut slate = w.init_send_tx(
+                    None,
+                    amount,
+                    confirmations,
+                    strategy,
+                    change_outputs,
+                    500,
+                    None,
+                    output_list,
+                    version,
+                    routputs,
+                    &None,
+                    ttl_blocks,
+                    false,
+                    None,
+                    None,
+                    min_fee,
+                    amount_includes_fee,
+                )?;
+
+                w.tx_lock_outputs(&slate, Some(String::from("self")), 0)?;
+
+                w.process_sender_initiated_slate(
+                    None,
+                    &mut slate,
+                    Some(String::from("self")),
+                    None,
+                    None,
+                    to,
+                )?;
+
+                w.finalize_post_slate(&mut slate, fluff)?;
 
                 return Ok(());
             } else if let Some(to) = to {

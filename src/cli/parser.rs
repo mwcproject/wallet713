@@ -304,6 +304,9 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("[amount_includes_fee] -i, --amount_includes_fee 'If send amount includes transaction fee.'")
                     )
+                    .arg(
+                        Arg::from_usage("[self] , --self 'Self send to another account. to is account name'")
+                    )
 
 
             )
