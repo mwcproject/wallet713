@@ -1,38 +1,30 @@
 #[macro_use]
 extern crate serde_derive;
-extern crate prettytable;
+//extern crate prettytable;
 #[macro_use]
 extern crate log;
 #[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate clap;
+
+#[cfg(windows)]
 extern crate ansi_term;
-extern crate blake2_rfc;
-extern crate chrono;
+
 extern crate colored;
+
+extern crate blake2_rfc;
 extern crate commands;
 extern crate enquote;
-extern crate env_logger;
-extern crate failure;
-extern crate futures;
-extern crate mime;
 extern crate parking_lot;
 extern crate path_clean;
-extern crate rand;
-extern crate ring;
 #[cfg(not(target_os = "android"))]
 extern crate rpassword;
-extern crate rustls;
 #[cfg(not(target_os = "android"))]
 extern crate rustyline;
-extern crate semver;
 extern crate serde;
-extern crate sha2;
-extern crate tokio;
 extern crate url;
 extern crate uuid;
-extern crate ws;
 
 extern crate grin_api;
 extern crate grin_core;
@@ -48,6 +40,7 @@ extern crate grin_wallet_controller;
 extern crate grin_wallet_util;
 
 extern crate ed25519_dalek;
+extern crate grin_wallet_api;
 
 use grin_core::core::Transaction;
 use grin_core::ser;
@@ -98,7 +91,7 @@ use cli::Parser;
 use common::config::Wallet713Config;
 #[cfg(not(target_os = "android"))]
 use common::PROMPT;
-use common::{Arc, Error, ErrorKind, Mutex, COLORED_PROMPT};
+use common::{Arc, Error, Mutex, COLORED_PROMPT};
 use contacts::DEFAULT_MWCMQS_DOMAIN;
 use contacts::DEFAULT_MWCMQS_PORT;
 use wallet::Wallet;
@@ -124,6 +117,11 @@ use std::borrow::Borrow;
 use std::fs;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
+use grin_core::ser::DeserializationMode;
+use grin_util::secp::{ContextFlag, Secp256k1};
+use grin_wallet_api::Owner;
+use grin_wallet_config::types::{TorBridgeConfig, TorProxyConfig};
+use rustyline::validate::Validator;
 use uuid::Uuid;
 
 #[cfg(not(target_os = "android"))]
@@ -184,7 +182,7 @@ fn do_config(
     }
 
     if let Some(port) = args.value_of("port") {
-        let port = u16::from_str_radix(port, 10).map_err(|_| ErrorKind::NumberParsingError)?;
+        let port = u16::from_str_radix(port, 10).map_err(|_| Error::NumberParsingError(port.to_string()))?;
         config.mwcmq_port = Some(port);
         any_matches = true;
     }
@@ -280,7 +278,7 @@ fn start_mwcmqs_listener(
     // make sure wallet is not locked, if it is try to unlock with no passphrase
     {
         if wallet.lock().is_locked() {
-            return Err(ErrorKind::WalletIsLocked)?;
+            return Err(Error::WalletIsLocked);
         }
     }
 
@@ -302,13 +300,12 @@ fn start_tor_listener(
     wallet: Arc<Mutex<Wallet>>,
     tor_running: &mut bool,
     start_libp2p: bool,
+    tor_bridge_line: Option<String>,
+    tor_client_option: Option<String>,
 ) -> Result<std::sync::Arc<std::sync::Mutex<u32>>, Error> {
     // Let's check if foreign API is running (was able to start)
     if !grin_wallet_controller::controller::is_foreign_api_running() {
-        return Err(ErrorKind::GenericError(
-            "Foreign API is not running. Unable to start tor listener.".to_string(),
-        )
-        .into());
+        return Err(Error::GenericError("Foreign API is not running. Unable to start tor listener.".to_string()));
     }
 
     let keychain_mask = Arc::new(Mutex::new(None));
@@ -336,6 +333,13 @@ fn start_tor_listener(
                 keychain_mask.clone(),
             )
             .unwrap();
+
+            let tor_proxy = TorProxyConfig::default();
+            let bridge =  TorBridgeConfig {
+                bridge_line: tor_bridge_line,
+                client_option: tor_client_option,
+            };
+
             let p = grin_wallet_controller::controller::init_tor_listener(
                 winst.clone(),
                 keychain_mask.clone(),
@@ -344,6 +348,9 @@ fn start_tor_listener(
                 &config2.libp2p_port,
                 Some(&wallet_data_dir.clone()),
                 &config2.tor_log_file,
+                &bridge,
+                &tor_proxy,
+                true,
             );
 
             let _ = match p {
@@ -378,10 +385,7 @@ fn start_tor_listener(
 
     if start_libp2p && *tor_running {
         if config.libp2p_port.is_none() {
-            return Err(ErrorKind::ArgumentError(
-                "Please define libp2p_port value in config".to_string(),
-            )
-            .into());
+            return Err(Error::ArgumentError("Please define libp2p_port value in config".to_string()));
         }
 
         let libp2p_port = config.libp2p_port.unwrap();
@@ -391,6 +395,7 @@ fn start_tor_listener(
             &config.get_socks_addr(),
             libp2p_port,
             mutex.clone(),
+            true,
         )?;
 
         cli_message!("libp2p listener started. Port {}", libp2p_port);
@@ -464,6 +469,8 @@ fn start_wallet_api(config: &Wallet713Config, wallet: Arc<Mutex<Wallet>>) -> Res
             thread::Builder::new()
                 .name("foreign_listener".to_string())
                 .spawn(move || {
+                    let tor_bridge=  TorBridgeConfig::default();
+                    let tor_proxy = TorProxyConfig::default();
                     if let Err(e) = grin_wallet_controller::controller::foreign_listener(
                         wallet_instance,
                         Arc::new(Mutex::new(None)),
@@ -473,6 +480,8 @@ fn start_wallet_api(config: &Wallet713Config, wallet: Arc<Mutex<Wallet>>) -> Res
                         &socks_addr,
                         &libp2p_port,
                         &tor_log_file,
+                        &tor_bridge,
+                        &tor_proxy,
                     ) {
                         cli_message!(
                             "{}: Foreign API Listener failed. {}",
@@ -545,6 +554,9 @@ fn kill_tor_if_exists() {
 #[cfg(not(target_os = "android"))]
 impl Helper for EditorHelper {}
 
+#[cfg(not(target_os = "android"))]
+impl Validator for EditorHelper {}
+
 fn main() {
     enable_ansi_support();
     kill_tor_if_exists();
@@ -563,12 +575,12 @@ fn main() {
             SubCommand::with_name("init")
             .about("initializes the wallet")
             .arg(Arg::from_usage("[short] -s --short 'short seed mnemonic'"))
+            .arg(Arg::from_usage("[seed_length] -l, --seed_length=<seed_length> 'seed mnemonic length, one of 12, 15, 18, 21, 24'"))
         )
         .subcommand(
             SubCommand::with_name("recover")
                 .about("recover wallet from mnemonic or displays the current mnemonic")
                 .arg(Arg::from_usage("[words] -m, --mnemonic=<words>... 'the seed mnemonic'"))
-                .arg(Arg::from_usage("[short] -s, --short 'short seed mnemonic'"))
         )
         .subcommand(SubCommand::with_name("state").about("print wallet initialization state and exit"))
         .get_matches();
@@ -665,13 +677,14 @@ fn main() {
                 println!();
                 println!("Set an optional password to secure your wallet with. Leave blank for no password.");
                 println!();
-                let mut short_seed = "";
+                let mut seed_length = "24";
                 if let Some(init) = matches.subcommand_matches("init") {
+                    seed_length = init.value_of("seed_length").unwrap_or("24");
                     if init.is_present("short") {
-                        short_seed = "-s "
+                        seed_length = "12";
                     }
                 };
-                let cmd = format!("init {}-p {}", short_seed, &passphrase);
+                let cmd = format!("init --seed_length {} -p {}", seed_length, &passphrase);
                 if let Err(err) = do_command(
                     &cmd,
                     &mut config,
@@ -691,18 +704,12 @@ fn main() {
                 print!("Mnemonic: ");
                 io::stdout().flush().unwrap();
                 let mut mnemonic = String::new();
-                let mut short_seed = "";
                 if let Some(recover) = matches.subcommand_matches("recover") {
                     if recover.is_present("words") {
-                        mnemonic = matches
-                            .subcommand_matches("recover")
-                            .unwrap()
+                        mnemonic = recover
                             .value_of("words")
                             .unwrap()
                             .to_string();
-                    }
-                    if recover.is_present("short") {
-                        short_seed = "-s "
                     }
                 } else {
                     if io::stdin().read_line(&mut mnemonic).unwrap() == 0 {
@@ -716,7 +723,7 @@ fn main() {
                 println!("Set an optional password to secure your wallet with. Leave blank for no password.");
                 println!();
                 // TODO: refactor this
-                let cmd = format!("recover {}-m {} -p {}", short_seed, mnemonic, &passphrase);
+                let cmd = format!("recover -m {} -p {}", mnemonic, &passphrase);
                 if let Err(err) = do_command(
                     &cmd,
                     &mut config,
@@ -1038,7 +1045,7 @@ fn do_command(
                 true => Some({
                     let index = match args.value_of("generate-address-index") {
                         Some(index) => u32::from_str_radix(index, 10)
-                            .map_err(|_| ErrorKind::NumberParsingError)?,
+                            .map_err(|_| Error::NumberParsingError(index.to_string()))?,
                         None => config.grinbox_address_index.unwrap_or(0) + 1,
                     };
                     config.grinbox_address_index = Some(index);
@@ -1099,9 +1106,16 @@ fn do_command(
 
             let passphrase = grin_util::ZeroingString::from(passphrase);
 
-            let short_seed = args.is_present("short");
+            let mut seed_length = args.value_of("seed_length")
+                .unwrap_or("24")
+                .parse::<usize>()
+                .map_err(|_| Error::ArgumentError("Expected integer 'seed_length' value".to_string()))?;
 
-            let seed = wallet.lock().init(config, passphrase.clone(), true, short_seed)?;
+            if args.is_present("short") {
+                seed_length = 12;
+            }
+
+            let seed = wallet.lock().init(config, passphrase.clone(), true, seed_length)?;
 
             println!(
                 "{}",
@@ -1114,7 +1128,7 @@ fn do_command(
 
             {
                 let mut wallet_inst = wallet.lock();
-                wallet_inst.complete(seed, config, "default", passphrase, true, short_seed)?;
+                wallet_inst.complete(seed, config, "default", passphrase, true, seed_length)?;
                 wallet_inst.update_tip_as_last_scanned()?;
             }
             show_address(config, wallet, false)?;
@@ -1133,7 +1147,7 @@ fn do_command(
             {
                 let mut w = wallet.lock();
                 if !w.is_locked() {
-                    return Err(ErrorKind::WalletAlreadyUnlocked.into());
+                    return Err(Error::WalletAlreadyUnlocked);
                 }
                 w.unlock(config, account, ZeroingString::from(passphrase.as_str()))?;
             }
@@ -1174,13 +1188,11 @@ fn do_command(
             let mwcmqs = args.is_present("mwcmqs");
             let tor = args.is_present("tor");
             let libp2p = args.is_present("libp2p");
+            let bridge_line = args.value_of("bridge_line").map(|s| s.to_string());
+            let client_option = args.value_of("client_option").map(|s| s.to_string());
 
             if libp2p && !tor {
-                return Err(ErrorKind::ArgumentError(
-                    "libp2p can be started with tor. Please specify both --tor --libp2p"
-                        .to_string(),
-                )
-                .into());
+                return Err(Error::ArgumentError("libp2p can be started with tor. Please specify both --tor --libp2p".to_string()));
             }
 
             if mwcmqs {
@@ -1189,7 +1201,7 @@ fn do_command(
                     _ => false,
                 };
                 if is_running {
-                    Err(ErrorKind::AlreadyListening("mwcmqs".to_string()))?
+                    Err(Error::AlreadyListening("mwcmqs".to_string()))?
                 } else {
                     let (publisher, subscriber) = start_mwcmqs_listener(&config, wallet.clone())?;
                     *mwcmqs_broker = Some((publisher, subscriber));
@@ -1204,9 +1216,11 @@ fn do_command(
                             wallet.clone(),
                             tor_running,
                             libp2p,
+                            bridge_line,
+                            client_option,
                         )?);
                     } else {
-                        return Err(ErrorKind::ArgumentError(
+                        return Err(Error::ArgumentError(
                             "Foreign API must be enabled to use Tor.".to_string(),
                         ))?;
                     }
@@ -1241,7 +1255,7 @@ fn do_command(
                         );
                     }
                 } else {
-                    Err(ErrorKind::ClosedListener("mwcmqs".to_string()))?
+                    Err(Error::ClosedListener("mwcmqs".to_string()))?
                 }
             }
             if tor {
@@ -1260,7 +1274,7 @@ fn do_command(
 
             let confirmations = args.value_of("confirmations").unwrap_or("10");
             let confirmations = u64::from_str_radix(confirmations, 10)
-                .map_err(|_| ErrorKind::InvalidMinConfirmations(confirmations.to_string()))?;
+                .map_err(|_| Error::InvalidMinConfirmations(confirmations.to_string()))?;
 
             wallet
                 .lock()
@@ -1282,22 +1296,22 @@ fn do_command(
             let tx_id: Option<u32> = match args.value_of("id") {
                 Some(s) => Some(
                     u32::from_str_radix(s, 10)
-                        .map_err(|_| ErrorKind::InvalidTxIdNumber(s.to_string()))?,
+                        .map_err(|_| Error::InvalidTxIdNumber(s.to_string()))?,
                 ),
                 _ => None,
             };
             let tx_slate_id: Option<Uuid> = match args.value_of("txid") {
                 Some(s) => {
-                    Some(Uuid::parse_str(s).map_err(|_| ErrorKind::InvalidTxUuid(s.to_string()))?)
+                    Some(Uuid::parse_str(s).map_err(|_| Error::InvalidTxUuid(s.to_string()))?)
                 }
                 _ => None,
             };
 
             let pagination_length = u32::from_str_radix(pagination_length, 10)
-                .map_err(|_| ErrorKind::InvalidPaginationLength(pagination_length.to_string()))?;
+                .map_err(|_| Error::InvalidPaginationLength(pagination_length.to_string()))?;
 
             let pagination_start = u32::from_str_radix(pagination_start, 10)
-                .map_err(|_| ErrorKind::InvalidPaginationStart(pagination_length.to_string()))?;
+                .map_err(|_| Error::InvalidPaginationStart(pagination_length.to_string()))?;
 
             let pagination_length: Option<u32> = if pagination_length > 0 {
                 Some(pagination_length)
@@ -1352,10 +1366,10 @@ fn do_command(
             let no_refresh = args.is_present("no-refresh");
 
             let pagination_length = u32::from_str_radix(pagination_length, 10)
-                .map_err(|_| ErrorKind::InvalidPaginationLength(pagination_length.to_string()))?;
+                .map_err(|_| Error::InvalidPaginationLength(pagination_length.to_string()))?;
 
             let pagination_start = u32::from_str_radix(pagination_start, 10)
-                .map_err(|_| ErrorKind::InvalidPaginationStart(pagination_length.to_string()))?;
+                .map_err(|_| Error::InvalidPaginationStart(pagination_length.to_string()))?;
 
             let pagination_length: Option<u32> = if pagination_length > 0 {
                 Some(pagination_length)
@@ -1380,7 +1394,7 @@ fn do_command(
             let fluff = args.is_present("fluff");
             let id = id
                 .parse::<u32>()
-                .map_err(|_| ErrorKind::InvalidTxId(id.to_string()))?;
+                .map_err(|_| Error::InvalidTxId(id.to_string()))?;
             wallet.lock().repost(id, fluff)?;
         }
         Some("cancel") => {
@@ -1388,7 +1402,7 @@ fn do_command(
             let id = args.value_of("id").unwrap();
             let id = id
                 .parse::<u32>()
-                .map_err(|_| ErrorKind::InvalidTxId(id.to_string()))?;
+                .map_err(|_| Error::InvalidTxId(id.to_string()))?;
             wallet.lock().cancel(id)?;
         }
         Some("getnextkey") => {
@@ -1409,13 +1423,15 @@ fn do_command(
             let slate = Slate::deserialize_upgrade_plain(&slate)?;
 
             if to.is_none() {
-                return Err(ErrorKind::ToNotSpecified("".to_string()).into());
+                return Err(Error::ToNotSpecified("".to_string()));
             }
             let to = to.unwrap();
             let mwcmqs_address = MWCMQSAddress::from_str(&to.to_string())?;
 
+            let secp = Secp256k1::with_caps(ContextFlag::Full);
+
             if let Some((publisher, _)) = mwcmqs_broker {
-                let slate = publisher.encrypt_slate(&slate, mwcmqs_address.borrow())?;
+                let slate = publisher.encrypt_slate( &slate, mwcmqs_address.borrow(), &secp)?;
                 println!("slate='{}'", slate);
             } else {
                 let address_pub_key = wallet.lock().get_payment_proof_address_pubkey()?;
@@ -1445,7 +1461,7 @@ fn do_command(
                     Box::new(controller.clone()),
                 );
 
-                let slate = publisher.encrypt_slate(&slate, mwcmqs_address.borrow())?;
+                let slate = publisher.encrypt_slate(&slate, mwcmqs_address.borrow(), &secp)?;
                 println!("slate='{}'", slate);
             }
         }
@@ -1477,9 +1493,11 @@ fn do_command(
                 }
             }
 
+            let secp = Secp256k1::with_caps(ContextFlag::Full);
+
             if let Some((publisher, _)) = mwcmqs_broker {
                 let decrypted_slate =
-                    publisher.decrypt_slate(from, mapmessage, signature, &source_address)?;
+                    publisher.decrypt_slate(from, mapmessage, signature, &source_address, &secp)?;
                 println!("slate='{}'", decrypted_slate);
             } else {
                 let mwcmqs_address = config.get_mwcmqs_address(&public_key)?;
@@ -1509,7 +1527,7 @@ fn do_command(
                 );
 
                 let decrypted_slate =
-                    publisher.decrypt_slate(from, mapmessage, signature, &source_address)?;
+                    publisher.decrypt_slate(from, mapmessage, signature, &source_address, &secp)?;
                 println!("slate='{}'", decrypted_slate);
             }
         }
@@ -1529,24 +1547,17 @@ fn do_command(
                 let mut slate = String::new();
                 file.read_to_string(&mut slate)?;
                 if slate.len() < 3 {
-                    return Err(ErrorKind::ArgumentError(format!("File {} is empty", input)).into());
+                    return Err(Error::ArgumentError(format!("File {} is empty", input)));
                 }
                 slate
             } else {
-                return Err(ErrorKind::ArgumentError(
-                    "Please define '--content' or '--file' argument".to_string(),
-                )
-                .into());
+                return Err(Error::ArgumentError("Please define '--content' or '--file' argument".to_string()));
             };
 
             let (mut slate, content, sender, _recipient) = w.deserialize_slate(&slate)?;
             if let Some(content) = &content {
                 if *content != SlatePurpose::SendInitial {
-                    return Err(ErrorKind::GenericError(format!(
-                        "The slate doesn't contain initial send data, the slate content is {:?}",
-                        content
-                    ))
-                    .into());
+                    return Err(Error::GenericError(format!("The slate doesn't contain initial send data, the slate content is {:?}",content)));
                 }
             }
 
@@ -1564,7 +1575,7 @@ fn do_command(
                         done = true;
                     } else {
                         line = line.trim().to_string();
-                        nvec.push(line.parse::<u64>()?);
+                        nvec.push(line.parse::<u64>().map_err(|_| Error::NumberParsingError(line))?);
                     }
                 }
                 Some(nvec)
@@ -1634,7 +1645,7 @@ fn do_command(
             let mut slate = String::new();
             file.read_to_string(&mut slate)?;
             if slate.len() < 3 {
-                return Err(ErrorKind::ArgumentError(format!("File {} is empty", input)).into());
+                return Err(Error::ArgumentError(format!("File {} is empty", input)));
             }
             let slate = Slate::deserialize_upgrade_plain(&slate)?;
             for p in slate.participant_data {
@@ -1658,14 +1669,11 @@ fn do_command(
                 let mut slate = String::new();
                 file.read_to_string(&mut slate)?;
                 if slate.len() < 3 {
-                    return Err(ErrorKind::ArgumentError(format!("File {} is empty", input)).into());
+                    return Err(Error::ArgumentError(format!("File {} is empty", input)));
                 }
                 slate
             } else {
-                return Err(ErrorKind::ArgumentError(
-                    "Please difine '--content' of '--file' argument".to_string(),
-                )
-                .into());
+                return Err(Error::ArgumentError("Please difine '--content' of '--file' argument".to_string()));
             };
 
             let (mut slate, content, _sender, _recipient) = {
@@ -1694,15 +1702,12 @@ fn do_command(
             let mut txn_file = String::new();
             file.read_to_string(&mut txn_file)?;
             if txn_file.len() < 3 {
-                return Err(ErrorKind::ArgumentError(format!("File {} is empty", input)).into());
+                return Err(Error::ArgumentError(format!("File {} is empty", input)));
             }
             let tx_bin = from_hex(&txn_file).map_err(|_s| {
-                ErrorKind::GenericError(format!(
-                    "Unable to parse the content of the file {}",
-                    input
-                ))
+                Error::GenericError(format!("Unable to parse the content of the file {}",input))
             })?;
-            let mut txn: Transaction = ser::deserialize(&mut &tx_bin[..], ser::ProtocolVersion(1))?;
+            let mut txn: Transaction = ser::deserialize(&mut &tx_bin[..], ser::ProtocolVersion(1), DeserializationMode::default())?;
             let fluff = args.is_present("fluff");
             wallet.lock().submit(&mut txn, fluff)?;
         }
@@ -1715,41 +1720,36 @@ fn do_command(
             let to = to.unwrap().to_string();
             let apisecret = args.value_of("apisecret").map(|s| s.to_string());
 
-            let http_sender = HttpDataSender::new(&to, apisecret.clone(), None, false, None)?;
-            let trailing = match &to.to_string().ends_with('/') {
-                true => "",
-                false => "/",
-            };
-            let url_str = format!("{}{}v2/foreign", &to.to_string(), trailing);
-
-            let proof_key = http_sender.check_receiver_proof_address(&url_str, None)?;
+            let http_sender = HttpDataSender::plain_http(&to, apisecret.clone())?;
+            let proof_key = http_sender.check_receiver_proof_address(None)?;
             cli_message!("Proof pub key of the listening wallet: {}", proof_key);
         }
         Some("send") => {
             let args = matches.subcommand_matches("send").unwrap();
             let to = args.value_of("to");
+            let self_send = args.is_present("self");
             let expected_proof_address = args.value_of("expectedproof");
             let input = args.value_of("file");
             let message = args.value_of("message").map(|s| s.to_string());
             let apisecret = args.value_of("apisecret").map(|s| s.to_string());
             let strategy = args.value_of("strategy").unwrap_or("smallest");
             if strategy != "smallest" && strategy != "all" && strategy != "custom" {
-                return Err(ErrorKind::InvalidStrategy.into());
+                return Err(Error::InvalidStrategy);
             }
 
             let routputs_arg = args.value_of("routputs").unwrap_or("1");
-            let routputs = usize::from_str_radix(routputs_arg, 10)?;
+            let routputs = usize::from_str_radix(routputs_arg, 10).map_err(|_| Error::NumberParsingError(routputs_arg.to_string()))?;
 
             let outputs_arg = args.value_of("outputs");
 
             let output_list: Option<Vec<String>> = if outputs_arg.is_none() {
                 if strategy == "custom" {
-                    return Err(ErrorKind::CustomWithNoOutputs.into());
+                    return Err(Error::CustomWithNoOutputs);
                 }
                 None
             } else {
                 if strategy != "custom" {
-                    return Err(ErrorKind::NonCustomWithOutputs.into());
+                    return Err(Error::NonCustomWithOutputs);
                 }
                 let ret: Vec<String> = outputs_arg
                     .unwrap()
@@ -1761,29 +1761,30 @@ fn do_command(
 
             let ttl_blocks = args.value_of("ttl-blocks").unwrap_or("0");
             let ttl_blocks = u64::from_str_radix(ttl_blocks, 10)
-                .map_err(|_| ErrorKind::InvalidTTLBlocks(ttl_blocks.to_string()))?;
+                .map_err(|_| Error::InvalidTTLBlocks(ttl_blocks.to_string()))?;
 
             let confirmations = args.value_of("confirmations").unwrap_or("10");
             let confirmations = u64::from_str_radix(confirmations, 10)
-                .map_err(|_| ErrorKind::InvalidMinConfirmations(confirmations.to_string()))?;
+                .map_err(|_| Error::InvalidMinConfirmations(confirmations.to_string()))?;
 
             if confirmations < 1 {
-                return Err(ErrorKind::ZeroConfNotAllowed.into());
+                return Err(Error::ZeroConfNotAllowed);
             }
 
             let change_outputs = args.value_of("change-outputs").unwrap_or("1");
             let change_outputs = u32::from_str_radix(change_outputs, 10)
-                .map_err(|_| ErrorKind::InvalidNumOutputs(change_outputs.to_string()))?;
+                .map_err(|_| Error::InvalidNumOutputs(change_outputs.to_string()))?;
 
             let mut version = match args.value_of("version") {
                 Some(v) => Some(
                     u16::from_str_radix(v, 10)
-                        .map_err(|_| ErrorKind::InvalidSlateVersion(v.to_string()))?,
+                        .map_err(|_| Error::InvalidSlateVersion(v.to_string()))?,
                 ),
                 None => None,
             };
             let fluff = args.is_present("fluff");
             let do_proof = args.is_present("proof");
+            let amount_includes_fee = args.is_present("amount_includes_fee");
 
             let amount = args.value_of("amount").unwrap();
             let mut ntotal = 0;
@@ -1796,7 +1797,7 @@ fn do_command(
                 let total_value = wallet
                     .lock()
                     .total_value(false, confirmations, &output_list)?;
-                let fee = tx_fee(max_available, 1, 1, None);
+                let fee = tx_fee(max_available, 1, 1);
                 ntotal = if total_value >= fee {
                     total_value - fee
                 } else {
@@ -1807,7 +1808,7 @@ fn do_command(
             let amount = match amount == "ALL" {
                 true => ntotal,
                 false => core::amount_from_hr_string(amount)
-                    .map_err(|_| ErrorKind::InvalidAmount(amount.to_string()))?,
+                    .map_err(|_| Error::InvalidAmount(amount.to_string()))?,
             };
 
             let slatepack_recipient_param = args.value_of("slatepack_recipient");
@@ -1830,11 +1831,7 @@ fn do_command(
                 Some(min_fee) => match core::amount_from_hr_string(min_fee) {
                     Ok(min_fee) => Some(min_fee),
                     Err(e) => {
-                        return Err(ErrorKind::ArgumentError(format!(
-                            "Could not parse minimal fee as a number, {}",
-                            e
-                        ))
-                        .into())
+                        return Err(Error::ArgumentError(format!("Could not parse minimal fee as a number, {}",e)));
                     }
                 },
                 None => None,
@@ -1878,6 +1875,7 @@ fn do_command(
                     slatepack_recipient_address,
                     lock_later,
                     min_fee,
+                    amount_includes_fee,
                 );
 
                 let slate = match slate {
@@ -1917,6 +1915,43 @@ fn do_command(
                 let _ = updater.join();
 
                 return Ok(());
+            }
+            else if self_send {
+                let w = wallet.lock();
+                let mut slate = w.init_send_tx(
+                    None,
+                    amount,
+                    confirmations,
+                    strategy,
+                    change_outputs,
+                    500,
+                    None,
+                    output_list,
+                    version,
+                    routputs,
+                    &None,
+                    ttl_blocks,
+                    false,
+                    None,
+                    None,
+                    min_fee,
+                    amount_includes_fee,
+                )?;
+
+                w.tx_lock_outputs(&slate, Some(String::from("self")), 0)?;
+
+                w.process_sender_initiated_slate(
+                    None,
+                    &mut slate,
+                    Some(String::from("self")),
+                    None,
+                    None,
+                    to,
+                )?;
+
+                w.finalize_post_slate(&mut slate, fluff)?;
+
+                return Ok(());
             } else if let Some(to) = to {
                 let mut to = to.to_string();
                 let mut display_to = None;
@@ -1952,7 +1987,7 @@ fn do_command(
                     &apisecret,
                     Some(config.get_tor_config()),
                 )?;
-                let other_wallet_version = sender.check_other_wallet_version(&to.to_string())?;
+                let other_wallet_version = sender.check_other_wallet_version(&to.to_string(), true)?;
                 if let Some(other_wallet_version) = &other_wallet_version {
                     if version.is_none() {
                         version = Some(other_wallet_version.0.to_numeric_version() as u16);
@@ -1978,6 +2013,7 @@ fn do_command(
                     slatepack_recipient_address,
                     lock_later,
                     min_fee,
+                    amount_includes_fee,
                 )?;
 
                 // Stopping updater, sync should be done by now
@@ -1986,13 +2022,21 @@ fn do_command(
 
                 let original_slate = slate.clone();
                 let (dalek_secret, _dalek_pk) = w.get_slatepack_keys()?;
+
+                let height = w.get_height()?;
+                let secp = Secp256k1::new();
+
                 slate = sender.send_tx(
+                    true,
                     &slate,
                     SlatePurpose::SendInitial,
                     &dalek_secret,
                     slatepack_recipient_dalek_pk,
                     other_wallet_version,
+                    height,
+                    &secp,
                 )?;
+
                 //check the expected proof address
                 //compare the expected listening wallet proof address  to the value the returned slate. If they don't match, return error
                 if let Some(expected_addr) = expected_proof_address {
@@ -2001,11 +2045,10 @@ fn do_command(
                         if receiver_a.public_key.len() == 56
                             && receiver_a.public_key != expected_addr
                         {
-                            return Err(ErrorKind::ProofAddresMismatch(
+                            return Err(Error::ProofAddresMismatch(
                                 receiver_a.public_key,
                                 expected_addr.to_string(),
-                            )
-                            .into());
+                            ));
                         }
                     }
                 }
@@ -2060,6 +2103,7 @@ fn do_command(
                     ), // Need to provide some address to trigger compact slate
                     lock_later,
                     min_fee,
+                    amount_includes_fee,
                 )?;
 
                 let slate_str = w.serialize_slate(
@@ -2086,10 +2130,10 @@ fn do_command(
             let to = args.value_of("to").unwrap();
             let outputs = args.value_of("outputs").unwrap_or("1");
             let outputs = usize::from_str_radix(outputs, 10)
-                .map_err(|_| ErrorKind::InvalidNumOutputs(outputs.to_string()))?;
+                .map_err(|_| Error::InvalidNumOutputs(outputs.to_string()))?;
             let amount = args.value_of("amount").unwrap();
             let amount = core::amount_from_hr_string(amount)
-                .map_err(|_| ErrorKind::InvalidAmount(amount.to_string()))?;
+                .map_err(|_| Error::InvalidAmount(amount.to_string()))?;
             let fluff = args.is_present("fluff");
 
             let slatepack_recipient_param = args.value_of("slatepack_recipient");
@@ -2136,11 +2180,10 @@ fn do_command(
             let method = match to.address_type() {
                 AddressType::MWCMQS => "mwcmqs",
                 AddressType::Https => {
-                    return Err(ErrorKind::HttpRequest(format!(
+                    return Err(Error::HttpRequest(format!(
                         "Invoice doesn't support address type: {:?}",
                         to.address_type()
-                    ))
-                    .into())
+                    )))
                 }
             };
 
@@ -2150,12 +2193,17 @@ fn do_command(
             let original_slate = slate.clone();
             let (dalek_secret, _dalek_pk) = w.get_slatepack_keys()?;
             let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &None, None)?;
+            let height = w.get_height()?;
+            let secp = Secp256k1::new();
             slate = sender.send_tx(
+                false,
                 &slate,
                 SlatePurpose::InvoiceInitial,
                 &dalek_secret,
                 slatepack_recipient_dalek_pk,
-                sender.check_other_wallet_version(&to.to_string())?,
+                sender.check_other_wallet_version(&to.to_string(), true)?,
+                height,
+                &secp,
             )?;
             // Sender can chenge that, restoring original value
             slate.ttl_cutoff_height = original_slate.ttl_cutoff_height.clone();
@@ -2189,12 +2237,20 @@ fn do_command(
             println!("restoring... please wait as this could take a few minutes to complete.");
 
             let passphrase = ZeroingString::from(passphrase.as_str());
-            let short_seed = args.is_present("short");
+
+            let mut seed_length = args.value_of("seed_length")
+                .unwrap_or("24")
+                .parse::<usize>()
+                .map_err(|_| Error::ArgumentError("Expected integer 'seed_length' value".to_string()))?;
+
+            if args.is_present("short") {
+                seed_length = 12;
+            }
 
             {
                 let mut w = wallet.lock();
-                let seed = w.init(config, passphrase.clone(), false, short_seed)?;
-                w.complete(seed, config, "default", passphrase.clone(), true, short_seed)?;
+                let seed = w.init(config, passphrase.clone(), false, seed_length)?;
+                w.complete(seed, config, "default", passphrase.clone(), true, seed_length)?;
                 w.restore_state()?;
                 w.update_tip_as_last_scanned()?;
             }
@@ -2224,30 +2280,24 @@ fn do_command(
                 if getenv("MWC_MNEMONIC")?.is_some() {
                     let envvar = env::var("MWC_MNEMONIC")?;
                     let words: Vec<&str> = envvar.split(" ").collect();
-                    let short_seed = match words.len() {
-                        16 => true,
-                        _ => false
-                    };
+                    let seed_words = words.len();
                     {
                         println!("Recovering with environment variable words: {:?}", words);
                         let mut w = wallet.lock();
                         w.restore_seed(config, &words, passphrase.clone())?;
-                        let seed = w.init(config, passphrase.clone(), false, short_seed)?;
-                        w.complete(seed, config, "default", passphrase.clone(), true, short_seed)?;
+                        let seed = w.init(config, passphrase.clone(), false, seed_words)?;
+                        w.complete(seed, config, "default", passphrase.clone(), true, seed_words)?;
                         w.restore_state()?;
                     }
                 } else {
                     let words: Vec<&str> = words.collect();
-                    let short_seed = match words.len() {
-                        16 => true,
-                        _ => false
-                    };
+                    let seed_words = words.len();
                     {
                         println!("Recovering with commandline specified words: {:?}", words);
                         let mut w = wallet.lock();
                         w.restore_seed(config, &words, passphrase.clone())?;
-                        let seed = w.init(config, passphrase.clone(), false, short_seed)?;
-                        w.complete(seed, config, "default", passphrase.clone(), true, short_seed)?;
+                        let seed = w.init(config, passphrase.clone(), false, seed_words)?;
+                        w.complete(seed, config, "default", passphrase.clone(), true, seed_words)?;
                         w.restore_state()?;
                     }
                 }
@@ -2271,10 +2321,10 @@ fn do_command(
 
             let start_height = args.value_of("start_height").unwrap_or("1");
             let start_height = u64::from_str_radix(start_height, 10)
-                .map_err(|_| ErrorKind::InvalidNumOutputs(start_height.to_string()))?;
+                .map_err(|_| Error::InvalidNumOutputs(start_height.to_string()))?;
 
             if mwcmqs_broker.is_some() {
-                return Err(ErrorKind::HasListener.into());
+                return Err(Error::HasListener);
             }
             println!("checking and repairing... please wait as this could take a few minutes to complete.");
             let wallet = wallet.lock();
@@ -2331,20 +2381,20 @@ fn do_command(
             let pub_key_file = args.value_of("pubkey_file").unwrap();
 
             let file = File::open(pub_key_file)
-                .map_err(|e| ErrorKind::FileNotFound(pub_key_file.to_string(), format!("{}", e)))?;
+                .map_err(|e| Error::FileNotFound(pub_key_file.to_string(), format!("{}", e)))?;
 
             let output_fn = format!("{}.commits", pub_key_file);
 
             if std::fs::metadata(output_fn.clone()).is_ok() {
                 std::fs::remove_file(output_fn.clone())
-                    .map_err(|_| ErrorKind::FileUnableToDelete(output_fn.clone()))?;
+                    .map_err(|_| Error::FileUnableToDelete(output_fn.clone()))?;
             }
 
             let mut pub_keys = Vec::new();
 
             for line in io::BufReader::new(file).lines() {
                 let pubkey_str = line.map_err(|e| {
-                    ErrorKind::FileNotFound(pub_key_file.to_string(), format!("{}", e))
+                    Error::FileNotFound(pub_key_file.to_string(), format!("{}", e))
                 })?;
                 if pubkey_str.is_empty() {
                     continue;
@@ -2378,13 +2428,14 @@ fn do_command(
             let id = args.value_of("id").unwrap();
             let id = id
                 .parse::<u32>()
-                .map_err(|_| ErrorKind::InvalidTxId(id.to_string()))?;
+                .map_err(|_| Error::InvalidTxId(id.to_string()))?;
             let w = wallet.lock();
             let tx_proof = w.get_tx_proof(id)?;
-            match tx_proof::verify_tx_proof_wrapper(&tx_proof) {
+            let secp = Secp256k1::with_caps(ContextFlag::Commit);
+            match tx_proof::verify_tx_proof_wrapper(&tx_proof, &secp) {
                 Ok((sender, receiver, amount, outputs, kernel)) => {
                     let mut file = File::create(input.replace("~", &home_dir))?;
-                    file.write_all(serde_json::to_string(&tx_proof)?.as_bytes())?;
+                    file.write_all(serde_json::to_string(&tx_proof).map_err(|e| Error::JsonError(format!("Unable to convert to Json, {}", e)))?.as_bytes())?;
                     println!("proof written to {}", input);
                     tx_proof::proof_ok(sender, receiver, amount, outputs, kernel);
                 }
@@ -2398,21 +2449,20 @@ fn do_command(
             let input = args.value_of("file").unwrap();
             let path = Path::new(&input.replace("~", &home_dir)).to_path_buf();
             if !path.exists() {
-                return Err(ErrorKind::FileNotFound(
+                return Err(Error::FileNotFound(
                     input.to_string(),
                     "path doesn't exist".to_string(),
-                )
-                .into());
+                ));
             }
             let mut file = File::open(path)?;
             let mut proof = String::new();
             file.read_to_string(&mut proof)?;
             if proof.len() < 3 {
-                return Err(ErrorKind::ArgumentError(format!("File {} is empty", input)).into());
+                return Err(Error::ArgumentError(format!("File {} is empty", input)));
             }
-            let tx_pf: TxProof = serde_json::from_str(&proof)?;
-
-            match tx_proof::verify_tx_proof_wrapper(&tx_pf) {
+            let tx_pf: TxProof = serde_json::from_str(&proof).map_err(|e| Error::JsonError(format!("Unable to parse Json {}, {}", proof, e)))?;
+            let secp = Secp256k1::with_caps(ContextFlag::Commit);
+            match tx_proof::verify_tx_proof_wrapper(&tx_pf, &secp) {
                 Ok((sender, receiver, amount, outputs, kernel)) => {
                     tx_proof::proof_ok(sender, receiver, amount, outputs, kernel);
                 }
@@ -2435,17 +2485,18 @@ fn do_command(
 
             let mwc_amount = args.value_of("mwc_amount").unwrap();
             let mwc_amount = core::amount_from_hr_string(mwc_amount)
-                .map_err(|_| ErrorKind::InvalidAmount(mwc_amount.to_string()))?;
+                .map_err(|_| Error::InvalidAmount(mwc_amount.to_string()))?;
 
             let confirmations = args.value_of("confirmations").unwrap_or("10");
-            let confirmations = u64::from_str_radix(confirmations, 10)?;
+            let confirmations = u64::from_str_radix(confirmations, 10)
+                .map_err(|_| Error::NumberParsingError(confirmations.to_string()))?;
 
             let secondary_currency = args.value_of("secondary_currency").unwrap();
             match secondary_currency {
                 "btc" | "bch" | "ltc" | "zcash" | "dash" | "doge" | "ether" |
                 "usdt"| "busd"| "bnb" | "usdc" | "link" | "trx" | "dai" | "tusd" |
                 "usdp" | "wbtc"| "tst" => (),
-                _ => return Err(ErrorKind::GenericError(format!("Invalid secondary_currency value. Expected btc, bch, ltc, zcash, dash or doge. Get {}", secondary_currency)).into()),
+                _ => return Err(Error::GenericError(format!("Invalid secondary_currency value. Expected btc, bch, ltc, zcash, dash or doge. Get {}", secondary_currency))),
             }
 
             let secondary_amount = args.value_of("secondary_amount").unwrap();
@@ -2453,16 +2504,20 @@ fn do_command(
             let who_lock_first = args.value_of("who_lock_first").unwrap_or("seller");
 
             let mwc_confirmations = args.value_of("mwc_confirmations").unwrap_or("60");
-            let mwc_confirmations = u64::from_str_radix(mwc_confirmations, 10)?;
+            let mwc_confirmations = u64::from_str_radix(mwc_confirmations, 10)
+                .map_err(|_| Error::NumberParsingError(mwc_confirmations.to_string()))?;
 
             let secondary_confirmations = args.value_of("secondary_confirmations").unwrap_or("3");
-            let secondary_confirmations = u64::from_str_radix(secondary_confirmations, 10)?;
+            let secondary_confirmations = u64::from_str_radix(secondary_confirmations, 10)
+                .map_err(|_| Error::NumberParsingError(secondary_confirmations.to_string()))?;
 
             let message_exchange_time = args.value_of("message_exchange_time").unwrap_or("60");
-            let message_exchange_time = u64::from_str_radix(message_exchange_time, 10)?;
+            let message_exchange_time = u64::from_str_radix(message_exchange_time, 10)
+                .map_err(|_| Error::NumberParsingError(message_exchange_time.to_string()))?;
 
             let redeem_time = args.value_of("redeem_time").unwrap_or("60");
-            let redeem_time = u64::from_str_radix(redeem_time, 10)?;
+            let redeem_time = u64::from_str_radix(redeem_time, 10)
+                .map_err(|_| Error::NumberParsingError(redeem_time.to_string()))?;
 
             let method = args.value_of("method").unwrap();
             let dest = args.value_of("dest").unwrap();
@@ -2486,7 +2541,7 @@ fn do_command(
 
             let secondary_fee = match args.value_of("secondary_fee") {
                 Some(fee_str) => Some(fee_str.parse::<f32>().map_err(|e| {
-                    ErrorKind::ArgumentError(format!("Invalid secondary_fee value, {}", e))
+                    Error::ArgumentError(format!("Invalid secondary_fee value, {}", e))
                 })?),
                 None => None,
             };
@@ -2534,7 +2589,7 @@ fn do_command(
             let apisecret = args.value_of("apisecret").map(|s| String::from(s));
             let secondary_fee = match args.value_of("secondary_fee") {
                 Some(s) => Some(s.parse::<f32>().map_err(|e| {
-                    ErrorKind::GenericError(format!(
+                    Error::GenericError(format!(
                         "Unable to parse secondary_fee value {}, {}",
                         s, e
                     ))
@@ -2599,9 +2654,7 @@ fn do_command(
             } else if args.is_present("stop_auto_swap") {
                 command::SwapSubcommand::StopAllAutoSwap
             } else {
-                return Err(
-                    ErrorKind::GenericError("Please define some action to do".to_string()).into(),
-                );
+                return Err(Error::GenericError("Please define some action to do".to_string()));
             };
 
             let params = command::SwapArgs {
@@ -2644,16 +2697,14 @@ fn do_command(
             let content = match args.value_of("slatepack") {
                 Some(str) => str.to_string(),
                 None => {
-                    let input = args.value_of("file").ok_or(ErrorKind::ArgumentError(
+                    let input = args.value_of("file").ok_or(Error::ArgumentError(
                         "Please specify '--slatepack' of '--file' option".to_string(),
                     ))?;
                     let mut file = File::open(input.replace("~", &home_dir))?;
                     let mut slate = String::new();
                     file.read_to_string(&mut slate)?;
                     if slate.len() < 3 {
-                        return Err(
-                            ErrorKind::ArgumentError(format!("File {} is empty", input)).into()
-                        );
+                        return Err(Error::ArgumentError(format!("File {} is empty", input)));
                     }
                     slate
                 }
@@ -2693,7 +2744,7 @@ fn do_command(
                 let fee_str = args.value_of("create").unwrap().split(",");
                 for fs in fee_str {
                     let fee_amount = core::amount_from_hr_string(fs).map_err(|e| {
-                        ErrorKind::ArgumentError(format!(
+                        Error::ArgumentError(format!(
                             "Unable to parse create fee amount, {}",
                             e
                         ))
@@ -2704,15 +2755,14 @@ fn do_command(
             } else if args.is_present("withdraw") {
                 command::IntegritySubcommand::Withdraw
             } else {
-                return Err(ErrorKind::ArgumentError(
+                return Err(Error::ArgumentError(
                     "Expected check, create or withdraw parameter".to_string(),
-                )
-                .into());
+                ));
             };
 
             let reserve = match args.value_of("reserve") {
                 Some(str) => Some(core::amount_from_hr_string(str).map_err(|e| {
-                    ErrorKind::ArgumentError(format!("Unable to parse reserve MWC value, {}", e))
+                    Error::ArgumentError(format!("Unable to parse reserve MWC value, {}", e))
                 })?),
                 None => None,
             };
@@ -2735,21 +2785,21 @@ fn do_command(
 
             let fee = match args.value_of("fee") {
                 Some(s) => Some(core::amount_from_hr_string(s).map_err(|e| {
-                    ErrorKind::ArgumentError(format!("Unable to parse create fee amount, {}", e))
+                    Error::ArgumentError(format!("Unable to parse create fee amount, {}", e))
                 })?),
                 None => None,
             };
 
             let fee_uuid = match args.value_of("fee_uuid") {
                 Some(s) => Some(Uuid::parse_str(s).map_err(|e| {
-                    ErrorKind::ArgumentError(format!("Unable to parse fee transaction UUID, {}", e))
+                    Error::ArgumentError(format!("Unable to parse fee transaction UUID, {}", e))
                 })?),
                 None => None,
             };
 
             let publish_interval = match args.value_of("publish_interval") {
                 Some(s) => Some(s.parse::<u32>().map_err(|e| {
-                    ErrorKind::ArgumentError(format!("Unable to parse interval value, {}", e))
+                    Error::ArgumentError(format!("Unable to parse interval value, {}", e))
                 })?),
                 None => None,
             };
@@ -2800,12 +2850,12 @@ fn do_command(
             let args = matches.subcommand_matches("eth_info").unwrap();
             let currency = match args.value_of("currency") {
                 Some(s) => Some(Currency::try_from(s).map_err(|e| {
-                    ErrorKind::ArgumentError(format!("Unable to parse currency value, {}", e))
+                    Error::ArgumentError(format!("Unable to parse currency value, {}", e))
                 })?),
                 None => None,
             };
             if currency.is_none() {
-                return Err(ErrorKind::GenericError("Unsupported coin type!".to_string()).into());
+                return Err(Error::GenericError("Unsupported coin type!".to_string()));
             }
 
             let eth_args = command::EthArgs {
@@ -2820,12 +2870,12 @@ fn do_command(
             let args = matches.subcommand_matches("eth_send").unwrap();
             let currency = match args.value_of("currency") {
                 Some(s) => Some(Currency::try_from(s).map_err(|e| {
-                    ErrorKind::ArgumentError(format!("Unable to parse currency value, {}", e))
+                    Error::ArgumentError(format!("Unable to parse currency value, {}", e))
                 })?),
                 None => None,
             };
             if currency.is_none() {
-                return Err(ErrorKind::GenericError("Unsupported coin type!".to_string()).into());
+                return Err(Error::GenericError("Unsupported coin type!".to_string()));
             }
             let dest = args.value_of("dest").unwrap();
             let amount = args.value_of("amount").unwrap();
@@ -2837,6 +2887,44 @@ fn do_command(
                 amount: Some(amount.to_string()),
             };
             grin_wallet_controller::command::eth(wallet.lock().get_wallet_instance()?, eth_args)?;
+        }
+        Some("rewind_hash") => {
+            let mut owner_api = Owner::new(wallet.lock().get_wallet_instance()?, None, None);
+            grin_wallet_controller::command::rewind_hash(&mut owner_api, None, true)?;
+        }
+        Some("scan_rewind_hash") => {
+            let args = matches.subcommand_matches("scan_rewind_hash").unwrap();
+
+            let args = grin_wallet_controller::command::ViewWalletScanArgs {
+                rewind_hash: args.value_of("rewind_hash").unwrap().to_string(),
+                start_height: match args.value_of("start_height").map(|s| s.parse::<u64>()) {
+                    Some( res ) => Some(res.map_err(|e| Error::ArgumentError(format!("Unable to parse 'start_height' value, {}", e)))?),
+                    None => None,
+                },
+                backwards_from_tip: match args.value_of("backwards_from_tip").map(|s| s.parse::<u64>()) {
+                    Some( res ) => Some(res.map_err(|e| Error::ArgumentError(format!("Unable to parse 'backwards_from_tip' value, {}", e)))?),
+                    None => None,
+                },
+            };
+            let mut owner_api = Owner::new(wallet.lock().get_wallet_instance()?, None, None);
+            grin_wallet_controller::command::scan_rewind_hash(&mut owner_api,args,true, true)?;
+        }
+        Some("generate_ownership_proof") => {
+            let args = matches.subcommand_matches("generate_ownership_proof").unwrap();
+            let mut owner_api = Owner::new(wallet.lock().get_wallet_instance()?, None, None);
+            command::generate_ownership_proof(&mut owner_api,
+                                              None,
+                                              command::GenerateOwnershipProofArgs {
+                                                  message: args.value_of("message").unwrap().to_string(),
+                                                  include_public_root_key: args.is_present("include_public_root_key"),
+                                                  include_tor_address: args.is_present("include_tor_address"),
+                                                  include_mqs_address: args.is_present("include_mqs_address"),
+                                              })?;
+        }
+        Some("validate_ownership_proof") => {
+            let args = matches.subcommand_matches("validate_ownership_proof").unwrap();
+            let mut owner_api = Owner::new(wallet.lock().get_wallet_instance()?, None, None);
+            command::validate_ownership_proof(&mut owner_api, None, args.value_of("proof").unwrap())?;
         }
         Some(subcommand) => {
             cli_message!(

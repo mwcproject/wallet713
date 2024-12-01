@@ -9,7 +9,8 @@ pub struct Parser {}
 impl<'a, 'b> Parser {
     pub fn parse(command: &str) -> Result<ArgMatches, Error> {
         let command = command.trim();
-        let mut tokens = tokenize(command)?;
+        let mut tokens = tokenize(command)
+            .map_err(|e| Error::TokenizerError(format!("Unable to parse command: {}, {}", command, e)))?;
         tokens.retain(|&token| token.token_type != TokenType::Whitespace);
         let matches = Parser::parser().get_matches_from_safe(tokens.iter().map(|token| {
             let unquoted = unquote(token.text);
@@ -17,7 +18,7 @@ impl<'a, 'b> Parser {
                 Ok(_) => unquoted.unwrap(),
                 Err(_) => token.text.to_string(),
             }
-        }))?;
+        })).map_err(|e| Error::ClapError(format!("{}", e)))?;
         Ok(matches)
     }
 
@@ -74,8 +75,11 @@ impl<'a, 'b> Parser {
                             .min_values(0)
                     )
                     .arg(
-                        Arg::from_usage("[short] -s, --short 'short seed mnemonic'")
+                        Arg::from_usage("[short] -s, --short 'short seed mnemonic, 12 seed words'")
                             .takes_value(false)
+                    )
+                    .arg(
+                        Arg::from_usage("[seed_length] -l, --seed_length=<seed_length> 'seed mnemonic length, one of 12, 15, 18, 21, 24'")
                     )
             )
             .subcommand(
@@ -216,6 +220,12 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("[libp2p] -p, --libp2p 'start the libp2p with Tor listener'")
                     )
+                    .arg(
+                        Arg::from_usage("[bridge_line] -b, --bridge_line <bridge_line> 'bridge connection line for tor'")
+                    )
+                    .arg(
+                        Arg::from_usage("[client_option] -c, --client_option <client_option> 'client params for tor'")
+                    )
             )
             .subcommand(
                 SubCommand::with_name("stop")
@@ -291,6 +301,14 @@ impl<'a, 'b> Parser {
                     .arg(
                         Arg::from_usage("[min_fee] --min_fee=<fee> 'Minimal fee value. By default wallet selecting the minimal fee accepted by the network. This value can increase the fee if needed.'")
                     )
+                    .arg(
+                        Arg::from_usage("[amount_includes_fee] -i, --amount_includes_fee 'If send amount includes transaction fee.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[self] , --self 'Self send to another account. to is account name'")
+                    )
+
+
             )
             .subcommand(
                 SubCommand::with_name("invoice")
@@ -335,10 +353,6 @@ impl<'a, 'b> Parser {
                         Arg::from_usage("[passphrase] -p, --passphrase=<passphrase> 'the passphrase to use'")
                             .min_values(0)
                     )
-                    .arg(
-                        Arg::from_usage("[short] -s, --short 'short seed mnemonic'")
-                            .takes_value(false)
-                    )
             )
             .subcommand(
                 SubCommand::with_name("recover")
@@ -349,10 +363,6 @@ impl<'a, 'b> Parser {
                     )
                     .arg(
                         Arg::from_usage("[words] -m, --mnemonic=<words>... 'the seed mnemonic'")
-                    )
-                    .arg(
-                        Arg::from_usage("[short] -s, --short 'short seed mnemonic'")
-                            .takes_value(false)
                     )
                     .arg(
                         Arg::from_usage("[display] -d, --display= 'display the current mnemonic'")
@@ -788,6 +798,44 @@ impl<'a, 'b> Parser {
             .subcommand(
                 SubCommand::with_name("check_tor_connection")
                     .about("check this wallet tor connection")
+            )
+            .subcommand(
+                SubCommand::with_name("rewind_hash")
+                    .about("Return the hash of the wallet root public key")
+            )
+            .subcommand(
+                SubCommand::with_name("scan_rewind_hash")
+                    .about("Scan the UTXO set, return the outputs and the total of MWC owned by a view wallet rewind hash.")
+                    .arg(
+                        Arg::from_usage("-h, --rewind_hash=<rewind_hash> 'Rewind hash of the wallet to be scanned in order to retrieve all the outputs and balance'")
+                    ).arg(
+                        Arg::from_usage("[start_height] -s, --start_height=<height> 'If given, the first block from which to start the scan (default 1)'")
+                    )
+                    .arg(
+                        Arg::from_usage("[backwards_from_tip] -b, --backwards_from_tip=<blocks> 'If given, start scan b blocks back from the tip'")
+                    )
+            )
+            .subcommand(
+                SubCommand::with_name("generate_ownership_proof")
+                    .about("Gerenerate ownershup proof for the root public key, tor address and mqs addresses.")
+                    .arg(
+                        Arg::from_usage("-s, --message=<messge> 'Message to sign'")
+                    ).arg(
+                    Arg::from_usage("[include_public_root_key] -p, --include_public_root_key 'Include root public key and signature. Note, root public key can be user to generate rewind_hash to view the all outputs for your wallet.'")
+                )
+                    .arg(
+                        Arg::from_usage("[include_tor_address] -t, --include_tor_address 'Include tor address and singature.'")
+                    )
+                    .arg(
+                        Arg::from_usage("[include_mqs_address] -m, --include_mqs_address 'Include MWCMQS address and singature.'")
+                    )
+            )
+            .subcommand(
+                SubCommand::with_name("validate_ownership_proof")
+                    .about("Validate ownership proof record.")
+                    .arg(
+                        Arg::from_usage("-p, --proof=<proof> 'Proof record, generated by generate_ownership_proof'")
+                    )
             )
     }
 }

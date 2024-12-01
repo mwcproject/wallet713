@@ -1,5 +1,5 @@
 use common::config::Wallet713Config;
-use common::{Error, ErrorKind};
+use common::Error;
 use uuid::Uuid;
 
 use crate::common::{Arc, Mutex};
@@ -27,6 +27,7 @@ use std::sync::mpsc::Sender;
 use std::thread;
 use std::thread::JoinHandle;
 use std::time::Duration;
+use grin_util::secp::{ContextFlag, Secp256k1};
 
 pub struct Wallet {
     backend: Option<
@@ -74,20 +75,25 @@ impl Wallet {
         passphrase: grin_util::ZeroingString,
     ) -> Result<(), Error> {
         if self.backend.is_some() {
-            return Err(ErrorKind::WalletAlreadyUnlocked.into());
+            return Err(Error::WalletAlreadyUnlocked);
         }
 
         self.create_wallet_instance(config, account, passphrase)
             .map_err(|e| {
                 warn!("Unable to unlock wallet, {}", e);
-                ErrorKind::WalletUnlockFailed
+                let mut err_str = format!("{}", e);
+                if err_str.contains("check password?") {
+                    err_str = "are you using the correct passphrase?".to_string(); // magic phrase that is expected by QT wallet
+                }
+
+                Error::WalletUnlockFailed( err_str )
             })?;
         Ok(())
     }
 
     pub fn getrootpublickey(&mut self, message: Option<&str>) -> Result<(), Error> {
         api::show_rootpublickey(self.get_wallet_instance()?, message).map_err(|err| {
-            ErrorKind::GenericError(format!("Unable to get a public key, {}", err))
+            Error::GenericError(format!("Unable to get a public key, {}", err))
         })?;
         Ok(())
     }
@@ -99,7 +105,7 @@ impl Wallet {
         pubkey: &str,
     ) -> Result<(), Error> {
         api::verifysignature(message, signature, pubkey).map_err(|err| {
-            ErrorKind::GenericError(format!("Unable to verify signature, {}", err))
+            Error::GenericError(format!("Unable to verify signature, {}", err))
         })?;
         Ok(())
     }
@@ -175,9 +181,9 @@ impl Wallet {
         account: &str,
         passphrase: grin_util::ZeroingString,
         create_new: bool,
-        short_seed: bool
+        seed_words_num: usize,
     ) -> Result<WalletSeed, Error> {
-        let seed = self.init_seed(&config, passphrase.clone(), create_new, true, Some(seed), short_seed)?;
+        let seed = self.init_seed(&config, passphrase.clone(), create_new, true, Some(seed), seed_words_num)?;
         //self.init_backend(&wallet_config, &config, passphrase)?;
         self.unlock(config, account, passphrase)?;
         Ok(seed)
@@ -188,9 +194,9 @@ impl Wallet {
         config: &Wallet713Config,
         passphrase: grin_util::ZeroingString,
         create_new: bool,
-        short_seed: bool
+        seed_words_num: usize
     ) -> Result<WalletSeed, Error> {
-        let seed = self.init_seed(&config, passphrase, create_new, false, None, short_seed)?;
+        let seed = self.init_seed(&config, passphrase, create_new, false, None, seed_words_num)?;
         Ok(seed)
     }
 
@@ -255,12 +261,23 @@ impl Wallet {
             validated = true;
         }
         display::info(
-            &self.get_current_account()?.label,
+            &Some(self.get_current_account()?.label),
             &wallet_info,
             !refresh || validated,
             true,
         );
         Ok(())
+    }
+
+    pub fn get_height(&self) -> Result<u64, Error> {
+        let wallet_inst = self.get_wallet_instance()?;
+        match api::node_height(wallet_inst.clone()) {
+            Ok((h, _)) => return Ok(h),
+            Err(_) => {
+                wallet_lock!(wallet_inst, w);
+                return Ok(w.last_confirmed_height()?);
+            }
+        }
     }
 
     pub fn get_id(&self, slate_id: Uuid) -> Result<u32, Error> {
@@ -341,7 +358,7 @@ impl Wallet {
         }
 
         display::txs(
-            &self.get_current_account()?.label,
+            &Some(self.get_current_account()?.label),
             height,
             !refresh_from_node || validated,
             &txs,
@@ -364,16 +381,17 @@ impl Wallet {
         if id.is_some() {
             let (_, outputs) = self.retrieve_outputs(true, false, Some(&txs[0]))?;
             display::outputs(
-                &self.get_current_account()?.label,
+                &Some(self.get_current_account()?.label),
                 height,
                 !refresh_from_node || validated,
                 outputs,
                 true,
             )?;
             debug_assert!(txs.len() == 1);
+            let secp = Secp256k1::with_caps(ContextFlag::None);
             // should only be one here, but just in case
             for tx in txs {
-                display::tx_messages(&tx, true)?;
+                display::tx_messages(&tx, true, &secp)?;
                 display::payment_proof(&tx)?;
             }
         }
@@ -503,7 +521,7 @@ impl Wallet {
             pagination_length,
         )?;
         display::outputs(
-            &self.get_current_account()?.label,
+            &Some(self.get_current_account()?.label),
             height,
             !refresh_from_node || validated,
             outputs,
@@ -531,6 +549,7 @@ impl Wallet {
         slatepack_recipient: Option<ProvableAddress>,
         late_lock: Option<bool>,
         min_fee: Option<u64>,
+        amount_includes_fee: bool,
     ) -> Result<Slate, Error> {
         let slate = api::init_send_tx(
             self.get_wallet_instance()?,
@@ -551,6 +570,7 @@ impl Wallet {
             slatepack_recipient,
             late_lock,
             min_fee,
+            amount_includes_fee,
         )?;
 
         Ok(slate)
@@ -585,7 +605,7 @@ impl Wallet {
             .map(|tpl| tpl.0.clone())
             .collect::<Vec<TxLogEntry>>();
         if txs.len() == 0 {
-            return Err(ErrorKind::GenericError(format!(
+            return Err(Error::GenericError(format!(
                 "could not find transaction with id {}!",
                 id
             )))?;
@@ -595,7 +615,7 @@ impl Wallet {
             let stored_tx = api::get_stored_tx(wallet.clone(), &slate_id.to_string())?;
             api::post_tx(wallet, &stored_tx, fluff)?;
         } else {
-            Err(ErrorKind::GenericError(format!(
+            Err(Error::GenericError(format!(
                 "no transaction data stored for id {}, can not repost!",
                 id
             )))?
@@ -659,7 +679,7 @@ impl Wallet {
             output_amounts,
             dest_acct_name,
         )
-        .map_err(|e| ErrorKind::GrinWalletReceiveError(format!("{}", e)))?;
+        .map_err(|e| Error::GrinWalletReceiveError(format!("{}", e)))?;
         *slate = s;
         Ok(())
     }
@@ -677,18 +697,21 @@ impl Wallet {
 
     pub fn submit(&self, txn: &mut Transaction, fluff: bool) -> Result<(), Error> {
         api::post_tx(self.get_wallet_instance()?, &txn, fluff)
-            .map_err(|e| ErrorKind::GrinWalletPostError(format!("{}", e)))?;
+            .map_err(|e| Error::GrinWalletPostError(format!("{}", e)))?;
         Ok(())
     }
 
     pub fn finalize_post_slate(&self, slate: &mut Slate, fluff: bool) -> Result<(), Error> {
         let wallet = self.get_wallet_instance()?;
         api::verify_slate_messages(&slate)
-            .map_err(|e| ErrorKind::GrinWalletVerifySlateMessagesError(format!("{}", e)))?;
+            .map_err(|e| Error::GrinWalletVerifySlateMessagesError(format!("{}", e)))?;
         api::finalize_tx(wallet.clone(), slate)
-            .map_err(|e| ErrorKind::GrinWalletFinalizeError(format!("{}", e)))?;
-        api::post_tx(wallet, &slate.tx, fluff)
-            .map_err(|e| ErrorKind::GrinWalletPostError(format!("{}", e)))?;
+            .map_err(|e| Error::GrinWalletFinalizeError(format!("{}", e)))?;
+        if slate.tx.is_none() {
+            return Err(Error::ArgumentError("Submitted slate is empty".to_string()));
+        }
+        api::post_tx(wallet, slate.tx.as_ref().unwrap(), fluff)
+            .map_err(|e| Error::GrinWalletPostError(format!("{}", e)))?;
         Ok(())
     }
 
@@ -852,14 +875,14 @@ impl Wallet {
         create_new: bool,
         create_file: bool,
         seed: Option<WalletSeed>,
-        short_seed: bool
+        seed_words_num: usize
     ) -> Result<WalletSeed, Error> {
         let data_file_dir = config.get_data_path_str()?;
         let result = WalletSeed::from_file(&data_file_dir, passphrase.clone());
-        let seed_lenght = match short_seed {
-            true => 16,
-            false => 32
-        };
+        if seed_words_num < 12 || seed_words_num>24 || seed_words_num % 3 !=0 {
+            return Err(Error::WalletSeedIncorrectLength(seed_words_num));
+        }
+        let seed_lenght = seed_words_num * 4 / 3;
         let seed = match result {
             Ok(seed) => seed,
             Err(_) => {
@@ -876,7 +899,7 @@ impl Wallet {
                         false,
                     )?
                 } else {
-                    return Err(ErrorKind::WalletSeedCouldNotBeOpened.into());
+                    return Err(Error::WalletSeedCouldNotBeOpened);
                 }
             }
         };
@@ -904,7 +927,7 @@ impl Wallet {
         if let Some(ref backend) = self.backend {
             Ok(backend.clone())
         } else {
-            Err(ErrorKind::NoWallet)?
+            Err(Error::NoWallet)
         }
     }
 
@@ -923,7 +946,8 @@ impl Wallet {
             .filter(|s| !s.is_empty())
             .collect();
 
-        let mut node_client = HTTPNodeClient::new(node_list, config.mwc_node_secret())?;
+        let mut node_client = HTTPNodeClient::new(node_list, config.mwc_node_secret())
+            .map_err(|e| Error::HttpRequest(format!("Unable create Node Client, {}", e)))?;
 
         let _ = WalletSeed::from_file(&config.get_data_path_str()?, passphrase.clone())?;
 
