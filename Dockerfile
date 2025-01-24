@@ -1,5 +1,5 @@
 # Multistage docker build, requires docker 17.05
-# based on: https://github.com/mimblewimble/grin/blob/master/etc/Dockerfile
+# based on: https://github.com/mwcproject/mwc/blob/master/etc/Dockerfile
 
 # Builder stage
 FROM rust:1.32 as builder

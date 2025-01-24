@@ -1,6 +1,6 @@
 # Overview
 
-mwc713 currently inherits its address format from wallet713's implementation of the grinbox address format. While this format is very useful it has some shortcomings. Most notably, if a user doesn't change his address on each transaction, the operator of the mwcmq server
+mwc713 currently inherits its address format from wallet713's implementation of the mwcbox address format. While this format is very useful it has some shortcomings. Most notably, if a user doesn't change his address on each transaction, the operator of the mwcmq server
 will know which addresses transact with one another. While amounts will still be unknown, this is certainly not ideal. While it's
 possible for the user to proactively switch addresses each time he receives a payment, a protocol for automatically changing
 addresses would be desireable. At the same time, to the end user this protocol for switching addresses must be completely

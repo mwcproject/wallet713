@@ -1,9 +1,9 @@
 [package]
 name = "mwc713"
-version = "5.3.2"
+version = "5.3.3"
 authors = ["vault713 devs"]
 description = "A wallet that makes it easy to send, store, and swap MWC."
-keywords = [ "grin", "mimblewimble", "rust", "crypto", "cryptocurrency" ]
+keywords = [ "mwc", "mwcproject", "rust", "crypto", "cryptocurrency" ]
 license = "Apache-2.0"
 readme = "README.md"
 
@@ -35,49 +35,46 @@ ed25519-dalek = "1.0.0-pre.4"
 thiserror = "1"
 
 # Release
-grin_core = { git = "https://github.com/mwcproject/mwc-node", tag = "5.3.2.2" }
-grin_keychain = { git = "https://github.com/mwcproject/mwc-node", tag = "5.3.2.2" }
-grin_chain = { git = "https://github.com/mwcproject/mwc-node", tag = "5.3.2.2" }
-grin_util = { git = "https://github.com/mwcproject/mwc-node", tag = "5.3.2.2" }
-grin_api = { git = "https://github.com/mwcproject/mwc-node", tag = "5.3.2.2" }
-grin_store = { git = "https://github.com/mwcproject/mwc-node", tag = "5.3.2.2" }
-grin_p2p = { git = "https://github.com/mwcproject/mwc-node", tag = "5.3.2.2" }
-grin_wallet_impls = { git = "https://github.com/mwcproject/mwc-wallet", tag = "5.3.3" }
-grin_wallet_libwallet = { git = "https://github.com/mwcproject/mwc-wallet", tag = "5.3.3" }
-grin_wallet_api = { git = "https://github.com/mwcproject/mwc-wallet", tag = "5.3.3" }
-grin_wallet_controller = { git = "https://github.com/mwcproject/mwc-wallet", tag = "5.3.3" }
-grin_wallet_config = { git = "https://github.com/mwcproject/mwc-wallet", tag = "5.3.3" }
-grin_wallet_util = { git = "https://github.com/mwcproject/mwc-wallet", tag = "5.3.3" }
+mwc_core = { git = "https://github.com/mwcproject/mwc-node", version="5.3.7", tag = "5.3.7" }
+mwc_keychain = { git = "https://github.com/mwcproject/mwc-node", version="5.3.7", tag = "5.3.7" }
+mwc_util = { git = "https://github.com/mwcproject/mwc-node", version="5.3.7", tag = "5.3.7" }
+mwc_api = { git = "https://github.com/mwcproject/mwc-node", version="5.3.7", tag = "5.3.7" }
+mwc_store = { git = "https://github.com/mwcproject/mwc-node", version="5.3.7", tag = "5.3.7" }
+mwc_p2p = { git = "https://github.com/mwcproject/mwc-node", version="5.3.7", tag = "5.3.7" }
+mwc_wallet_impls = { git = "https://github.com/mwcproject/mwc-wallet", version="5.3.4", tag = "5.3.4" }
+mwc_wallet_libwallet = { git = "https://github.com/mwcproject/mwc-wallet", version="5.3.4", tag = "5.3.4" }
+mwc_wallet_api = { git = "https://github.com/mwcproject/mwc-wallet", version="5.3.4", tag = "5.3.4" }
+mwc_wallet_controller = { git = "https://github.com/mwcproject/mwc-wallet", version="5.3.4", tag = "5.3.4" }
+mwc_wallet_config = { git = "https://github.com/mwcproject/mwc-wallet", version="5.3.4", tag = "5.3.4" }
+mwc_wallet_util = { git = "https://github.com/mwcproject/mwc-wallet", version="5.3.4", tag = "5.3.4" }
 
 # For bleeding edge
-#grin_core = { git = "https://github.com/mwcproject/mwc-node", branch = "5.3.100" }
-#grin_keychain = { git = "https://github.com/mwcproject/mwc-node", branch = "5.3.100" }
-#grin_chain = { git = "https://github.com/mwcproject/mwc-node", branch = "5.3.100" }
-#grin_util = { git = "https://github.com/mwcproject/mwc-node", branch = "5.3.100" }
-#grin_api = { git = "https://github.com/mwcproject/mwc-node", branch = "5.3.100" }
-#grin_store = { git = "https://github.com/mwcproject/mwc-node", branch = "5.3.100" }
-#grin_p2p = { git = "https://github.com/mwcproject/mwc-node", branch = "5.3.100" }
-#grin_wallet_impls = { git = "https://github.com/mwcproject/mwc-wallet", branch = "5.3.100" }
-#grin_wallet_libwallet = { git = "https://github.com/mwcproject/mwc-wallet", branch = "5.3.100" }
-#grin_wallet_api = { git = "https://github.com/mwcproject/mwc-wallet", branch = "5.3.100" }
-#grin_wallet_controller = { git = "https://github.com/mwcproject/mwc-wallet", branch = "5.3.100" }
-#grin_wallet_config = { git = "https://github.com/mwcproject/mwc-wallet", branch = "5.3.100" }
-#grin_wallet_util = { git = "https://github.com/mwcproject/mwc-wallet", branch = "5.3.100" }
+#mwc_core = { git = "https://github.com/mwcproject/mwc-node", branch = "5.3.100" }
+#mwc_keychain = { git = "https://github.com/mwcproject/mwc-node", branch = "5.3.100" }
+#mwc_util = { git = "https://github.com/mwcproject/mwc-node", branch = "5.3.100" }
+#mwc_api = { git = "https://github.com/mwcproject/mwc-node", branch = "5.3.100" }
+#mwc_store = { git = "https://github.com/mwcproject/mwc-node", branch = "5.3.100" }
+#mwc_p2p = { git = "https://github.com/mwcproject/mwc-node", branch = "5.3.100" }
+#mwc_wallet_impls = { git = "https://github.com/mwcproject/mwc-wallet", branch = "5.3.100" }
+#mwc_wallet_libwallet = { git = "https://github.com/mwcproject/mwc-wallet", branch = "5.3.100" }
+#mwc_wallet_api = { git = "https://github.com/mwcproject/mwc-wallet", branch = "5.3.100" }
+#mwc_wallet_controller = { git = "https://github.com/mwcproject/mwc-wallet", branch = "5.3.100" }
+#mwc_wallet_config = { git = "https://github.com/mwcproject/mwc-wallet", branch = "5.3.100" }
+#mwc_wallet_util = { git = "https://github.com/mwcproject/mwc-wallet", branch = "5.3.100" }
 
 # For local testing
-#grin_api = { path = "../mwc-node/api"}
-#grin_core = { path = "../mwc-node/core"}
-#grin_keychain = { path = "../mwc-node/keychain"}
-#grin_chain = {path = "../mwc-node/chain"}
-#grin_util = { path = "../mwc-node/util"}
-#grin_store = { path = "../mwc-node/store"}
-#grin_p2p = { path = "../mwc-node/p2p"}
-#grin_wallet_impls = { path = "../mwc-wallet/impls"}
-#grin_wallet_libwallet = { path = "../mwc-wallet/libwallet"}
-#grin_wallet_api = { path = "../mwc-wallet/api"}
-#grin_wallet_controller = { path = "../mwc-wallet/controller"}
-#grin_wallet_config = { path = "../mwc-wallet/config"}
-#grin_wallet_util = { path = "../mwc-wallet/util"}
+#mwc_api = { path = "../mwc-node/api"}
+#mwc_core = { path = "../mwc-node/core"}
+#mwc_keychain = { path = "../mwc-node/keychain"}
+#mwc_util = { path = "../mwc-node/util"}
+#mwc_store = { path = "../mwc-node/store"}
+#mwc_p2p = { path = "../mwc-node/p2p"}
+#mwc_wallet_impls = { path = "../mwc-wallet/impls"}
+#mwc_wallet_libwallet = { path = "../mwc-wallet/libwallet"}
+#mwc_wallet_api = { path = "../mwc-wallet/api"}
+#mwc_wallet_controller = { path = "../mwc-wallet/controller"}
+#mwc_wallet_config = { path = "../mwc-wallet/config"}
+#mwc_wallet_util = { path = "../mwc-wallet/util"}
 
 # OS specific dependencies
 [target.'cfg(not(target_os = "android"))'.dependencies]

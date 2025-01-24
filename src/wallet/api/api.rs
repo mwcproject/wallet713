@@ -1,29 +1,29 @@
 use std::collections::{HashMap, VecDeque};
 use uuid::Uuid;
 
-use grin_core::core::hash::Hash;
-use grin_p2p::types::PeerAddr;
-use grin_p2p::types::PeerInfoDisplay;
-pub use grin_util::secp::Message;
-use grin_util::secp::{ContextFlag, Secp256k1, Signature};
+use mwc_core::core::hash::Hash;
+use mwc_p2p::types::PeerAddr;
+use mwc_p2p::types::PeerInfoDisplay;
+pub use mwc_util::secp::Message;
+use mwc_util::secp::{ContextFlag, Secp256k1, Signature};
 
 use crate::common::{Arc, Error, Mutex};
-use grin_core::core::Transaction;
-use grin_keychain::Identifier;
-use grin_util::secp::key::{PublicKey, SecretKey};
-use grin_wallet_impls::keychain::Keychain;
-use grin_wallet_libwallet::api_impl::types::SwapStartArgs;
-use grin_wallet_libwallet::proof::crypto::Hex;
-use grin_wallet_libwallet::proof::proofaddress;
-use grin_wallet_libwallet::proof::tx_proof::TxProof;
-use grin_wallet_libwallet::{AcctPathMapping, NodeClient, OutputCommitMapping, OutputData, Slate, SlatePurpose, StatusMessage, TxLogEntry, TxLogEntryType, WalletInfo, WalletInst, WalletLCProvider};
+use mwc_core::core::Transaction;
+use mwc_keychain::Identifier;
+use mwc_util::secp::key::{PublicKey, SecretKey};
+use mwc_wallet_impls::keychain::Keychain;
+use mwc_wallet_libwallet::api_impl::types::SwapStartArgs;
+use mwc_wallet_libwallet::proof::crypto::Hex;
+use mwc_wallet_libwallet::proof::proofaddress;
+use mwc_wallet_libwallet::proof::tx_proof::TxProof;
+use mwc_wallet_libwallet::{AcctPathMapping, NodeClient, OutputCommitMapping, OutputData, Slate, SlatePurpose, StatusMessage, TxLogEntry, TxLogEntryType, WalletInfo, WalletInst, WalletLCProvider};
 
 use ed25519_dalek::PublicKey as DalekPublicKey;
-use grin_keychain::{ExtKeychainPath, SwitchCommitmentType};
-use grin_wallet_impls::adapters::SlateGetData;
-use grin_wallet_impls::{Address, PathToSlateGetter, PathToSlatePutter, SlateGetter, SlatePutter};
-use grin_wallet_libwallet::internal::{keys, updater};
-use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
+use mwc_keychain::{ExtKeychainPath, SwitchCommitmentType};
+use mwc_wallet_impls::adapters::SlateGetData;
+use mwc_wallet_impls::{Address, PathToSlateGetter, PathToSlatePutter, SlateGetter, SlatePutter};
+use mwc_wallet_libwallet::internal::{keys, updater};
+use mwc_wallet_libwallet::proof::proofaddress::ProvableAddress;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -79,12 +79,12 @@ pub fn verifysignature(message: &str, signature: &str, pubkey: &str) -> Result<(
     let msg = Message::from_slice(msg.as_bytes())?;
 
     let secp = Secp256k1::with_caps(ContextFlag::VerifyOnly);
-    let pk = grin_util::from_hex(pubkey).map_err(|e| {
+    let pk = mwc_util::from_hex(pubkey).map_err(|e| {
         Error::GenericError(format!("Unable to parse public key HEX value {}", e))
     })?;
     let pk = PublicKey::from_slice(&secp, &pk)?;
 
-    let signature = grin_util::from_hex(signature).map_err(|e| {
+    let signature = mwc_util::from_hex(signature).map_err(|e| {
         Error::GenericError(format!("Unable to parse signature HEX value {}", e))
     })?;
     let signature = Signature::from_der(&secp, &signature)?;
@@ -544,7 +544,7 @@ where
                         .body
                         .kernels
                         .iter()
-                        .map(|k| grin_util::to_hex(&k.excess.0))
+                        .map(|k| mwc_util::to_hex(&k.excess.0))
                         .collect();
                 } else {
                     if tx.tx_type == TxLogEntryType::TxSent {
@@ -556,7 +556,7 @@ where
                 }
             }
             if let Some(kernel) = tx.kernel_excess {
-                tx_info.tx_kernels.push(grin_util::to_hex(&kernel.0));
+                tx_info.tx_kernels.push(mwc_util::to_hex(&kernel.0));
             }
         }
 
@@ -676,14 +676,14 @@ where
 
     for t in &txs {
         let amount = if t.tx_log.amount_credited >= t.tx_log.amount_debited {
-            grin_core::core::amount_to_hr_string(
+            mwc_core::core::amount_to_hr_string(
                 t.tx_log.amount_credited - t.tx_log.amount_debited,
                 true,
             )
         } else {
             format!(
                 "-{}",
-                grin_core::core::amount_to_hr_string(
+                mwc_core::core::amount_to_hr_string(
                     t.tx_log.amount_debited - t.tx_log.amount_credited,
                     true
                 )
@@ -712,7 +712,7 @@ where
             amount,
             t.tx_log
                 .fee
-                .map(|fee| grin_core::core::amount_to_hr_string(fee, true))
+                .map(|fee| mwc_core::core::amount_to_hr_string(fee, true))
                 .unwrap_or("Unknown".to_string()),
             t.tx_log
                 .messages
@@ -753,13 +753,13 @@ where
     let (tx, rx) = mpsc::channel();
     // Starting printing to console thread.
     let running = Arc::new(AtomicBool::new(true));
-    let updater = grin_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(
+    let updater = mwc_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(
         rx,
         running.clone(),
     )?;
     let tx = Some(tx);
 
-    let res = grin_wallet_libwallet::owner::retrieve_summary_info(
+    let res = mwc_wallet_libwallet::owner::retrieve_summary_info(
         wallet_inst,
         None,
         &tx,
@@ -800,7 +800,7 @@ where
     K: Keychain + 'a,
 {
     // Caller is responsible for refresh call
-    grin_wallet_libwallet::owner::update_wallet_state(
+    mwc_wallet_libwallet::owner::update_wallet_state(
         wallet_inst.clone(),
         None,
         status_send_channel,
@@ -851,7 +851,7 @@ where
         }
     }
 
-    let params = grin_wallet_libwallet::InitTxArgs {
+    let params = mwc_wallet_libwallet::InitTxArgs {
         src_acct_name: active_account,
         amount,
         minimum_confirmations,
@@ -894,7 +894,7 @@ where
         amount_includes_fee: Some(amount_includes_fee),
     };
 
-    let s = grin_wallet_libwallet::owner::init_send_tx(&mut **w, None, &params, false, routputs)?;
+    let s = mwc_wallet_libwallet::owner::init_send_tx(&mut **w, None, &params, false, routputs)?;
     Ok(s)
 }
 
@@ -911,7 +911,7 @@ where
     K: Keychain + 'a,
 {
     wallet_lock!(wallet_inst, w);
-    grin_wallet_libwallet::owner::tx_lock_outputs(
+    mwc_wallet_libwallet::owner::tx_lock_outputs(
         &mut **w,
         None,
         slate,
@@ -934,7 +934,7 @@ where
     wallet_lock!(wallet_inst, w);
 
     let (slate_res, _context) =
-        grin_wallet_libwallet::owner::finalize_tx(&mut **w, None, slate, true, false)?;
+        mwc_wallet_libwallet::owner::finalize_tx(&mut **w, None, slate, true, false)?;
     *slate = slate_res;
 
     Ok(())
@@ -953,13 +953,13 @@ where
     let (tx, rx) = mpsc::channel();
     // Starting printing to console thread.
     let running = Arc::new(AtomicBool::new(true));
-    let updater = grin_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(
+    let updater = mwc_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(
         rx,
         running.clone(),
     )?;
 
     let tx = Some(tx);
-    grin_wallet_libwallet::owner::cancel_tx(wallet_inst.clone(), None, &tx, tx_id, tx_slate_id)?;
+    mwc_wallet_libwallet::owner::cancel_tx(wallet_inst.clone(), None, &tx, tx_id, tx_slate_id)?;
 
     running.store(false, Ordering::Relaxed);
     let _ = updater.join();
@@ -1091,13 +1091,13 @@ where
     let (tx, rx) = mpsc::channel();
     // Starting printing to console thread.
     let running = Arc::new(AtomicBool::new(true));
-    let updater = grin_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(
+    let updater = mwc_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(
         rx,
         running.clone(),
     )?;
 
     let tx = Some(tx);
-    grin_wallet_libwallet::owner::scan(
+    mwc_wallet_libwallet::owner::scan(
         wallet_inst.clone(),
         None,
         Some(start_height),
@@ -1124,12 +1124,12 @@ where
     // Starting printing to console thread.
     let running = Arc::new(AtomicBool::new(true));
     let (tx, rx) = mpsc::channel();
-    let updater = grin_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(
+    let updater = mwc_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(
         rx,
         running.clone(),
     )?;
 
-    grin_wallet_libwallet::owner::dump_wallet_data(wallet_inst, &tx, file_name)?;
+    mwc_wallet_libwallet::owner::dump_wallet_data(wallet_inst, &tx, file_name)?;
 
     running.store(false, Ordering::Relaxed);
     let _ = updater.join();
@@ -1155,7 +1155,7 @@ where
         let (tx, rx) = mpsc::channel();
         // Starting printing to console thread.
         updater = Some(
-            grin_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(
+            mwc_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(
                 rx,
                 running.clone(),
             )?,
@@ -1164,7 +1164,7 @@ where
     }
 
     let res =
-        grin_wallet_libwallet::owner::update_wallet_state(wallet_inst, None, &status_send_channel)?;
+        mwc_wallet_libwallet::owner::update_wallet_state(wallet_inst, None, &status_send_channel)?;
 
     running.store(false, Ordering::Relaxed);
     if updater.is_some() {
@@ -1392,7 +1392,7 @@ where
 {
     wallet_lock!(wallet_inst, w);
 
-    let params = grin_wallet_libwallet::IssueInvoiceTxArgs {
+    let params = mwc_wallet_libwallet::IssueInvoiceTxArgs {
         dest_acct_name: active_account,
         amount,
         message,
@@ -1404,7 +1404,7 @@ where
         slatepack_recipient,
     };
 
-    let s = grin_wallet_libwallet::owner::issue_invoice_tx(
+    let s = mwc_wallet_libwallet::owner::issue_invoice_tx(
         &mut **w,
         None,
         &params,
@@ -1432,7 +1432,7 @@ where
 
     let dest_acct_name: Option<String> = dest_acct_name.map(|s| s.to_string());
 
-    let s = grin_wallet_libwallet::foreign::receive_tx(
+    let s = mwc_wallet_libwallet::foreign::receive_tx(
         &mut **w,
         None,
         slate,
@@ -1458,7 +1458,7 @@ where
     K: Keychain + 'a,
 {
     let swap_id =
-        grin_wallet_libwallet::owner_swap::swap_create_from_offer(wallet_inst, None, filename)?;
+        mwc_wallet_libwallet::owner_swap::swap_create_from_offer(wallet_inst, None, filename)?;
     Ok(swap_id)
 }
 
@@ -1496,13 +1496,13 @@ where
     match buyer_communication_method.as_str() {
         "mwcmqs" => {
             // Validating destination address
-            let _ = grin_wallet_impls::MWCMQSAddress::from_str(&buyer_communication_address)
+            let _ = mwc_wallet_impls::MWCMQSAddress::from_str(&buyer_communication_address)
                 .map_err(|e| {
                     Error::ArgumentError(format!("Invalid destination address, {}", e))
                 })?;
         }
         "tor" => {
-            let _ = grin_wallet_impls::adapters::validate_tor_address(&buyer_communication_address)
+            let _ = mwc_wallet_impls::adapters::validate_tor_address(&buyer_communication_address)
                 .map_err(|e| {
                     Error::ArgumentError(format!("Invalid destination address, {}", e))
                 })?;
@@ -1542,7 +1542,7 @@ where
         tag,
     };
 
-    let swap_id = grin_wallet_libwallet::owner_swap::swap_start(wallet_inst, None, &params)?;
+    let swap_id = mwc_wallet_libwallet::owner_swap::swap_start(wallet_inst, None, &params)?;
     Ok(swap_id)
 }
 

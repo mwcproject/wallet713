@@ -7,10 +7,10 @@ pub const DEFAULT_MWCMQS_DOMAIN: &str = "mqs.mwc.mw";
 pub const DEFAULT_MWCMQS_PORT: u16 = 443;
 
 #[cfg(not(windows))]
-pub const DEFAULT_GRINBOX_PORT: u16 = 443;
+pub const DEFAULT_MWCBOX_PORT: u16 = 443;
 #[cfg(windows)]
-pub const DEFAULT_GRINBOX_PORT: u16 = 80;
-use grin_wallet_impls::Address;
+pub const DEFAULT_MWCBOX_PORT: u16 = 80;
+use mwc_wallet_impls::Address;
 
 pub trait AddressBookBackend {
     fn get_contact(&mut self, name: &[u8]) -> Result<Contact, Error>;

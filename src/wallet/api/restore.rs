@@ -1,4 +1,4 @@
-// Copyright 2018 The Grin Developers
+// Copyright 2018 The mwc Developers
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,10 +14,10 @@
 //! Functions to restore a wallet's outputs from just the master seed
 
 use crate::common::Error;
-use grin_util::secp::key::PublicKey;
-use grin_wallet_impls::keychain::Keychain;
-use grin_wallet_libwallet::proof::crypto::Hex;
-use grin_wallet_libwallet::{NodeClient, WalletBackend};
+use mwc_util::secp::key::PublicKey;
+use mwc_wallet_impls::keychain::Keychain;
+use mwc_wallet_libwallet::proof::crypto::Hex;
+use mwc_wallet_libwallet::{NodeClient, WalletBackend};
 use std::fs::OpenOptions;
 
 struct PubKeyInfo {
@@ -39,8 +39,8 @@ where
     K: Keychain + 'a,
 {
     use blake2_rfc::blake2b::blake2b;
-    use grin_util::secp::key::SecretKey;
-    use grin_util::secp::{ContextFlag, Secp256k1};
+    use mwc_util::secp::key::SecretKey;
+    use mwc_util::secp::{ContextFlag, Secp256k1};
     use std::io::prelude::*;
 
     // First, get a definitive list of outputs we own from the chain

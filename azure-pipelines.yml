@@ -1,4 +1,4 @@
-# Copyright 2019 The Grin Developers
+# Copyright 2019 The MWC Developers
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ jobs:
     matrix:
       release:
         CI_JOB: release
-        PLATFORM: linux-amd64
+        PLATFORM: linux-x64
   steps:
     - script: |
         sudo apt-get update -yqq
@@ -52,7 +52,7 @@ jobs:
     matrix:
       release:
         CI_JOB: release
-        PLATFORM: macos
+        PLATFORM: macos-x64
   steps:
     - template: '.ci/release.yml'
 - job: windows

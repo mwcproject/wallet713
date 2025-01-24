@@ -4,17 +4,17 @@ use std::io;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
-use grin_core::global::ChainTypes;
-use grin_util::logger::LoggingConfig;
+use mwc_core::global::ChainTypes;
+use mwc_util::logger::LoggingConfig;
 
 use crate::common::Error;
-use crate::contacts::DEFAULT_GRINBOX_PORT;
+use crate::contacts::DEFAULT_MWCBOX_PORT;
 use contacts::{DEFAULT_MWCMQS_DOMAIN, DEFAULT_MWCMQS_PORT};
-use grin_util::secp::key::PublicKey;
-use grin_wallet_config::{MQSConfig, TorConfig};
-use grin_wallet_impls::MWCMQSAddress;
-use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
-use grin_wallet_libwallet::ReplayMitigationConfig;
+use mwc_util::secp::key::PublicKey;
+use mwc_wallet_config::{MQSConfig, TorConfig};
+use mwc_wallet_impls::MWCMQSAddress;
+use mwc_wallet_libwallet::proof::proofaddress::ProvableAddress;
+use mwc_wallet_libwallet::ReplayMitigationConfig;
 use std::collections::BTreeMap;
 
 const WALLET713_HOME: &str = ".mwc713";
@@ -102,7 +102,7 @@ pub const WALLET713_CONFIG_HELP: &str =
 # socks port for wallet libp2p listener. Note, libp2p activated with TOR listener.
 # libp2p_port = 13419
 
-# MWC MQS/GrinBox address defive index. Every new index will give you a new address that will be used for
+# MWC MQS/mwcBox address defive index. Every new index will give you a new address that will be used for
 # communication with message queue
 # grinbox_address_index = 0
 
@@ -473,7 +473,7 @@ impl Wallet713Config {
         }
     }
 
-    pub fn grinbox_listener_auto_start(&self) -> bool {
+    pub fn mwcbox_listener_auto_start(&self) -> bool {
         self.grinbox_listener_auto_start.unwrap_or(true)
     }
 
@@ -514,7 +514,7 @@ impl Wallet713Config {
     }
 
     pub fn get_mqs_config(&self) -> MQSConfig {
-        grin_wallet_config::MQSConfig {
+        MQSConfig {
             mwcmqs_domain: self
                 .mwcmqs_domain
                 .clone()
@@ -548,19 +548,19 @@ impl Wallet713Config {
     }
 
     pub fn get_tor_config(&self) -> TorConfig {
-        let mut tor_config = grin_wallet_config::TorConfig::default();
+        let mut tor_config = TorConfig::default();
         tor_config.socks_running = true;
         tor_config.socks_proxy_addr = self.get_socks_addr();
         tor_config.send_config_dir = self.get_wallet_data_dir();
         tor_config
     }
 
-    pub fn get_tls_config(&self, print_message: bool) -> Option<grin_api::TLSConfig> {
+    pub fn get_tls_config(&self, print_message: bool) -> Option<mwc_api::TLSConfig> {
         if self.is_tls_enabled() {
             if print_message {
                 cli_message!("TLS is enabled. Wallet will use secure connection for Rest API");
             }
-            Some(grin_api::TLSConfig::new(
+            Some(mwc_api::TLSConfig::new(
                 self.tls_certificate_file.clone().unwrap(),
                 self.tls_certificate_key.clone().unwrap(),
             ))
@@ -581,7 +581,7 @@ impl fmt::Display for Wallet713Config {
             f,
             "wallet713_data_path={}\nmwcmq_port={}\nmwc_node_uri={}\nmwc_node_secret={}",
             self.wallet713_data_path,
-            self.mwcmq_port.unwrap_or(DEFAULT_GRINBOX_PORT),
+            self.mwcmq_port.unwrap_or(DEFAULT_MWCBOX_PORT),
             self.mwc_node_uri
                 .clone()
                 .unwrap_or(String::from("provided by vault713")),

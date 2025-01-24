@@ -26,27 +26,27 @@ extern crate serde;
 extern crate url;
 extern crate uuid;
 
-extern crate grin_api;
-extern crate grin_core;
-extern crate grin_keychain;
-extern crate grin_p2p;
-extern crate grin_store;
-extern crate grin_util;
-extern crate grin_wallet_impls;
+extern crate mwc_api;
+extern crate mwc_core;
+extern crate mwc_keychain;
+extern crate mwc_p2p;
+extern crate mwc_store;
+extern crate mwc_util;
+extern crate mwc_wallet_impls;
 #[macro_use]
-extern crate grin_wallet_libwallet;
-extern crate grin_wallet_config;
-extern crate grin_wallet_controller;
-extern crate grin_wallet_util;
+extern crate mwc_wallet_libwallet;
+extern crate mwc_wallet_config;
+extern crate mwc_wallet_controller;
+extern crate mwc_wallet_util;
 
 extern crate ed25519_dalek;
-extern crate grin_wallet_api;
+extern crate mwc_wallet_api;
 
-use grin_core::core::Transaction;
-use grin_core::ser;
-use grin_wallet_impls::adapters::HttpDataSender;
-use grin_wallet_libwallet::proof::proofaddress::ProvableAddress;
-use grin_wallet_libwallet::SlatePurpose;
+use mwc_core::core::Transaction;
+use mwc_core::ser;
+use mwc_wallet_impls::adapters::HttpDataSender;
+use mwc_wallet_libwallet::proof::proofaddress::ProvableAddress;
+use mwc_wallet_libwallet::SlatePurpose;
 #[cfg(not(target_os = "android"))]
 use std::borrow::Cow::{self, Borrowed, Owned};
 use std::convert::TryFrom;
@@ -59,14 +59,14 @@ use std::sync::mpsc::Receiver;
 use std::sync::mpsc::Sender;
 use std::{env, thread};
 
-use grin_util::from_hex;
-use grin_util::ZeroingString;
+use mwc_util::from_hex;
+use mwc_util::ZeroingString;
 
 use clap::{App, Arg, ArgMatches, SubCommand};
 use colored::*;
-use grin_core::core;
-use grin_core::global::{init_global_chain_type, ChainTypes};
-use grin_core::libtx::tx_fee;
+use mwc_core::core;
+use mwc_core::global::{init_global_chain_type, ChainTypes};
+use mwc_core::libtx::tx_fee;
 #[cfg(not(target_os = "android"))]
 use rustyline::completion::{Completer, FilenameCompleter, Pair};
 #[cfg(not(target_os = "android"))]
@@ -96,31 +96,31 @@ use contacts::DEFAULT_MWCMQS_DOMAIN;
 use contacts::DEFAULT_MWCMQS_PORT;
 use wallet::Wallet;
 
-use grin_util::secp::key::PublicKey;
-use grin_wallet_impls::{
+use mwc_util::secp::key::PublicKey;
+use mwc_wallet_impls::{
     Address, AddressType, MWCMQPublisher, MWCMQSAddress, MWCMQSubscriber, Publisher, Subscriber,
 };
-use grin_wallet_libwallet::proof::tx_proof::TxProof;
-use grin_wallet_libwallet::set_replay_config;
-use grin_wallet_libwallet::swap::types::Currency;
-use grin_wallet_libwallet::Slate;
+use mwc_wallet_libwallet::proof::tx_proof::TxProof;
+use mwc_wallet_libwallet::set_replay_config;
+use mwc_wallet_libwallet::swap::types::Currency;
+use mwc_wallet_libwallet::Slate;
 
 use contacts::{AddressBook, Backend, Contact};
 
-use grin_wallet_libwallet::proof::crypto::Hex;
+use mwc_wallet_libwallet::proof::crypto::Hex;
 
-use grin_util::secp::constants::SECRET_KEY_SIZE;
-use grin_wallet_controller::command;
-use grin_wallet_libwallet::proof::proofaddress;
-use grin_wallet_libwallet::proof::tx_proof;
+use mwc_util::secp::constants::SECRET_KEY_SIZE;
+use mwc_wallet_controller::command;
+use mwc_wallet_libwallet::proof::proofaddress;
+use mwc_wallet_libwallet::proof::tx_proof;
 use std::borrow::Borrow;
 use std::fs;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
-use grin_core::ser::DeserializationMode;
-use grin_util::secp::{ContextFlag, Secp256k1};
-use grin_wallet_api::Owner;
-use grin_wallet_config::types::{TorBridgeConfig, TorProxyConfig};
+use mwc_core::ser::DeserializationMode;
+use mwc_util::secp::{ContextFlag, Secp256k1};
+use mwc_wallet_api::Owner;
+use mwc_wallet_config::types::{TorBridgeConfig, TorProxyConfig};
 use rustyline::validate::Validator;
 use uuid::Uuid;
 
@@ -284,7 +284,7 @@ fn start_mwcmqs_listener(
 
     println!("Starting mwcmqs listener...");
 
-    let res = grin_wallet_controller::controller::start_mwcmqs_listener(
+    let res = mwc_wallet_controller::controller::start_mwcmqs_listener(
         wallet.lock().get_wallet_instance()?,
         config.get_mqs_config(),
         false,
@@ -304,7 +304,7 @@ fn start_tor_listener(
     tor_client_option: Option<String>,
 ) -> Result<std::sync::Arc<std::sync::Mutex<u32>>, Error> {
     // Let's check if foreign API is running (was able to start)
-    if !grin_wallet_controller::controller::is_foreign_api_running() {
+    if !mwc_wallet_controller::controller::is_foreign_api_running() {
         return Err(Error::GenericError("Foreign API is not running. Unable to start tor listener.".to_string()));
     }
 
@@ -328,7 +328,7 @@ fn start_tor_listener(
         .spawn(move || {
             let wallet_data_dir = config2.get_wallet_data_dir();
             let winst = wallet2.lock().get_wallet_instance().unwrap();
-            let onion_address = grin_wallet_controller::controller::get_tor_address(
+            let onion_address = mwc_wallet_controller::controller::get_tor_address(
                 winst.clone(),
                 keychain_mask.clone(),
             )
@@ -340,7 +340,7 @@ fn start_tor_listener(
                 client_option: tor_client_option,
             };
 
-            let p = grin_wallet_controller::controller::init_tor_listener(
+            let p = mwc_wallet_controller::controller::init_tor_listener(
                 winst.clone(),
                 keychain_mask.clone(),
                 &addr,
@@ -389,7 +389,7 @@ fn start_tor_listener(
         }
 
         let libp2p_port = config.libp2p_port.unwrap();
-        grin_wallet_controller::controller::start_libp2p_listener(
+        mwc_wallet_controller::controller::start_libp2p_listener(
             wallet.lock().get_wallet_instance().unwrap(),
             tor_secret,
             &config.get_socks_addr(),
@@ -433,7 +433,7 @@ fn start_wallet_api(config: &Wallet713Config, wallet: Arc<Mutex<Wallet>>) -> Res
             thread::Builder::new()
                 .name("owner_listener".to_string())
                 .spawn(move || {
-                    if let Err(e) = grin_wallet_controller::controller::owner_listener(
+                    if let Err(e) = mwc_wallet_controller::controller::owner_listener(
                         wallet_instance,
                         Arc::new(Mutex::new(None)),
                         &addr,
@@ -471,7 +471,7 @@ fn start_wallet_api(config: &Wallet713Config, wallet: Arc<Mutex<Wallet>>) -> Res
                 .spawn(move || {
                     let tor_bridge=  TorBridgeConfig::default();
                     let tor_proxy = TorProxyConfig::default();
-                    if let Err(e) = grin_wallet_controller::controller::foreign_listener(
+                    if let Err(e) = mwc_wallet_controller::controller::foreign_listener(
                         wallet_instance,
                         Arc::new(Mutex::new(None)),
                         &foreign_api_address,
@@ -766,7 +766,7 @@ fn main() {
             let result = wallet.lock().unlock(
                 &config,
                 &account,
-                grin_util::ZeroingString::from(passphrase.as_str()),
+                mwc_util::ZeroingString::from(passphrase.as_str()),
             );
             if let Err(ref err) = result {
                 println!("{}: {}", "ERROR".bright_red(), err);
@@ -776,7 +776,7 @@ fn main() {
         } else {
             wallet
                 .lock()
-                .unlock(&config, &account, grin_util::ZeroingString::from(""))
+                .unlock(&config, &account, mwc_util::ZeroingString::from(""))
                 .is_ok()
         };
 
@@ -799,7 +799,7 @@ fn main() {
 
     println!("{}", WELCOME_FOOTER.bright_blue());
 
-    if config.grinbox_listener_auto_start() {
+    if config.mwcbox_listener_auto_start() {
         let result = start_mwcmqs_listener(&config, wallet.clone());
         match result {
             Err(e) => cli_message!("{}: {}", "ERROR".bright_red(), e),
@@ -1104,7 +1104,7 @@ fn do_command(
                 println!("{}: wallet with no passphrase.", "WARNING".bright_yellow());
             }
 
-            let passphrase = grin_util::ZeroingString::from(passphrase);
+            let passphrase = mwc_util::ZeroingString::from(passphrase);
 
             let mut seed_length = args.value_of("seed_length")
                 .unwrap_or("24")
@@ -1441,7 +1441,7 @@ fn do_command(
 
                 let keychain_mask = Arc::new(Mutex::new(None));
 
-                let controller = grin_wallet_controller::controller::Controller::new(
+                let controller = mwc_wallet_controller::controller::Controller::new(
                     &addr_name,
                     wallet.lock().get_wallet_instance()?,
                     keychain_mask,
@@ -1506,7 +1506,7 @@ fn do_command(
 
                 let keychain_mask = Arc::new(Mutex::new(None));
 
-                let controller = grin_wallet_controller::controller::Controller::new(
+                let controller = mwc_wallet_controller::controller::Controller::new(
                     &addr_name,
                     wallet.lock().get_wallet_instance()?,
                     keychain_mask,
@@ -1842,7 +1842,7 @@ fn do_command(
             let (tx, rx) = mpsc::channel();
             // Starting printing to console thread.
             let updater =
-                grin_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(
+                mwc_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(
                     rx,
                     running.clone(),
                 )?;
@@ -1981,7 +1981,7 @@ fn do_command(
                     AddressType::Https => "http",
                 };
 
-                let sender = grin_wallet_impls::create_sender(
+                let sender = mwc_wallet_impls::create_sender(
                     method,
                     &to.to_string(),
                     &apisecret,
@@ -2192,7 +2192,7 @@ fn do_command(
             // Invoices supported by MQS  only. HTTP based transport works differently, no invoice processing on them.
             let original_slate = slate.clone();
             let (dalek_secret, _dalek_pk) = w.get_slatepack_keys()?;
-            let sender = grin_wallet_impls::create_sender(method, &to.to_string(), &None, None)?;
+            let sender = mwc_wallet_impls::create_sender(method, &to.to_string(), &None, None)?;
             let height = w.get_height()?;
             let secp = Secp256k1::new();
             slate = sender.send_tx(
@@ -2352,7 +2352,7 @@ fn do_command(
             let args = matches.subcommand_matches("set-recv").unwrap();
             let account = args.value_of("account").unwrap();
             if wallet.lock().account_path(account)?.is_some() {
-                grin_wallet_libwallet::set_receive_account(account.to_string());
+                mwc_wallet_libwallet::set_receive_account(account.to_string());
                 cli_message!("Incoming funds will be received in account: {}", account);
             } else {
                 cli_message!("Account {} does not exist!", account);
@@ -2680,7 +2680,7 @@ fn do_command(
                 tag: args.value_of("tag").map(|s| String::from(s)),
             };
 
-            grin_wallet_controller::command::swap(
+            command::swap(
                 wallet.lock().get_wallet_instance()?,
                 None,
                 config.foreign_api_address(),
@@ -2768,7 +2768,7 @@ fn do_command(
             };
             let account = args.value_of("account").map(|s| String::from(s));
 
-            grin_wallet_controller::command::integrity(
+            command::integrity(
                 wallet.lock().get_wallet_instance()?,
                 None,
                 command::IntegrityArgs {
@@ -2804,7 +2804,7 @@ fn do_command(
                 None => None,
             };
 
-            grin_wallet_controller::command::messaging(
+            command::messaging(
                 wallet.lock().get_wallet_instance()?,
                 None,
                 command::MessagingArgs {
@@ -2828,7 +2828,7 @@ fn do_command(
             let args = matches
                 .subcommand_matches("send_marketplace_message")
                 .unwrap();
-            grin_wallet_controller::command::send_marketplace_message(
+            command::send_marketplace_message(
                 wallet.lock().get_wallet_instance()?,
                 None,
                 &config.get_tor_config(),
@@ -2840,7 +2840,7 @@ fn do_command(
             )?;
         }
         Some("check_tor_connection") => {
-            grin_wallet_controller::command::check_tor_connection(
+            command::check_tor_connection(
                 wallet.lock().get_wallet_instance()?,
                 None,
                 &config.get_tor_config(),
@@ -2864,7 +2864,7 @@ fn do_command(
                 dest: None,
                 amount: None,
             };
-            grin_wallet_controller::command::eth(wallet.lock().get_wallet_instance()?, eth_args)?;
+            command::eth(wallet.lock().get_wallet_instance()?, eth_args)?;
         }
         Some("eth_send") => {
             let args = matches.subcommand_matches("eth_send").unwrap();
@@ -2886,16 +2886,16 @@ fn do_command(
                 dest: Some(dest.to_string()),
                 amount: Some(amount.to_string()),
             };
-            grin_wallet_controller::command::eth(wallet.lock().get_wallet_instance()?, eth_args)?;
+            command::eth(wallet.lock().get_wallet_instance()?, eth_args)?;
         }
         Some("rewind_hash") => {
             let mut owner_api = Owner::new(wallet.lock().get_wallet_instance()?, None, None);
-            grin_wallet_controller::command::rewind_hash(&mut owner_api, None, true)?;
+            command::rewind_hash(&mut owner_api, None, true)?;
         }
         Some("scan_rewind_hash") => {
             let args = matches.subcommand_matches("scan_rewind_hash").unwrap();
 
-            let args = grin_wallet_controller::command::ViewWalletScanArgs {
+            let args = command::ViewWalletScanArgs {
                 rewind_hash: args.value_of("rewind_hash").unwrap().to_string(),
                 start_height: match args.value_of("start_height").map(|s| s.parse::<u64>()) {
                     Some( res ) => Some(res.map_err(|e| Error::ArgumentError(format!("Unable to parse 'start_height' value, {}", e)))?),
@@ -2907,7 +2907,7 @@ fn do_command(
                 },
             };
             let mut owner_api = Owner::new(wallet.lock().get_wallet_instance()?, None, None);
-            grin_wallet_controller::command::scan_rewind_hash(&mut owner_api,args,true, true)?;
+            command::scan_rewind_hash(&mut owner_api,args,true, true)?;
         }
         Some("generate_ownership_proof") => {
             let args = matches.subcommand_matches("generate_ownership_proof").unwrap();

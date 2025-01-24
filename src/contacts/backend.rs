@@ -2,20 +2,20 @@ use std::cell::RefCell;
 use std::fs::create_dir_all;
 use std::path::Path;
 
-use grin_core::ser;
-use grin_core::ser::Error as CoreError;
-use grin_store::Store;
-use grin_store::{self, option_to_not_found, to_key};
+use mwc_core::ser;
+use mwc_core::ser::Error as CoreError;
+use mwc_store::Store;
+use mwc_store::{self, option_to_not_found, to_key};
 
 use super::types::{AddressBookBackend, AddressBookBatch, Contact};
 use common::Error;
-use grin_wallet_impls::Address;
+use mwc_wallet_impls::Address;
 
 const DB_DIR: &'static str = "contacts";
 const CONTACT_PREFIX: u8 = 'X' as u8;
 
 pub struct Backend {
-    db: grin_store::Store,
+    db: Store,
 }
 
 impl Backend {
@@ -66,7 +66,7 @@ impl AddressBookBackend for Backend {
     }
 
     fn batch<'a>(&'a self) -> Result<Box<dyn AddressBookBatch + 'a>, Error> {
-        let batch = self.db.batch()?;
+        let batch = self.db.batch_write()?;
         let batch = Batch {
             _store: self,
             db: RefCell::new(Some(batch)),
@@ -77,7 +77,7 @@ impl AddressBookBackend for Backend {
 
 pub struct Batch<'a> {
     _store: &'a Backend,
-    db: RefCell<Option<grin_store::Batch<'a>>>,
+    db: RefCell<Option<mwc_store::Batch<'a>>>,
 }
 
 impl<'a> AddressBookBatch for Batch<'a> {

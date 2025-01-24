@@ -57,13 +57,13 @@ pub enum Error {
     #[error("could not parse number from {0}")]
     NumberParsingError(String),
     #[error("failed receiving slate!, {0}")]
-    GrinWalletReceiveError(String),
+    MwcWalletReceiveError(String),
     #[error("failed verifying slate messages!, {0}")]
-    GrinWalletVerifySlateMessagesError(String),
+    MwcWalletVerifySlateMessagesError(String),
     #[error("failed finalizing slate!, {0}")]
-    GrinWalletFinalizeError(String),
+    MwcWalletFinalizeError(String),
     #[error("failed posting transaction!, {0}")]
-    GrinWalletPostError(String),
+    MwcWalletPostError(String),
     #[error("please stop the listeners before doing this operation")]
     HasListener,
     #[error("wallet already unlocked")]
@@ -83,23 +83,23 @@ pub enum Error {
     #[error("Invalid argument: {0}")]
     ArgumentError(String),
     #[error("Wallet error: {0}")]
-    LibWalletError(#[from] grin_wallet_libwallet::Error),
+    LibWalletError(#[from] mwc_wallet_libwallet::Error),
     #[error("Secp error: {0}")]
-    SecpError(#[from] grin_util::secp::Error),
+    SecpError(#[from] mwc_util::secp::Error),
     #[error("Keychain error: {0}")]
-    KeychainError(#[from] grin_keychain::Error),
+    KeychainError(#[from] mwc_keychain::Error),
     #[error("IO error: {0}")]
     IOError(String),
     #[error("Swap error: {0}")]
-    SwapError(#[from] grin_wallet_libwallet::swap::Error),
+    SwapError(#[from] mwc_wallet_libwallet::swap::Error),
     #[error("Wallet error: {0}")]
-    WalletError(#[from] grin_wallet_impls::Error),
+    WalletError(#[from] mwc_wallet_impls::Error),
     #[error("Controller error: {0}")]
-    ControllerError(#[from] grin_wallet_controller::Error),
+    ControllerError(#[from] mwc_wallet_controller::Error),
     #[error("URL parse error: {0}")]
     UrlParseError(#[from] url::ParseError),
     #[error("Parse error: {0}")]
-    CoreParseError(#[from] grin_core::ser::Error),
+    CoreParseError(#[from] mwc_core::ser::Error),
     #[error("Json error: {0}")]
     JsonError(String),
     #[error("Var error: {0}")]
@@ -113,7 +113,7 @@ pub enum Error {
     #[error("Parsing error: {0}")]
     ClapError(String),
     #[error("Storage error: {0}")]
-    StoreError(#[from] grin_store::Error),
+    StoreError(#[from] mwc_store::Error),
 
 }
 

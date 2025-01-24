@@ -3,31 +3,31 @@ use common::Error;
 use uuid::Uuid;
 
 use crate::common::{Arc, Mutex};
-use grin_core::core::Transaction;
-use grin_keychain::keychain::ExtKeychain;
-use grin_util::secp::key::{PublicKey, SecretKey};
-use grin_wallet_impls::lifecycle::WalletSeed;
-use grin_wallet_impls::node_clients::HTTPNodeClient;
-use grin_wallet_libwallet::{
+use mwc_core::core::Transaction;
+use mwc_keychain::keychain::ExtKeychain;
+use mwc_util::secp::key::{PublicKey, SecretKey};
+use mwc_wallet_impls::lifecycle::WalletSeed;
+use mwc_wallet_impls::node_clients::HTTPNodeClient;
+use mwc_wallet_libwallet::{
     AcctPathMapping, NodeClient, OutputCommitMapping, ScannedBlockInfo, Slate, SlatePurpose,
     StatusMessage, TxLogEntry, WalletInst,
 };
 
 use crate::wallet::api::api;
 use ed25519_dalek::{PublicKey as DalekPublicKey, SecretKey as DalekSecretKey};
-use grin_util::ZeroingString;
-use grin_wallet_controller::display;
-use grin_wallet_impls::{DefaultLCProvider, DefaultWalletImpl};
-use grin_wallet_libwallet::api_impl::owner_updater;
-use grin_wallet_libwallet::proof::proofaddress;
-use grin_wallet_libwallet::proof::proofaddress::{ProofAddressType, ProvableAddress};
-use grin_wallet_libwallet::proof::tx_proof::TxProof;
+use mwc_util::ZeroingString;
+use mwc_wallet_controller::display;
+use mwc_wallet_impls::{DefaultLCProvider, DefaultWalletImpl};
+use mwc_wallet_libwallet::api_impl::owner_updater;
+use mwc_wallet_libwallet::proof::proofaddress;
+use mwc_wallet_libwallet::proof::proofaddress::{ProofAddressType, ProvableAddress};
+use mwc_wallet_libwallet::proof::tx_proof::TxProof;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread;
 use std::thread::JoinHandle;
 use std::time::Duration;
-use grin_util::secp::{ContextFlag, Secp256k1};
+use mwc_util::secp::{ContextFlag, Secp256k1};
 
 pub struct Wallet {
     backend: Option<
@@ -72,7 +72,7 @@ impl Wallet {
         &mut self,
         config: &Wallet713Config,
         account: &str,
-        passphrase: grin_util::ZeroingString,
+        passphrase: ZeroingString,
     ) -> Result<(), Error> {
         if self.backend.is_some() {
             return Err(Error::WalletAlreadyUnlocked);
@@ -148,7 +148,7 @@ impl Wallet {
     pub fn account_path(
         &mut self,
         account: &str,
-    ) -> Result<Option<grin_wallet_libwallet::AcctPathMapping>, Error> {
+    ) -> Result<Option<AcctPathMapping>, Error> {
         let acct_mappings = api::accounts(self.get_wallet_instance()?)?;
         for m in acct_mappings {
             if m.label == account {
@@ -164,7 +164,7 @@ impl Wallet {
         passphrase: ZeroingString,
     ) -> Result<(), Error> {
         let seed = WalletSeed::from_file(&config.get_data_path_str()?, passphrase)?;
-        grin_wallet_impls::lifecycle::show_recovery_phrase(ZeroingString::from(
+        mwc_wallet_impls::lifecycle::show_recovery_phrase(ZeroingString::from(
             seed.to_mnemonic()?,
         ));
         Ok(())
@@ -179,7 +179,7 @@ impl Wallet {
         seed: WalletSeed,
         config: &Wallet713Config,
         account: &str,
-        passphrase: grin_util::ZeroingString,
+        passphrase: ZeroingString,
         create_new: bool,
         seed_words_num: usize,
     ) -> Result<WalletSeed, Error> {
@@ -192,7 +192,7 @@ impl Wallet {
     pub fn init(
         &mut self,
         config: &Wallet713Config,
-        passphrase: grin_util::ZeroingString,
+        passphrase: ZeroingString,
         create_new: bool,
         seed_words_num: usize
     ) -> Result<WalletSeed, Error> {
@@ -204,11 +204,11 @@ impl Wallet {
         &self,
         config: &Wallet713Config,
         words: &Vec<&str>,
-        passphrase: grin_util::ZeroingString,
+        passphrase: ZeroingString,
     ) -> Result<(), Error> {
         WalletSeed::recover_from_phrase(
             &config.get_data_path_str()?,
-            grin_util::ZeroingString::from(words.join(" ").as_str()),
+            mwc_util::ZeroingString::from(words.join(" ").as_str()),
             passphrase,
         )?;
         Ok(())
@@ -679,7 +679,7 @@ impl Wallet {
             output_amounts,
             dest_acct_name,
         )
-        .map_err(|e| Error::GrinWalletReceiveError(format!("{}", e)))?;
+        .map_err(|e| Error::MwcWalletReceiveError(format!("{}", e)))?;
         *slate = s;
         Ok(())
     }
@@ -697,21 +697,21 @@ impl Wallet {
 
     pub fn submit(&self, txn: &mut Transaction, fluff: bool) -> Result<(), Error> {
         api::post_tx(self.get_wallet_instance()?, &txn, fluff)
-            .map_err(|e| Error::GrinWalletPostError(format!("{}", e)))?;
+            .map_err(|e| Error::MwcWalletPostError(format!("{}", e)))?;
         Ok(())
     }
 
     pub fn finalize_post_slate(&self, slate: &mut Slate, fluff: bool) -> Result<(), Error> {
         let wallet = self.get_wallet_instance()?;
         api::verify_slate_messages(&slate)
-            .map_err(|e| Error::GrinWalletVerifySlateMessagesError(format!("{}", e)))?;
+            .map_err(|e| Error::MwcWalletVerifySlateMessagesError(format!("{}", e)))?;
         api::finalize_tx(wallet.clone(), slate)
-            .map_err(|e| Error::GrinWalletFinalizeError(format!("{}", e)))?;
+            .map_err(|e| Error::MwcWalletFinalizeError(format!("{}", e)))?;
         if slate.tx.is_none() {
             return Err(Error::ArgumentError("Submitted slate is empty".to_string()));
         }
         api::post_tx(wallet, slate.tx.as_ref().unwrap(), fluff)
-            .map_err(|e| Error::GrinWalletPostError(format!("{}", e)))?;
+            .map_err(|e| Error::MwcWalletPostError(format!("{}", e)))?;
         Ok(())
     }
 
@@ -745,7 +745,7 @@ impl Wallet {
     //
     //     let outputs = outputs
     //         .iter()
-    //         .map(|o| grin_util::to_hex(o.0.to_vec()))
+    //         .map(|o| mwc_util::to_hex(o.0.to_vec()))
     //         .collect();
     //
     //     Ok((
@@ -871,7 +871,7 @@ impl Wallet {
     fn init_seed(
         &self,
         config: &Wallet713Config,
-        passphrase: grin_util::ZeroingString,
+        passphrase: ZeroingString,
         create_new: bool,
         create_file: bool,
         seed: Option<WalletSeed>,
@@ -935,7 +935,7 @@ impl Wallet {
         &mut self,
         config: &Wallet713Config,
         account: &str,
-        passphrase: grin_util::ZeroingString,
+        passphrase: ZeroingString,
     ) -> Result<(), Error> {
         //parse the node_uri String to a list
         //parse the nodes address and put them in a vec
@@ -974,7 +974,7 @@ impl Wallet {
         let wallet_inst = lc.wallet_inst()?;
         wallet_inst.set_parent_key_id_by_name(account)?;
 
-        grin_wallet_libwallet::swap::trades::init_swap_trade_backend(
+        mwc_wallet_libwallet::swap::trades::init_swap_trade_backend(
             wallet_inst.get_data_file_dir(),
             &config.swap_electrumx_addr,
             &config.swap_eth_contract_addr,
@@ -1031,7 +1031,7 @@ impl Wallet {
         use std::sync::mpsc::channel;
 
         let (tx, rx) = channel();
-        grin_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(rx)?;
+        mwc_wallet_libwallet::api_impl::owner_updater::start_updater_console_thread(rx)?;
 
         let tx_inner = Some(tx);*/
 

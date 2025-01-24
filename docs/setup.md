@@ -24,7 +24,7 @@ I
 ## Option 2: Building your own binary
 
 ### Requirements
-1. All the [current requirements](https://github.com/mimblewimble/grin/blob/master/doc/build.md#requirements) of Grin.
+1. All the [current requirements](https://github.com/mwcproject/mwc/blob/master/doc/build.md#requirements) of MWC.
 1. [OpenSSL](https://www.openssl.org).
    * macOS with Homebrew:
       ```

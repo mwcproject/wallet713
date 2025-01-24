@@ -7,7 +7,7 @@ While running, mwc713 works with an internal command prompt. You type commands i
   * [Common use cases](#common-use-cases)
     + [Getting started](#getting-started)
     + [Transacting](#transacting)
-      - [Transacting using grinbox](#transacting-using-grinbox)
+      - [Transacting using mwcbox](#transacting-using-mwcbox)
       - [Transacting using https](#transacting-using-https)
         * [Sending via https](#sending-via-https)
         * [Receiving via http](#receiving-via-http)
@@ -18,7 +18,7 @@ While running, mwc713 works with an internal command prompt. You type commands i
     + [Send configurations](#send-configurations)
       - [Input selection strategy](#input-selection-strategy)
       - [Minimum number of confirmations](#minimum-number-of-confirmations)
-    + [Transaction proofs (grinbox only)](#transaction-proofs-grinbox-only)
+    + [Transaction proofs (mwcbox only)](#transaction-proofs-mwcbox-only)
       - [Creating a transaction proof](#creating-a-transaction-proof)
       - [Verifying a transaction proof](#verifying-a-transaction-proof)
     + [Using Contacts](#using-contacts)
@@ -38,7 +38,7 @@ While running, mwc713 works with an internal command prompt. You type commands i
     + [Recovering a wallet using your mnemonic BIP-39 phrase](#recovering-a-wallet-using-your-mnemonic-bip-39-phrase)
     + [Displaying existing BIP-39 mnemonic](#displaying-existing-bip-39-mnemonic)
   * [Supported address formats](#supported-address-formats)
-    + [Grinbox](#grinbox)
+    + [mwcbox](#mwcbox)
       - [Address derivation](#address-derivation)
       - [Switching address](#switching-address)
   * [Command documentation](#command-documentation)
@@ -70,11 +70,11 @@ Display wallet info:
 wallet713> $ info
 ```
 
-In order to receive grins from others you need to listen for transactions coming to your grinbox address:
+In order to receive mwcs from others you need to listen for transactions coming to your mwcbox address:
 ```
 wallet713> $ listen
 ```
-This will also display your grinbox address.
+This will also display your mwcbox address.
 
 To exit the wallet:
 ```
@@ -93,7 +93,7 @@ To send a 10 mwc transaction to the address `xmiUWCTh4Rpme5hbZJhNUFAWGLMgXTvS2pq
 wallet713> $ send 10 --to xmiUWCTh4Rpme5hbZJhNUFAWGLMgXTvS2pqWk6yNZv8fhV1PyHmQ
 ```
 
-To receive grins you simply keep mwc713 running and transactions are processed automatically. Any transactions received while being offline are fetched once you initiate `listen`. 
+To receive mwcs you simply keep mwc713 running and transactions are processed automatically. Any transactions received while being offline are fetched once you initiate `listen`. 
 
 
 
@@ -160,7 +160,7 @@ wallet713> $ send 10 --to xmiUWCTh4Rpme5hbZJhNUFAWGLMgXTvS2pqWk6yNZv8fhV1PyHmQ -
 
 ### Transaction proofs (mwcmq only)
 
-Thanks to the use of mwcmq, mwc713 supports proving that a particular amount was sent in a transaction to a particular grinbox recipient address. It relies on the fact that a recipient needs to return a message to the sender in order to build a valid transaction. As part of that, the recipient need their private key to receive and process the sender's original message, as well as in order to sign and send back the response to the sender. The sender can then use this information to generate a proof that can be sent to Bob or a third party, (say Carol) that says that if a particular transaction kernel is visible on the blockchain, a certain mwcmq address has received a transaction of a certain amount. **This can only be used for transactions that have been sent using mwcmq and you need mwc713 to generate and validate a transaction proof.**
+Thanks to the use of mwcmq, mwc713 supports proving that a particular amount was sent in a transaction to a particular mwcbox recipient address. It relies on the fact that a recipient needs to return a message to the sender in order to build a valid transaction. As part of that, the recipient need their private key to receive and process the sender's original message, as well as in order to sign and send back the response to the sender. The sender can then use this information to generate a proof that can be sent to Bob or a third party, (say Carol) that says that if a particular transaction kernel is visible on the blockchain, a certain mwcmq address has received a transaction of a certain amount. **This can only be used for transactions that have been sent using mwcmq and you need mwc713 to generate and validate a transaction proof.**
 
 In the below example,
 1. Alice wants to send Bob 1.337 mwc and prove to Carol that this transaction has occurred.
@@ -191,7 +191,7 @@ In the below example,
    ```
    wallet713> $ export-proof -i 23 -f proof.txt
    proof written to proof.txt
-   this file proves that [0.233232000] grins was sent to [xmiUWCTh4Rpme5hbZJhNUFAWGLMgXTvS2pqWk6yNZv8fhV1PyHmQ] from [xmiUWCTh4Rpme5hbZJhNUFAWGLMgXTvS2pqWk6yNZv8fhV1PyHmQ]
+   this file proves that [0.233232000] mwcs was sent to [xmiUWCTh4Rpme5hbZJhNUFAWGLMgXTvS2pqWk6yNZv8fhV1PyHmQ] from [xmiUWCTh4Rpme5hbZJhNUFAWGLMgXTvS2pqWk6yNZv8fhV1PyHmQ]
 
    outputs:
       08710be0b3fffa79b9423f8e007709a815f237dcfd31340cfa1fdfefd823dca30e
@@ -199,12 +199,12 @@ In the below example,
       099c8a166acd426481c1b09707b9e6cdabb69718ee3ca86694579bf98a42c0c80d
 
    WARNING: this proof should only be considered valid if the kernel is actually on-chain with sufficient confirmations
-   please use a grin block explorer to verify this is the case. for example:
+   please use a mwc block explorer to verify this is the case. for example:
       https://explorer.mwc.mq/#k099c8a166acd426481c1b09707b9e6cdabb69718ee3ca86694579bf98a42c0c80d
    ```
 1. Alice can now send `proof.txt` to Carol, who then can use it to verify the proof. As per the output note above, the proof **is only valid if the kernel in question is found on-chain**. One way to verify this is to locate the specific kernel in a block using a blockchain explorer.
 
-**IMPORTANT NOTE:** When sending to older versions of the wallet, the address of the sender might be missing. In this case the proof only proves that the address of the receiving party was the one receiving the noted grins. Anyone in possession of this proof can claim they were the sender. If the sender field is missing, a warning will be displayed.
+**IMPORTANT NOTE:** When sending to older versions of the wallet, the address of the sender might be missing. In this case the proof only proves that the address of the receiving party was the one receiving the noted mwcs. Anyone in possession of this proof can claim they were the sender. If the sender field is missing, a warning will be displayed.
 
 #### Verifying a transaction proof
 
@@ -223,7 +223,7 @@ kernel:
   099c8a166acd426481c1b09707b9e6cdabb69718ee3ca86694579bf98a42c0c80d
 
 WARNING: this proof should only be considered valid if the kernel is actually on-chain with sufficient confirmations
-please use a grin block explorer to verify this is the case. for example:
+please use a mwc block explorer to verify this is the case. for example:
   https://explorer.mwc.mq/#k099c8a166acd426481c1b09707b9e6cdabb69718ee3ca86694579bf98a42c0c80d
 ```
 Once again, as per the output note above, the proof **is only valid if the kernel in question is found on-chain**. One way to verify this is to locat the specific kernel in a block using a blockchain explorer.
@@ -232,9 +232,9 @@ Once again, as per the output note above, the proof **is only valid if the kerne
 
 ### Using Contacts
 
-To make it easier to transact with parties without having to deal with their grinbox addresses  profiles, you can assign them nicknames that are stored locally in your contacts. **These contacts are stored locally on your machine and are not synced or shared with us.**
+To make it easier to transact with parties without having to deal with their mwcbox addresses  profiles, you can assign them nicknames that are stored locally in your contacts. **These contacts are stored locally on your machine and are not synced or shared with us.**
 
-To add the grinbox address `xmiUWCTh4Rpme5hbZJhNUFAWGLMgXTvS2pqWk6yNZv8fhV1PyHmQ` to your contacts as `faucet`:
+To add the mwcbox address `xmiUWCTh4Rpme5hbZJhNUFAWGLMgXTvS2pqWk6yNZv8fhV1PyHmQ` to your contacts as `faucet`:
 ```
 wallet713> $ contacts add faucet mwcmqs://xmiUWCTh4Rpme5hbZJhNUFAWGLMgXTvS2pqWk6yNZv8fhV1PyHmQ
 ```
@@ -334,7 +334,7 @@ foreign_api_address = "0.0.0.0:5555"
 
 If you would like to secure access to the foreign api, you can set up a secret by using the following configuration option.
 
-Note, however, that setting up a such a secret on the foreign requires the sending party to know the secret in order to communicate with your wallet for sending in grins.
+Note, however, that setting up a such a secret on the foreign requires the sending party to know the secret in order to communicate with your wallet for sending in mwcs.
 
 ```
 foreign_api_secret = "<some secret string>"
@@ -352,9 +352,9 @@ owner_api_secret = "<some secret string>"
 owner_api_include_foreign = <true|false>
 ``` 
 
-MWC713 Owner API supports the default grin's wallet owner API. Additionally `issue_send_tx` supports `grinbox` method where `dest` argument is a grinbox address.
+MWC713 Owner API supports the default mwc's wallet owner API. Additionally `issue_send_tx` supports `mwcbox` method where `dest` argument is a mwcbox address.
 
-Note that in order to utilize  `mwcmq` methods, the grinbox listeners must be initialized automatically at start by using the following configuration parameters in `mwc713.toml`:
+Note that in order to utilize  `mwcmq` methods, the mwcbox listeners must be initialized automatically at start by using the following configuration parameters in `mwc713.toml`:
 
 ```
 grinbox_listener_auto_start = true
@@ -385,7 +385,7 @@ Remember to include the `-p yourpassphrase` if your seed is password protected.
 The following transaction addresses are currently supported.
 
 ### MWCMQ
-Assigned to you when you run the wallet for the first time. The address is derived from your seed. Mainnet grinbox addresses begin with `g`, floonet addresses begin with `x`.
+Assigned to you when you run the wallet for the first time. The address is derived from your seed. Mainnet mwcbox addresses begin with `g`, floonet addresses begin with `x`.
 Typical address format: `mwcmqs://geWzjc7jqGFx6hZAEFbBrVpSQBiG4keieUvpsrKJZ71ero5w6KQu`
 
 ####  Address derivation
