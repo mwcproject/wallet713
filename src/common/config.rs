@@ -107,7 +107,7 @@ pub const WALLET713_CONFIG_HELP: &str =
 # grinbox_address_index = 0
 
 # MWC node connection URI. Please make sure that you are connecting to the node from correct network.
-# mwc_node_uri = \"https://mwc713.floonet.mwc.mw;http://13.236.73.43:13413;http://13.209.51.140:13413\"
+# mwc_node_uri = \"https://mwc713.floonet.mwc.mw;http://13.236.73.43:13413\"
 
 # MWC node secret
 # mwc_node_secret = \"11ne3EAUtOXVKwhxm84U\"
@@ -458,7 +458,7 @@ impl Wallet713Config {
             ChainTypes::Mainnet =>
                 String::from("https://mwc713.mwc.mw;https://mwc7132.mwc.mw;https://mwc7133.mwc.mw;https://mwc7134.mwc.mw;https://mwc7135.mwc.mw"),
             _ =>
-                String::from("https://mwc713.floonet.mwc.mw;http://13.236.73.43:13413;http://13.209.51.140:13413"),
+                String::from("https://mwc713.floonet.mwc.mw;http://13.236.73.43:13413"),
         })
     }
 
